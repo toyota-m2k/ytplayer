@@ -65,6 +65,67 @@
         </Style.Triggers>
     </Style>
 
+    <!-- Icon Toggle Button -->
+    <ControlTemplate x:Key="IconToggleButtonTemplate"  TargetType="ToggleButton">
+        <Border 
+            x:Name="border"
+            Background="{TemplateBinding Background}"
+            Padding="{TemplateBinding Padding}"
+            BorderBrush="{TemplateBinding BorderBrush}"
+            BorderThickness="{TemplateBinding BorderThickness}"
+            >
+            <ContentPresenter 
+                VerticalAlignment="Center" 
+                HorizontalAlignment="Center"/>
+        </Border>
+    </ControlTemplate>
+
+    <Style x:Key="ToggleButtonStyle" TargetType="ToggleButton">
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+        <Setter Property="Width" Value="30"/>
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="Background" Value="{StaticResource NormalBtnBG}"/>
+        <Setter Property="Foreground" Value="{StaticResource NormalBtnFG}"/>
+        <Setter Property="Padding" Value="8"/>
+        <Setter Property="Template" Value="{StaticResource IconToggleButtonTemplate}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource MouseOverBtnBG}" />
+                <Setter Property="Foreground" Value="{StaticResource MouseOverBtnFG}" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{StaticResource PressedBtnBG}" />
+                <Setter Property="Foreground" Value="{StaticResource PressedBtnFG}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Background" Value="{StaticResource NormalBtnBG}" />
+                <Setter Property="Foreground" Value="{StaticResource DisabledBtnFG}" />
+            </Trigger>
+            <Trigger Property="IsChecked" Value="true">
+                <Setter Property="Background" Value="#80000000"/>
+                <Setter Property="Foreground" Value="#00FFFF"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="RadioButton" BasedOn="{StaticResource ToggleButtonStyle}" x:Key="IconRadioButton">
+    </Style>
+
+    <!-- Icon Check Button -->
+    <ControlTemplate x:Key="IconCheckButtonTemplate"  TargetType="common:CheckButton">
+        <Border 
+            x:Name="border"
+            Background="{TemplateBinding Background}"
+            Padding="{TemplateBinding Padding}"
+            BorderBrush="{TemplateBinding BorderBrush}"
+            BorderThickness="{TemplateBinding BorderThickness}"
+            >
+            <ContentPresenter 
+                VerticalAlignment="Center" 
+                HorizontalAlignment="Center"/>
+        </Border>
+    </ControlTemplate>
+
     <Style x:Key="CheckButtonStyle" TargetType="common:CheckButton">
         <Setter Property="OverridesDefaultStyle" Value="True" />
         <Setter Property="Width" Value="30"/>

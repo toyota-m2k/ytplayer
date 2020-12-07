@@ -22,7 +22,15 @@ namespace ytplayer {
     public class MainViewModel : MicViewModelBase {
         public ReactivePropertySlim<bool> AutoDownload { get; } = new ReactivePropertySlim<bool>(true);
         public ReactivePropertySlim<bool> OnlySound { get; } = new ReactivePropertySlim<bool>(false);
-        public ReactiveCommand CommandAutoDownload { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandDownloadNow { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandSettings { get; } = new ReactiveCommand();
+
+
+        public MainViewModel() {
+            //CommandAutoDownload.Subscribe(() => {
+            //    AutoDownload.Value = !AutoDownload.Value;
+            //});
+        }
     }
 
     /// <summary>

@@ -5,8 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ytplayer.dialog"
         mc:Ignorable="d"
-        Title="SettingDialog" Height="450" Width="800">
+        Title="Settings" 
+        Background="#EFEFEF"
+        Height="450" Width="800">
     <Grid>
-        
+
     </Grid>
 </Window>
