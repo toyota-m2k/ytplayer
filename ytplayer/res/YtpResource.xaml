@@ -1,0 +1,82 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:ytplayer"
+                    xmlns:common="clr-namespace:common"
+                    >
+    <!-- Converters -->
+    <common:BoolVisibilityConverter x:Key="BoolVisibilityConverter"/>
+    <common:NegBoolVisibilityConverter x:Key="NegBoolVisibilityConverter"/>
+    <common:NegBoolConverter x:Key="NegBoolConverter"/>
+    <common:EnumBooleanConverter x:Key="EnumBooleanConverter"/>
+    <common:EnumVisibilityConverter x:Key="EnumVisibilityConverter"/>
+    <common:NegEnumVisibilityConverter x:Key="NegEnumVisibilityConverter"/>
+    <common:DateStringConverter x:Key="DateStringConverter"/>
+    <common:DecimalStringConverter x:Key="DecimalStringConverter"/>
+
+    <!-- Colors -->
+    <SolidColorBrush x:Key="ControlPanelBG" Color="#90000000" />
+
+    <SolidColorBrush x:Key="NormalBtnBG" Color="#30FFFFFF" />
+    <SolidColorBrush x:Key="MouseOverBtnBG" Color="#80888888" />
+    <SolidColorBrush x:Key="PressedBtnBG" Color="#80888888" />
+    <SolidColorBrush x:Key="DisabledBtnBG" Color="#30FFFFFF" />
+
+    <SolidColorBrush x:Key="NormalBtnFG" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="MouseOverBtnFG" Color="#80a0ff" />
+    <SolidColorBrush x:Key="PressedBtnFG" Color="#40FFa0" />
+    <SolidColorBrush x:Key="DisabledBtnFG" Color="#30000000" />
+
+    <Style x:Key="PushButtonStyle" TargetType="Button">
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+        <Setter Property="Width" Value="30"/>
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="Background" Value="{StaticResource NormalBtnBG}"/>
+        <Setter Property="Foreground" Value="{StaticResource NormalBtnFG}"/>
+        <Setter Property="Padding" Value="8"/>
+        <Setter Property="Template" Value="{StaticResource IconButtonTemplate}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource MouseOverBtnBG}" />
+                <Setter Property="Foreground" Value="{StaticResource MouseOverBtnFG}" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{StaticResource PressedBtnBG}" />
+                <Setter Property="Foreground" Value="{StaticResource PressedBtnFG}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Background" Value="{StaticResource NormalBtnBG}" />
+                <Setter Property="Foreground" Value="{StaticResource DisabledBtnFG}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="CheckButtonStyle" TargetType="common:CheckButton">
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+        <Setter Property="Width" Value="30"/>
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="Background" Value="{StaticResource NormalBtnBG}"/>
+        <Setter Property="Foreground" Value="{StaticResource NormalBtnFG}"/>
+        <Setter Property="Padding" Value="8"/>
+        <Setter Property="Template" Value="{StaticResource IconCheckButtonTemplate}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource MouseOverBtnBG}" />
+                <Setter Property="Foreground" Value="{StaticResource MouseOverBtnFG}" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{StaticResource PressedBtnBG}" />
+                <Setter Property="Foreground" Value="{StaticResource PressedBtnFG}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Background" Value="{StaticResource NormalBtnBG}" />
+                <Setter Property="Foreground" Value="{StaticResource DisabledBtnFG}" />
+            </Trigger>
+            <Trigger Property="IsChecked" Value="true">
+                <Setter Property="Background" Value="#80000000"/>
+                <Setter Property="Foreground" Value="#00FFFF"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+
+</ResourceDictionary>
