@@ -26,6 +26,13 @@
             <StackPanel.Resources>
                 <Path x:Key="PathDownload" Data="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
             </StackPanel.Resources>
+
+            <Button Content="{StaticResource PathDownload}" Style="{StaticResource PushButtonStyle}">
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="Auto Download"/>
+                </ToolTipService.ToolTip>
+            </Button>
+
             <!--<common:CheckButton 
                 Command="{Binding CommandAutoDownload}" IsChecked="{Binding AutoDownload.Value, Mode=TwoWay}" 
                 Content="{StaticResource PathDownload}" 

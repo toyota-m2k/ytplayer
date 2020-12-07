@@ -26,6 +26,21 @@
     <SolidColorBrush x:Key="PressedBtnFG" Color="#40FFa0" />
     <SolidColorBrush x:Key="DisabledBtnFG" Color="#30000000" />
 
+    <!-- Icon Button -->
+    <ControlTemplate x:Key="IconButtonTemplate"  TargetType="Button">
+        <Border 
+            x:Name="border"
+            Background="{TemplateBinding Background}"
+            Padding="{TemplateBinding Padding}"
+            BorderBrush="{TemplateBinding BorderBrush}"
+            BorderThickness="{TemplateBinding BorderThickness}"
+            >
+            <ContentPresenter 
+                VerticalAlignment="Center" 
+                HorizontalAlignment="Center"/>
+        </Border>
+    </ControlTemplate>
+
     <Style x:Key="PushButtonStyle" TargetType="Button">
         <Setter Property="OverridesDefaultStyle" Value="True" />
         <Setter Property="Width" Value="30"/>
