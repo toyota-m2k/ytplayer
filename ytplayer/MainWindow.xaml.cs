@@ -54,6 +54,15 @@ namespace ytplayer {
         //    }
         //}
 
+        protected override void OnSourceInitialized(EventArgs e) {
+            base.OnSourceInitialized(e);
+            Settings.Instance.Placement.ApplyPlacementTo(this);
+        }
+
+        private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
+            Settings.Instance.Placement.GetPlacementFrom(this);
+            Settings.Instance.Serialize();
+        }
 
         private readonly string[] youtube_urls = {
             "https://www.youtube.com/",

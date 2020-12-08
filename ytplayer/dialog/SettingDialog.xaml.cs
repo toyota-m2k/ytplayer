@@ -2,6 +2,7 @@
 using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,13 +24,26 @@ namespace ytplayer.dialog {
         public ReactivePropertySlim<string> MusicPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<bool> UseWSL { get; } = new ReactivePropertySlim<bool>(false);
 
-        public void CopyFrom(SettingsViewModel src) {
-            DBPath.Value = src.DBPath.Value;
-            YoutubeDLPath.Value = src.YoutubeDLPath.Value;
-            FFMpegPath.Value = src.FFMpegPath.Value;
-            VideoPath.Value = src.VideoPath.Value;
-            MusicPath.Value = src.MusicPath.Value;
-            UseWSL.Value = src.UseWSL.Value;
+        public SettingsViewModel() {
+            var src = Settings.Instance;
+            DBPath.Value = src.DBPath;
+            YoutubeDLPath.Value = src.YoutubeDLPath;
+            FFMpegPath.Value = src.FFMpegPath;
+            VideoPath.Value = src.VideoPath;
+            MusicPath.Value = src.MusicPath;
+            UseWSL.Value = src.UseWSL;
+        }
+
+        public void SaveSettings() {
+            var dst = Settings.Instance;
+            dst.DBPath = DBPath.Value;
+            dst.YoutubeDLPath = YoutubeDLPath.Value;
+            dst.FFMpegPath = FFMpegPath.Value;
+            dst.VideoPath = VideoPath.Value;
+            dst.MusicPath = MusicPath.Value;
+            dst.UseWSL = UseWSL.Value;
+            dst.Serialize();
+            dst.ApplyEnvironment();
         }
     }
 
@@ -38,7 +52,9 @@ namespace ytplayer.dialog {
     /// </summary>
     public partial class SettingDialog : Window {
         public SettingDialog() {
+            DataContext = new SettingsViewModel();
             InitializeComponent();
         }
+        private SettingsViewModel viewModel => DataContext as SettingsViewModel;
     }
 }
