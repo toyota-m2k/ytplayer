@@ -63,6 +63,10 @@ namespace ytplayer {
         public string EnsureDBPath {
             get {
                 if(!string.IsNullOrEmpty(DBPath)) {
+                    var dir = System.IO.Path.GetDirectoryName(DBPath);
+                    if (dir == string.Empty) {
+                        return System.IO.Path.Combine(sOrgCurrentPath, DBPath);
+                    }
                     return DBPath;
                 }
                 return System.IO.Path.Combine(sOrgCurrentPath, "ytp.db");

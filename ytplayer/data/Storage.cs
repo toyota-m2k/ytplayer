@@ -10,15 +10,68 @@ namespace ytplayer.data {
     public class Storage : IDisposable {
         private SQLiteConnection Connection { get; set; }
 
+        public class StorageTable<T> where T: class {
+            public Table<T> Table { get; private set; }
+            public StorageTable(DataContext ctx) {
+                Table = ctx.GetTable<T>();
+            }
 
-        public Storage() {
-            var builder = new SQLiteConnectionStringBuilder() { DataSource = Settings.Instance.EnsureDBPath };
+            public IEnumerable<T> List => Table;
+
+            public void Add(T add, bool update=true) {
+                Table.InsertOnSubmit(add);
+                if(update) {
+                    Table.Context.SubmitChanges();
+                }
+            }
+
+            public void Add(IEnumerable<T> adds, bool update = true) {
+                Table.InsertAllOnSubmit(adds);
+                if (update) {
+                    Table.Context.SubmitChanges();
+                }
+            }
+
+            public void Delete(T del, bool update=true) {
+                Table.DeleteOnSubmit(del);
+                if(update) {
+                    Update();
+                }
+            }
+            public void Delete(IEnumerable<T> dels, bool update) {
+                Table.DeleteAllOnSubmit(dels);
+                if(update) {
+                    Update();
+                }
+            }
+
+            public void Update() {
+                Table.Context.SubmitChanges();
+            }
+        }
+
+        public DataContext Context { get; set; }
+
+        public StorageTable<DLEntry> DLTable { get; }
+        public StorageTable<KVEntry> KVTable { get; }
+
+        public Storage(string path) {
+            var builder = new SQLiteConnectionStringBuilder() { DataSource = path };
             Connection = new SQLiteConnection(builder.ConnectionString);
             Connection.Open();
             InitTables();
+
+            Context = new DataContext(Connection);
+            Context.Log = Console.Out;
+            DLTable = new StorageTable<DLEntry>(Context);
+            KVTable = new StorageTable<KVEntry>(Context);
         }
 
         public void Dispose() {
+            if(Context!=null) {
+                Context.Dispose();
+                Context = null;
+            }
             if (Connection != null) {
                 Connection.Close();
                 Connection.Dispose();
@@ -38,26 +91,24 @@ namespace ytplayer.data {
         private void InitTables() {
             executeSql(
                 @"CREATE TABLE IF NOT EXISTS t_download (
-                    id INTEGER NOT NULL PRIMARY KEY,
-                    url TEXT NOT NULL UNIQUE,
-                    name TEXT NOT NULL,
-                    path TEXT NOT NULL,
-                    status INTEGER NOT NULL,
-                    rating INTEGER DEFAULT '0',
-                    date INTEGER DEFAULT '0'
+                    url TEXT NOT NULL PRIMARY KEY,
+                    name TEXT,
+                    path TEXT,
                     category TEXT,
                     desc TEXT,
+                    status INTEGER DEFAULT '0',
+                    rating INTEGER DEFAULT '0',
+                    date INTEGER DEFAULT '0',
+                    media INTEGER DEFAULT '0'
                 )",
-                @"CREATE INDEX IF NOT EXISTS idx_date ON t_downloaded(path)"
+                @"CREATE INDEX IF NOT EXISTS idx_path ON t_download(path)",
+                @"CREATE INDEX IF NOT EXISTS idx_category ON t_download(category)",
+                @"CREATE TABLE IF NOT EXISTS t_map (
+                    name TEXT NOT NULL PRIMARY KEY,
+                    ivalue INTEGER DEFAULT '0',
+                    svalue TEXT
+                )"
             );
-        }
-
-        public void Add(DLEntry entry) {
-            using (var context = new DataContext(Connection)) {
-                var table = context.GetTable<DLEntry>();
-                table.InsertOnSubmit(entry);
-                context.SubmitChanges();
-            }
         }
     }
 }

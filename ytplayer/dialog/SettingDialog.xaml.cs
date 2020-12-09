@@ -14,6 +14,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using ytplayer.common;
 
 namespace ytplayer.dialog {
     public class SettingsViewModel : MicViewModelBase {
@@ -34,7 +35,36 @@ namespace ytplayer.dialog {
             UseWSL.Value = src.UseWSL;
         }
 
+        public string Validate() {
+            if (!string.IsNullOrEmpty(DBPath.Value)) {
+                var dir = System.IO.Path.GetDirectoryName(DBPath.Value);
+                if (dir == null) return "invalid db directory.";
+                if (dir != string.Empty && !PathUtil.isDirectory(dir)) return $"invalid directory {dir}";
+            }
+            if (!UseWSL.Value) {
+                if (!string.IsNullOrEmpty(YoutubeDLPath.Value)) {
+                    if (!PathUtil.isFile(System.IO.Path.Combine(YoutubeDLPath.Value, "youtube-dl.exe"))) return "youtube-dl is not found.";
+                }
+                if (!string.IsNullOrEmpty(FFMpegPath.Value)) {
+                    if (!PathUtil.isFile(System.IO.Path.Combine(FFMpegPath.Value, "ffmpeg.exe")) ||
+                        !PathUtil.isFile(System.IO.Path.Combine(FFMpegPath.Value, "ffprobe.exe"))) return "ffmpeg is not found.";
+                }
+            }
+            if (!string.IsNullOrEmpty(VideoPath.Value)) {
+                if(!PathUtil.isDirectory(VideoPath.Value)) {
+                    return $"no such directory: {VideoPath.Value}";
+                }
+            }
+            if (!string.IsNullOrEmpty(MusicPath.Value)) {
+                if (!PathUtil.isDirectory(MusicPath.Value)) {
+                    return $"no such directory: {MusicPath.Value}";
+                }
+            }
+            return null;
+        }
         public void SaveSettings() {
+            if (Validate() != null) return;
+
             var dst = Settings.Instance;
             dst.DBPath = DBPath.Value;
             dst.YoutubeDLPath = YoutubeDLPath.Value;

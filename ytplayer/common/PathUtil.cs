@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 
 namespace ytplayer.common {
     public class PathUtil {
-        static string normalizeDirname(string p) {
+        public static string normalizeDirname(string p) {
             if (p == null) return "";
             var r = p.Trim().Replace('/', '\\');
-            if (!r.EndsWith("\\")) {
-                r += "\\";
+            if (r.EndsWith("\\")) {
+                r = r.Substring(0, r.Length - 1);
             }
             return r;
         }
@@ -20,11 +20,15 @@ namespace ytplayer.common {
         }
 
         public static bool isExists(string path) {
-            return !string.IsNullOrEmpty(path) && System.IO.File.Exists(path);
+            return System.IO.File.Exists(path) || System.IO.Directory.Exists(path);
         }
         public static bool isDirectory(string path) {
-            return isExists(path) && System.IO.File.GetAttributes(path).HasFlag(System.IO.FileAttributes.Directory);
+            return isExists(path) && System.IO.Directory.Exists(path);
         }
+        public static bool isFile(string path) {
+            return isExists(path);
+        }
+
         public class DirectoryPathComparer : IEqualityComparer<string> {
             public bool Equals(string x, string y) {
                 return isEqualDirectoryName(x, y);
@@ -44,11 +48,9 @@ namespace ytplayer.common {
             var result = new StringBuilder(orgPath);
             var paths = orgPath.Split(';');
             foreach(var ap in appendPaths.Distinct(directoryPathComparer)) {
-                var path = ap.Trim();
-                if (isDirectory(path)) {
-                    if (!paths.Where((p) => isEqualDirectoryName(path, p)).Any()) {
-                        result.Append(";").Append(path);
-                    }
+                var path = normalizeDirname(ap);
+                if (!paths.Where((p) => isEqualDirectoryName(path, p)).Any()) {
+                    result.Append(";").Append(path);
                 }
             }
             return result.ToString();
