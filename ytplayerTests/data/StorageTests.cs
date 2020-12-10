@@ -47,7 +47,7 @@ namespace ytplayer.data.Tests {
             dl.Add(DLEntry.Create("4"));
             var e = list.Single((v) => v.Url == "1");
             Assert.AreEqual(entry.Url, e.Url);
-            e.Rating = Rating.EXCELLENT;
+            e.Rating = Rating.GOOD;
             e = list.Single((v) => v.Url == "3");
             e.Category = "hoge";
             dl.Update();
@@ -58,7 +58,7 @@ namespace ytplayer.data.Tests {
             Assert.AreEqual(4, list.Count());
             e = list.Single((v) => v.Url == "1");
             Assert.AreEqual(entry.Url, e.Url);
-            Assert.AreEqual(Rating.EXCELLENT, e.Rating);
+            Assert.AreEqual(Rating.GOOD, e.Rating);
             e = list.Single((v) => v.Url == "3");
             Assert.AreEqual("3", e.Url);
             Assert.AreEqual(Rating.NORMAL, e.Rating);

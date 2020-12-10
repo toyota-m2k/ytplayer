@@ -60,18 +60,24 @@ namespace ytplayer {
                 return Environment.GetFolderPath(Environment.SpecialFolder.MyMusic);
             }
         }
-        public string EnsureDBPath {
-            get {
-                if(!string.IsNullOrEmpty(DBPath)) {
-                    var dir = System.IO.Path.GetDirectoryName(DBPath);
-                    if (dir == string.Empty) {
-                        return System.IO.Path.Combine(sOrgCurrentPath, DBPath);
-                    }
-                    return DBPath;
+
+        public static string ComplementDBPath(string dbPath) {
+            dbPath = dbPath?.Trim();
+            if (!string.IsNullOrEmpty(dbPath)) {
+                var dir = System.IO.Path.GetDirectoryName(dbPath);
+                var name = System.IO.Path.GetFileName(dbPath);
+                if (!string.IsNullOrEmpty(dir) && !string.IsNullOrEmpty(name)) {
+                    return dbPath;
                 }
-                return System.IO.Path.Combine(sOrgCurrentPath, "ytp.db");
+                if (!string.IsNullOrEmpty(name)) {
+                    return System.IO.Path.Combine(sOrgCurrentPath, name);
+                }
             }
+            return System.IO.Path.Combine(sOrgCurrentPath, YtpDef.DEFAULT_DB_FILENAME);
         }
+
+        public string EnsureDBPath => ComplementDBPath(DBPath);
+
         public void ApplyEnvironment() {
             if (!UseWSL) {
                 var path = PathUtil.appendPathString(sOrgPath, YoutubeDLPath, FFMpegPath);

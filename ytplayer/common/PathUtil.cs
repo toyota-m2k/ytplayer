@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections;
+﻿using Microsoft.WindowsAPICodePack.Dialogs;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Windows;
 
 namespace ytplayer.common {
     public class PathUtil {
@@ -29,6 +29,32 @@ namespace ytplayer.common {
             return isExists(path);
         }
 
+        public static string getDirectoryName(string path) {
+            if (string.IsNullOrEmpty(path)) return null;
+            return System.IO.Path.GetDirectoryName(path);
+        }
+
+        public static System.IO.DirectoryInfo createDirectories(string path) {
+            try {
+                return System.IO.Directory.CreateDirectory(path);
+            }
+            catch (Exception e) {
+                Logger.error(e);
+                return null;
+            }
+        }
+
+        public static bool removeDirectories(string path) {
+            try {
+                System.IO.Directory.Delete(path, true);
+                return true;
+            }
+            catch (Exception e) {
+                Logger.error(e);
+                return false;
+            }
+        }
+
         public class DirectoryPathComparer : IEqualityComparer<string> {
             public bool Equals(string x, string y) {
                 return isEqualDirectoryName(x, y);
@@ -47,7 +73,7 @@ namespace ytplayer.common {
         public static string appendPathString(string orgPath, params string[] appendPaths) {
             var result = new StringBuilder(orgPath);
             var paths = orgPath.Split(';');
-            foreach(var ap in appendPaths.Distinct(directoryPathComparer)) {
+            foreach (var ap in appendPaths.Distinct(directoryPathComparer)) {
                 var path = normalizeDirname(ap);
                 if (!paths.Where((p) => isEqualDirectoryName(path, p)).Any()) {
                     result.Append(";").Append(path);
@@ -55,5 +81,31 @@ namespace ytplayer.common {
             }
             return result.ToString();
         }
+
+        //public static string SelectFolder(Window owner, string title, string initialFolder) {
+
+        //    return FolderDialogBuilder.Create()
+        //        .title(title)
+        //        .initialDirectory(initialFolder)
+        //        .GetFilePath(owner);
+        //}
+
+        //public static string SelectFileToOpen(Window owner, string title, string initialFolder, string defExt, params (string label, string wc)[] types) {
+        //    return OpenFileDialogBuilder.Create()
+        //        .title(title)
+        //        .initialDirectory(initialFolder)
+        //        .defaultExtension(defExt)
+        //        .addFileTypes(types)
+        //        .GetFilePath(owner);
+        //}
+
+        //public static string SelectFileToSave(Window owner, string title, string initialFolder, string defExt, params (string label, string wc)[] types) {
+        //    return SaveFileDialogBuilder.Create()
+        //        .title(title)
+        //        .initialDirectory(initialFolder)
+        //        .defaultExtension(defExt)
+        //        .addFileTypes(types)
+        //        .GetFilePath(owner);
+        //}
     }
 }

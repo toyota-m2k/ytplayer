@@ -59,5 +59,9 @@ namespace common
                 yield return (T)o;
             }
         }
+
+        public static T[] Array<T>(params T[] args) {
+            return args;
+        }
     }
 }

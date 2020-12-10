@@ -12,6 +12,7 @@
     <common:NegEnumVisibilityConverter x:Key="NegEnumVisibilityConverter"/>
     <common:DateStringConverter x:Key="DateStringConverter"/>
     <common:DecimalStringConverter x:Key="DecimalStringConverter"/>
+    <local:MediaFlagToVisibilityConverter x:Key="MediaFlagToVisibilityConverter"/>
 
     <!-- Colors -->
     <SolidColorBrush x:Key="ControlPanelBG" Color="#90000000" />
@@ -152,6 +153,39 @@
                 <Setter Property="Foreground" Value="#00FFFF"/>
             </Trigger>
         </Style.Triggers>
+    </Style>
+
+    <!-- ListView Column Header Sorting Icon -->
+    <DrawingImage x:Key="AscImageSource">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <DrawingGroup.Children>
+                    <GeometryDrawing Geometry="M7,15L12,10L17,15H7Z" Brush="#35000000"/>
+                </DrawingGroup.Children>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
+    <ImageBrush x:Key="AscBrush" AlignmentX="Right" AlignmentY="Center" ImageSource="{StaticResource AscImageSource}"/>
+
+    <Style x:Key="AscImage" TargetType="Image">
+        <Setter Property="Source" Value="{StaticResource AscImageSource}"/>
+    </Style>
+
+    <DrawingImage x:Key="DescImageSource">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <DrawingGroup.Children>
+                    <GeometryDrawing Geometry="M7,10L12,15L17,10H7Z" Brush="#35000000"/>
+                </DrawingGroup.Children>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
+    <ImageBrush x:Key="DescBrush" AlignmentX="Right" AlignmentY="Center" ImageSource="{StaticResource DescImageSource}"/>
+
+    <Style x:Key="DescImage" TargetType="Image">
+        <Setter Property="Source" Value="{StaticResource DescImageSource}"/>
     </Style>
 
 

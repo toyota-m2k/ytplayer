@@ -7,8 +7,71 @@
         mc:Ignorable="d"
         Title="Settings" 
         Background="#EFEFEF"
-        Height="450" Width="800">
-    <Grid>
+        Closed="OnClosed"
+        Height="321" Width="600">
+    <Window.Resources>
+        <ResourceDictionary Source="../res/YtpResource.xaml"/>
+    </Window.Resources>
+    <Grid Margin="20,5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="2*"/>
+            <RowDefinition Height="Auto"/>            <!-- 1: Data Path -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>            <!-- 3: UseWSL -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>            <!-- 5: ytdl-path -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>            <!-- 7: ffmpeg path -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>            <!-- 9: video output path -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>            <!-- 11: music output path -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>            <!-- 13: Ok/Cancel -->
+            <RowDefinition Height="3*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <!-- 0: label -->
+            <ColumnDefinition Width="20"/>
+            <ColumnDefinition Width="*"/>
+            <!-- 2: inputs -->
+            <ColumnDefinition Width="10"/>
+            <ColumnDefinition Width="Auto"/>
+            <!-- 4: button (optional) -->
+        </Grid.ColumnDefinitions>
 
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Data File"/>
+        <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding DBPath.Value, Mode=TwoWay}"/>
+        <Button Grid.Row="1" Grid.Column="4" Content="…" Command="{Binding CommandDBPath}" Padding="8,0"/>
+
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="youtube-dl location"/>
+        <StackPanel Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="3" Orientation="Horizontal">
+            <RadioButton Content="Windows native" IsChecked="{Binding UseWSL.Value, Mode=TwoWay, Converter={StaticResource NegBoolConverter}}" Margin="0,0,20,0"/>
+            <RadioButton Content="in WSL" IsChecked="{Binding UseWSL.Value, Mode=TwoWay}"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="5" Grid.Column="0" Text="youtube-dl.exe in"/>
+        <TextBox Grid.Row="5" Grid.Column="2" Text="{Binding YoutubeDLPath.Value, Mode=TwoWay}" IsEnabled="{Binding UseWSL.Value, Mode=TwoWay, Converter={StaticResource NegBoolConverter}}"/>
+        <Button Grid.Row="5" Grid.Column="4" Content="…" Padding="8,0" Command="{Binding CommandYTDLPath}" IsEnabled="{Binding UseWSL.Value, Mode=TwoWay, Converter={StaticResource NegBoolConverter}}"/>
+
+        <TextBlock Grid.Row="7" Grid.Column="0" Text="ffmpeg.exe in"/>
+        <TextBox Grid.Row="7" Grid.Column="2" Text="{Binding FFMpegPath.Value, Mode=TwoWay}" IsEnabled="{Binding UseWSL.Value, Mode=TwoWay, Converter={StaticResource NegBoolConverter}}"/>
+        <Button Grid.Row="7" Grid.Column="4" Content="…" Padding="8,0" Command="{Binding CommandFFMpegPath}" IsEnabled="{Binding UseWSL.Value, Mode=TwoWay, Converter={StaticResource NegBoolConverter}}"/>
+
+        <TextBlock Grid.Row="9" Grid.Column="0" Text="Video output to"/>
+        <TextBox Grid.Row="9" Grid.Column="2" Text="{Binding VideoPath.Value, Mode=TwoWay}"/>
+        <Button Grid.Row="9" Grid.Column="4" Content="…" Padding="8,0" Command="{Binding CommandVideoPath}"/>
+
+        <TextBlock Grid.Row="11" Grid.Column="0" Text="Music output to"/>
+        <TextBox Grid.Row="11" Grid.Column="2" Text="{Binding MusicPath.Value, Mode=TwoWay}"/>
+        <Button Grid.Row="11" Grid.Column="4" Content="…" Padding="8,0" Command="{Binding CommandMusicPath}"/>
+
+        <StackPanel Grid.Row="13" Grid.Column="0" Grid.ColumnSpan="5" HorizontalAlignment="Center" Orientation="Horizontal">
+            <Button Content="OK" Command="{Binding OKCommand}" Width="100"/>
+            <Button Content="Cancel" Command="{Binding OKCommand}" Width="100" Margin="20,0,0,0" Visibility="{Binding Cancellable.Value, Converter={StaticResource BoolVisibilityConverter}}"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="14" Grid.Column="0" Grid.ColumnSpan="5" Margin="0,10,0,0" Text="{Binding ErrorMessage.Value}" Height="30" VerticalAlignment="Top"/>
     </Grid>
 </Window>

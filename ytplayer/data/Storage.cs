@@ -1,4 +1,5 @@
-﻿using System;
+﻿using common;
+using System;
 using System.Collections.Generic;
 using System.Data.Linq;
 using System.Data.SQLite;
@@ -10,19 +11,25 @@ namespace ytplayer.data {
     public class Storage : IDisposable {
         private SQLiteConnection Connection { get; set; }
 
-        public class StorageTable<T> where T: class {
+
+       public delegate void NotificationProc<T>(T entry) where T : class;
+
+        public class StorageTable<T> : IDisposable where T : class {
             public Table<T> Table { get; private set; }
+            public event NotificationProc<T> AddEvent;
+            public event NotificationProc<T> DelEvent;
             public StorageTable(DataContext ctx) {
                 Table = ctx.GetTable<T>();
             }
 
             public IEnumerable<T> List => Table;
 
-            public void Add(T add, bool update=true) {
+            public void Add(T add, bool update = true) {
                 Table.InsertOnSubmit(add);
-                if(update) {
+                if (update) {
                     Table.Context.SubmitChanges();
                 }
+                AddEvent?.Invoke(add);
             }
 
             public void Add(IEnumerable<T> adds, bool update = true) {
@@ -30,23 +37,39 @@ namespace ytplayer.data {
                 if (update) {
                     Table.Context.SubmitChanges();
                 }
+                if (AddEvent != null) {
+                    foreach (var a in adds) {
+                        AddEvent(a);
+                    }
+                }
             }
 
-            public void Delete(T del, bool update=true) {
+            public void Delete(T del, bool update = true) {
                 Table.DeleteOnSubmit(del);
-                if(update) {
+                if (update) {
                     Update();
                 }
+                DelEvent?.Invoke(del);
             }
             public void Delete(IEnumerable<T> dels, bool update) {
                 Table.DeleteAllOnSubmit(dels);
-                if(update) {
+                if (update) {
                     Update();
+                }
+                if (DelEvent != null) {
+                    foreach (var d in dels) {
+                        AddEvent(d);
+                    }
                 }
             }
 
             public void Update() {
                 Table.Context.SubmitChanges();
+            }
+
+            public void Dispose() {
+                AddEvent = null;
+                DelEvent = null;
             }
         }
 
@@ -55,7 +78,10 @@ namespace ytplayer.data {
         public StorageTable<DLEntry> DLTable { get; }
         public StorageTable<KVEntry> KVTable { get; }
 
+        public string DBPath { get; }
+
         public Storage(string path) {
+            DBPath = path;
             var builder = new SQLiteConnectionStringBuilder() { DataSource = path };
             Connection = new SQLiteConnection(builder.ConnectionString);
             Connection.Open();
@@ -68,6 +94,9 @@ namespace ytplayer.data {
         }
 
         public void Dispose() {
+            DLTable?.Dispose();
+            KVTable?.Dispose();
+
             if(Context!=null) {
                 Context.Dispose();
                 Context = null;

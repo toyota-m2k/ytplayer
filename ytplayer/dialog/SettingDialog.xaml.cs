@@ -1,31 +1,37 @@
 ﻿using common;
 using Reactive.Bindings;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using ytplayer.common;
+using ytplayer.data;
 
 namespace ytplayer.dialog {
-    public class SettingsViewModel : MicViewModelBase {
+    /**
+     * 設定画面のビューモデル
+     */
+    public class SettingsViewModel : MicViewModelBase<SettingDialog> {
         public ReactivePropertySlim<string> DBPath { get; } = new ReactivePropertySlim<string>();
+        public ReactivePropertySlim<bool> UseWSL { get; } = new ReactivePropertySlim<bool>(false);
         public ReactivePropertySlim<string> YoutubeDLPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> FFMpegPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> VideoPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> MusicPath { get; } = new ReactivePropertySlim<string>();
-        public ReactivePropertySlim<bool> UseWSL { get; } = new ReactivePropertySlim<bool>(false);
+        public ReactivePropertySlim<string> ErrorMessage { get; } = new ReactivePropertySlim<string>();
+        public ReactivePropertySlim<bool> Cancellable { get; } = new ReactivePropertySlim<bool>(true);
 
-        public SettingsViewModel() {
+        public ReactiveCommand CommandDBPath { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandYTDLPath { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandFFMpegPath { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandVideoPath { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandMusicPath { get; } = new ReactiveCommand();
+
+        public ReactiveCommand OKCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand CancelCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand<bool> Completed { get; } = new ReactiveCommand<bool>();
+
+        public Storage NewStorage { get; private set; } = null;
+
+        public SettingsViewModel(SettingDialog owner) : base(owner) {
             var src = Settings.Instance;
             DBPath.Value = src.DBPath;
             YoutubeDLPath.Value = src.YoutubeDLPath;
@@ -33,14 +39,55 @@ namespace ytplayer.dialog {
             VideoPath.Value = src.VideoPath;
             MusicPath.Value = src.MusicPath;
             UseWSL.Value = src.UseWSL;
+
+            CommandDBPath.Subscribe(() => SelectDBFile(DBPath));
+            CommandYTDLPath.Subscribe(() => SelectFolder("youtube-dl folder", YoutubeDLPath));
+            CommandFFMpegPath.Subscribe(() => SelectFolder("ffmpeg folder", FFMpegPath));
+            CommandVideoPath.Subscribe(() => SelectFolder("Video Folder", VideoPath));
+            CommandMusicPath.Subscribe(() => SelectFolder("Music Folder", MusicPath));
+
+            OKCommand.Subscribe(() => {
+                ErrorMessage.Value = Validate();
+                if(!string.IsNullOrEmpty(ErrorMessage.Value)) {
+                    return;
+                }
+                SaveSettings();
+                Completed.Execute(true);
+            });
+            CancelCommand.Subscribe(() => Completed.Execute(false));
         }
 
-        public string Validate() {
-            if (!string.IsNullOrEmpty(DBPath.Value)) {
-                var dir = System.IO.Path.GetDirectoryName(DBPath.Value);
-                if (dir == null) return "invalid db directory.";
-                if (dir != string.Empty && !PathUtil.isDirectory(dir)) return $"invalid directory {dir}";
+        private void SelectFolder(string title, ReactivePropertySlim<string> path) {
+            var r = FolderDialogBuilder.Create()
+                .title(title)
+                .initialDirectory(path.Value)
+                .GetFilePath(Owner);
+            if (null!=r) {
+                path.Value = r;
             }
+        }
+
+        private void SelectDBFile(ReactivePropertySlim<string> path) {
+            var r = SaveFileDialogBuilder.Create()
+                .title("DB File")
+                .initialDirectory(PathUtil.getDirectoryName(path.Value))
+                .showFolders(true)
+                .defaultExtension(YtpDef.DB_EXT)
+                .defaultFilename(YtpDef.DEFAULT_DBNAME)
+                .GetFilePath(Owner);
+            if (null != r) {
+                path.Value = r;
+            }
+        }
+
+        private string Validate() {
+            DBPath.Value = Settings.ComplementDBPath(DBPath.Value);
+
+            //if (!string.IsNullOrEmpty(DBPath.Value)) {
+            //    var dir = System.IO.Path.GetDirectoryName(DBPath.Value);
+            //    if (dir == null) return "invalid db directory.";
+            //    if (dir != string.Empty && !PathUtil.isDirectory(dir)) return $"invalid directory {dir}";
+            //}
             if (!UseWSL.Value) {
                 if (!string.IsNullOrEmpty(YoutubeDLPath.Value)) {
                     if (!PathUtil.isFile(System.IO.Path.Combine(YoutubeDLPath.Value, "youtube-dl.exe"))) return "youtube-dl is not found.";
@@ -60,11 +107,22 @@ namespace ytplayer.dialog {
                     return $"no such directory: {MusicPath.Value}";
                 }
             }
-            return null;
-        }
-        public void SaveSettings() {
-            if (Validate() != null) return;
 
+            if (Owner.CurrentStorage == null || !PathUtil.isEqualDirectoryName(Owner.CurrentStorage.DBPath, DBPath.Value)) {
+                // 現在と異なるDBファイルが指定された・・・開いてみる。
+                try {
+                    NewStorage = new Storage(DBPath.Value);
+                } catch(Exception e) {
+                    // 開けなかったらNG
+                    Logger.error(e);
+                    NewStorage = null;
+                    return $"cannot create db.";
+                }
+            }
+
+            return null;    // Succeeded.
+        }
+        private void SaveSettings() {
             var dst = Settings.Instance;
             dst.DBPath = DBPath.Value;
             dst.YoutubeDLPath = YoutubeDLPath.Value;
@@ -81,10 +139,26 @@ namespace ytplayer.dialog {
     /// SettingDialog.xaml の相互作用ロジック
     /// </summary>
     public partial class SettingDialog : Window {
-        public SettingDialog() {
-            DataContext = new SettingsViewModel();
+        public bool Result { get; private set; } = false;
+        public Storage CurrentStorage { get; }
+        public Storage NewStorage => viewModel.NewStorage;
+        public SettingDialog(Storage currentStorage) {
+            viewModel = new SettingsViewModel(this);
+            viewModel.Cancellable.Value = currentStorage!=null;
+
             InitializeComponent();
+            viewModel.Completed.Subscribe((res) => {
+                Result = res;
+                Close();
+            });
         }
-        private SettingsViewModel viewModel => DataContext as SettingsViewModel;
+        private SettingsViewModel viewModel {
+            get => DataContext as SettingsViewModel;
+            set => DataContext = value;
+        }
+
+        private void OnClosed(object sender, EventArgs e) {
+            viewModel?.Dispose();
+        }
     }
 }

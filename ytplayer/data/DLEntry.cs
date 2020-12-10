@@ -5,6 +5,7 @@ using System.Data.Linq.Mapping;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ytplayer.common;
 
 namespace ytplayer.data {
     public enum Status {
@@ -21,7 +22,6 @@ namespace ytplayer.data {
         BAD = 2,
         NORMAL = 3,
         GOOD = 4,
-        EXCELLENT = 5,
     }
     public enum MediaFlag {
         NONE = 0,
@@ -101,7 +101,7 @@ namespace ytplayer.data {
         }
 
         public static DLEntry Create(string url_) {
-            return new DLEntry() { url = url_ };
+            return new DLEntry() { url = url_, Date=DateTime.UtcNow };
         }
 
         private static readonly DateTime EpochDate = new DateTime(1970, 1, 1, 0, 0, 0);
@@ -111,6 +111,7 @@ namespace ytplayer.data {
                     return DateTime.FromFileTimeUtc(Convert.ToInt64(obj));
                 }
             } catch(Exception e) {
+                Logger.error(e);
             }
             return EpochDate;
         }

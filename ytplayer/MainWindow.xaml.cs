@@ -3,6 +3,7 @@ using Reactive.Bindings;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -16,10 +17,15 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using ytplayer.common;
+using ytplayer.data;
+using ytplayer.dialog;
 using ytplayer.interop;
 
 namespace ytplayer {
     public class MainViewModel : MicViewModelBase {
+        public ReactiveProperty<ObservableCollection<DLEntry>> MainList { get; } = new ReactiveProperty<ObservableCollection<DLEntry>>(new ObservableCollection<DLEntry>());
+
         public ReactivePropertySlim<bool> AutoDownload { get; } = new ReactivePropertySlim<bool>(true);
         public ReactivePropertySlim<bool> OnlySound { get; } = new ReactivePropertySlim<bool>(false);
         public ReactiveCommand CommandDownloadNow { get; } = new ReactiveCommand();
@@ -37,12 +43,47 @@ namespace ytplayer {
     /// MainWindow.xaml の相互作用ロジック
     /// </summary>
     public partial class MainWindow : Window {
+        private Storage mStorage = null;
+        private ClipboardMonitor mClipboardMonitor = null;
+
+
         public MainWindow() {
-            DataContext = new MainViewModel();
+            viewModel = new MainViewModel();
+            viewModel.CommandSettings.Subscribe(() => {
+                var dlg = new SettingDialog(mStorage);
+                dlg.ShowDialog();
+                if(dlg.Result) {
+                    if(dlg.NewStorage!=null) {
+                        mStorage.Dispose();
+                        mStorage = dlg.NewStorage;
+                        RefreshList();
+                    }
+                }
+            });
             InitializeComponent();
         }
 
-        private MainViewModel viewModel => DataContext as MainViewModel;
+        private MainViewModel viewModel {
+            get => DataContext as MainViewModel;
+            set => DataContext = value;
+        }
+
+        private void RefreshList() {
+            viewModel.MainList.Value = new ObservableCollection<DLEntry>(mStorage.DLTable.List);
+        }
+
+        private void RegisterUrl(string url) {
+            url = url.Trim();
+            if(!url.StartsWith("https://")&&!url.StartsWith("http://")) {
+                return;
+            }
+            url = url.Split(Utils.Array("\r", "\n", " ", "\t"), StringSplitOptions.RemoveEmptyEntries)?.FirstOrDefault();
+            if(string.IsNullOrEmpty(url)) {
+                return;
+            }
+            var target = DLEntry.Create(url);
+            mStorage.DLTable.Add(target, true);
+        }
 
         //class PathComparator : IEqualityComparer<string> {
         //    public new bool Equals(string x, string y) {
@@ -136,7 +177,12 @@ namespace ytplayer {
         }
 
         private void Window_Drop(object sender, DragEventArgs e) {
-            download(e.Data.GetData(DataFormats.Text) as string);
+            RegisterUrl(e.Data.GetData(DataFormats.Text) as string);
+
+            //download(e.Data.GetData(DataFormats.Text) as string);
+
+            
+            
             //var fmts = e.Data.GetFormats();
             //foreach(var f in fmts) {
             //    try {
@@ -148,20 +194,68 @@ namespace ytplayer {
             //}
         }
 
-        private ClipboardMonitor clipboardMonitor = null;
-
-        private void OnLoaded(object sender, RoutedEventArgs e) {
-            clipboardMonitor = new ClipboardMonitor(this, true);
-            clipboardMonitor.ClipboardUpdate += OnClipboardUpdated;
+        private void InitStorage(bool forceCreate=false) {
+            if (forceCreate || !PathUtil.isFile(Settings.Instance.EnsureDBPath)) {
+                while(true) {
+                    var dlg = new SettingDialog(null);
+                    dlg.ShowDialog();
+                    if (dlg.Result && dlg.NewStorage!=null) {
+                        SetStorage(dlg.NewStorage);
+                        return;
+                    }
+                }
+            } else {
+                try {
+                    var storage = new Storage(Settings.Instance.EnsureDBPath);
+                    SetStorage(storage);
+                } catch(Exception e) {
+                    Logger.error(e);
+                    mStorage = null;
+                    InitStorage(true);
+                }
+            }
         }
 
-        private void OnClipboardUpdated(object sender, EventArgs e) {
-            download(Clipboard.GetText());
+        private void SetStorage(Storage newStorage) {
+            if(mStorage!=null && mStorage!=newStorage) {
+                mStorage.Dispose();
+            }
+            mStorage = newStorage;
+            mStorage.DLTable.AddEvent += OnDLEntryAdd;
+            mStorage.DLTable.DelEvent += OnDLEntryDel;
+            RefreshList();
+        }
+
+        private void OnDLEntryDel(DLEntry entry) {
+            viewModel.MainList.Value.Remove(entry);
+        }
+
+        private void OnDLEntryAdd(DLEntry entry) {
+            viewModel.MainList.Value.Add(entry);
+            // ToDo: Sort ... see DxxDBViewerWindow.xaml.cs SortInfo, etc...
+        }
+
+        private void OnLoaded(object sender, RoutedEventArgs e) {
+            InitStorage();
+            mClipboardMonitor = new ClipboardMonitor(this, true);
+            mClipboardMonitor.ClipboardUpdate += OnClipboardUpdated;
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) {
-            clipboardMonitor.Dispose();
+            mClipboardMonitor.Dispose();
         }
 
+        private void OnClipboardUpdated(object sender, EventArgs e) {
+            RegisterUrl(Clipboard.GetText());
+            //download(Clipboard.GetText());
+        }
+
+        private void OnHeaderClick(object sender, RoutedEventArgs e) {
+            // Sort
+        }
+
+        private void OnListItemDoubleClick(object sender, MouseButtonEventArgs e) {
+
+        }
     }
 }
