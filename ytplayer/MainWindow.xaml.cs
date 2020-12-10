@@ -20,17 +20,30 @@ using System.Windows.Shapes;
 using ytplayer.common;
 using ytplayer.data;
 using ytplayer.dialog;
+using ytplayer.download;
 using ytplayer.interop;
 
 namespace ytplayer {
+    public class OutputMessage {
+        static Brush ErrorColor = new SolidColorBrush(Colors.Red);
+        static Brush StandardColor = new SolidColorBrush(Colors.Black);
+        public string Message { get; }
+        public bool Error { get; }
+        public Brush Color => Error ? ErrorColor : StandardColor;
+
+        public OutputMessage(string message, bool error) {
+            Message = message;
+            Error = error;
+        }
+    }
+
     public class MainViewModel : MicViewModelBase {
         public ReactiveProperty<ObservableCollection<DLEntry>> MainList { get; } = new ReactiveProperty<ObservableCollection<DLEntry>>(new ObservableCollection<DLEntry>());
-
         public ReactivePropertySlim<bool> AutoDownload { get; } = new ReactivePropertySlim<bool>(true);
         public ReactivePropertySlim<bool> OnlySound { get; } = new ReactivePropertySlim<bool>(false);
         public ReactiveCommand CommandDownloadNow { get; } = new ReactiveCommand();
         public ReactiveCommand CommandSettings { get; } = new ReactiveCommand();
-
+        public ObservableCollection<OutputMessage> OutputList { get; } = new ObservableCollection<OutputMessage>();
 
         public MainViewModel() {
             //CommandAutoDownload.Subscribe(() => {
@@ -42,10 +55,9 @@ namespace ytplayer {
     /// <summary>
     /// MainWindow.xaml の相互作用ロジック
     /// </summary>
-    public partial class MainWindow : Window {
+    public partial class MainWindow : Window, IDownloadHost {
         private Storage mStorage = null;
         private ClipboardMonitor mClipboardMonitor = null;
-
 
         public MainWindow() {
             viewModel = new MainViewModel();
@@ -138,11 +150,11 @@ namespace ytplayer {
             var process = Process.Start(psi);
             var s = process.StandardOutput.ReadToEnd();
             Debug.WriteLine(s);
-            Output.Text += "\n";
-            Output.Text += s;
+            //Output.Text += "\n";
+            //Output.Text += s;
             s = process.StandardError.ReadToEnd();
-            Output.Text += s;
-            Output.ScrollToEnd();
+            //Output.Text += s;
+            //Output.ScrollToEnd();
         }
 
         private async void Button_Click(object sender, RoutedEventArgs e) {
@@ -160,7 +172,7 @@ namespace ytplayer {
             var process = Process.Start(psi);
             var s = process.StandardOutput.ReadToEnd();
             Debug.WriteLine(s);
-            Output.Text += s;
+            //Output.Text += s;
 
             if(!process.HasExited) {
                 await Task.Run(async () => {
@@ -169,7 +181,7 @@ namespace ytplayer {
                     }
                 });
             }
-            Output.Text += $"Done:{process.ExitCode}";
+            //Output.Text += $"Done:{process.ExitCode}";
         }
 
         private void Window_PreviewDragOver(object sender, DragEventArgs e) {
@@ -224,6 +236,9 @@ namespace ytplayer {
             mStorage.DLTable.AddEvent += OnDLEntryAdd;
             mStorage.DLTable.DelEvent += OnDLEntryDel;
             RefreshList();
+
+            ((IDownloadHost)this).StandardOutput("xxx xxx xxxx");
+            ((IDownloadHost)this).ErrorOutput("xxx xxx xxxx");
         }
 
         private void OnDLEntryDel(DLEntry entry) {
@@ -256,6 +271,24 @@ namespace ytplayer {
 
         private void OnListItemDoubleClick(object sender, MouseButtonEventArgs e) {
 
+        }
+
+        Storage IDownloadHost.Storage => mStorage;
+
+        bool IDownloadHost.StandardOutput(string msg) {
+            if (null == msg) return false;
+            Dispatcher.Invoke(() => {
+                viewModel.OutputList.Add(new OutputMessage(msg, error: false));
+            });
+            return true;
+        }
+
+        bool IDownloadHost.ErrorOutput(string msg) {
+            if (null == msg) return false;
+            Dispatcher.Invoke(() => {
+                viewModel.OutputList.Add(new OutputMessage(msg, error: true));
+            });
+            return true;
         }
     }
 }

@@ -138,7 +138,7 @@
                     </Style.Triggers>
                 </Style>
             </Grid.Resources>
-            <ListView Grid.Row="1" x:Name="mListView" ItemsSource="{Binding MainList.Value}" 
+            <ListView x:Name="MainListView" ItemsSource="{Binding MainList.Value}" 
                   GridViewColumnHeader.Click="OnHeaderClick">
                 <ListView.Resources>
                     <DataTemplate x:Key="SortHeaderTemplate">
@@ -252,8 +252,22 @@
             </ListView>
         </Grid>
         <GridSplitter Grid.Row="2" Height="6" HorizontalAlignment="Stretch"/>
-        <TextBox Grid.Row="3" x:Name="Output" AcceptsReturn="True" IsReadOnly="True" TextWrapping="Wrap" VerticalAlignment="Stretch">
-        </TextBox>
+        <!--<TextBox Grid.Row="3" x:Name="Output" AcceptsReturn="True" IsReadOnly="True" TextWrapping="Wrap" VerticalAlignment="Stretch">
+        </TextBox>-->
+        <Grid Grid.Row="3">
+            <ListView x:Name="OutputListView" ItemsSource="{Binding OutputList}">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Message}" Foreground="{Binding Color}"/>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Grid>
         <StackPanel Grid.Row="4" Orientation="Horizontal" Background="#404080">
             <TextBlock Text="> Ready" Foreground="White"/>
         </StackPanel>

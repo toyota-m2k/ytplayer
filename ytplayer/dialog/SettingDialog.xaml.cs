@@ -29,6 +29,7 @@ namespace ytplayer.dialog {
         public ReactiveCommand CancelCommand { get; } = new ReactiveCommand();
         public ReactiveCommand<bool> Completed { get; } = new ReactiveCommand<bool>();
 
+        [Disposal(false)]
         public Storage NewStorage { get; private set; } = null;
 
         public SettingsViewModel(SettingDialog owner) : base(owner) {
