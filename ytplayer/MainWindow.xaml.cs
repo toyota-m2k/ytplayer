@@ -41,6 +41,9 @@ namespace ytplayer {
         public ReactiveProperty<ObservableCollection<DLEntry>> MainList { get; } = new ReactiveProperty<ObservableCollection<DLEntry>>(new ObservableCollection<DLEntry>());
         public ReactivePropertySlim<bool> AutoDownload { get; } = new ReactivePropertySlim<bool>(true);
         public ReactivePropertySlim<bool> OnlySound { get; } = new ReactivePropertySlim<bool>(false);
+        public ReactivePropertySlim<bool> IsBusy { get; } = new ReactivePropertySlim<bool>(false);
+        public ReactivePropertySlim<bool> IsSettingNow { get; } = new ReactivePropertySlim<bool>(false);
+
         public ReactiveCommand CommandDownloadNow { get; } = new ReactiveCommand();
         public ReactiveCommand CommandSettings { get; } = new ReactiveCommand();
         public ObservableCollection<OutputMessage> OutputList { get; } = new ObservableCollection<OutputMessage>();
@@ -56,21 +59,34 @@ namespace ytplayer {
     /// MainWindow.xaml の相互作用ロジック
     /// </summary>
     public partial class MainWindow : Window, IDownloadHost {
-        private Storage mStorage = null;
+        //private Storage mStorage = null;
+        private DownloadManager mDownloadManager = null;
         private ClipboardMonitor mClipboardMonitor = null;
+        private Storage Storage => mDownloadManager?.Storage;
 
         public MainWindow() {
             viewModel = new MainViewModel();
             viewModel.CommandSettings.Subscribe(() => {
-                var dlg = new SettingDialog(mStorage);
-                dlg.ShowDialog();
-                if(dlg.Result) {
-                    if(dlg.NewStorage!=null) {
-                        mStorage.Dispose();
-                        mStorage = dlg.NewStorage;
-                        RefreshList();
-                    }
+                if (viewModel.IsBusy.Value) {
+                    return;
                 }
+                viewModel.IsSettingNow.Value = true;
+                try {
+                    var dlg = new SettingDialog(Storage);
+                    dlg.ShowDialog();
+                    if (dlg.Result) {
+                        if (dlg.NewStorage != null) {
+                            SetStorage(dlg.NewStorage);
+                        }
+                    }
+                } finally {
+                    viewModel.IsSettingNow.Value = false;
+                }
+            });
+
+            viewModel.CommandDownloadNow.Subscribe(() => {
+                var targets = MainListView.SelectedItems.ToEnumerable<DLEntry>();
+                mDownloadManager.Enqueue(targets, MediaFlag.VIDEO);
             });
             InitializeComponent();
         }
@@ -81,7 +97,7 @@ namespace ytplayer {
         }
 
         private void RefreshList() {
-            viewModel.MainList.Value = new ObservableCollection<DLEntry>(mStorage.DLTable.List);
+            viewModel.MainList.Value = new ObservableCollection<DLEntry>(Storage.DLTable.List);
         }
 
         private void RegisterUrl(string url) {
@@ -94,7 +110,7 @@ namespace ytplayer {
                 return;
             }
             var target = DLEntry.Create(url);
-            mStorage.DLTable.Add(target, true);
+            Storage.DLTable.Add(target, true);
         }
 
         //class PathComparator : IEqualityComparer<string> {
@@ -209,11 +225,16 @@ namespace ytplayer {
         private void InitStorage(bool forceCreate=false) {
             if (forceCreate || !PathUtil.isFile(Settings.Instance.EnsureDBPath)) {
                 while(true) {
-                    var dlg = new SettingDialog(null);
-                    dlg.ShowDialog();
-                    if (dlg.Result && dlg.NewStorage!=null) {
-                        SetStorage(dlg.NewStorage);
-                        return;
+                    viewModel.IsSettingNow.Value = true;
+                    try {
+                        var dlg = new SettingDialog(null);
+                        dlg.ShowDialog();
+                        if (dlg.Result && dlg.NewStorage != null) {
+                            SetStorage(dlg.NewStorage);
+                            return;
+                        }
+                    } finally {
+                        viewModel.IsSettingNow.Value = false;
                     }
                 }
             } else {
@@ -222,32 +243,42 @@ namespace ytplayer {
                     SetStorage(storage);
                 } catch(Exception e) {
                     Logger.error(e);
-                    mStorage = null;
                     InitStorage(true);
                 }
             }
         }
 
         private void SetStorage(Storage newStorage) {
-            if(mStorage!=null && mStorage!=newStorage) {
-                mStorage.Dispose();
+            if(mDownloadManager?.Storage != newStorage) {
+                // ストレージが置き換わるときは、DownloadManagerを作り直す
+                // DownloadManager.Dispose()の中で、ストレージもDisposeされる。
+                mDownloadManager?.Dispose();
+                mDownloadManager = new DownloadManager(this, newStorage);
+                mDownloadManager.BusyChanged += OnBusyStateChanged;
+                viewModel.IsBusy.Value = false;
+                newStorage.DLTable.AddEvent += OnDLEntryAdd;
+                newStorage.DLTable.DelEvent += OnDLEntryDel;
+                RefreshList();
             }
-            mStorage = newStorage;
-            mStorage.DLTable.AddEvent += OnDLEntryAdd;
-            mStorage.DLTable.DelEvent += OnDLEntryDel;
-            RefreshList();
+        }
 
-            ((IDownloadHost)this).StandardOutput("xxx xxx xxxx");
-            ((IDownloadHost)this).ErrorOutput("xxx xxx xxxx");
+        private void OnBusyStateChanged(bool busy) {
+            Dispatcher.Invoke(() => {
+                viewModel.IsBusy.Value = busy;
+            });
         }
 
         private void OnDLEntryDel(DLEntry entry) {
-            viewModel.MainList.Value.Remove(entry);
+            Dispatcher.Invoke(() => {
+                viewModel.MainList.Value.Remove(entry);
+            });
         }
 
         private void OnDLEntryAdd(DLEntry entry) {
-            viewModel.MainList.Value.Add(entry);
-            // ToDo: Sort ... see DxxDBViewerWindow.xaml.cs SortInfo, etc...
+            Dispatcher.Invoke(() => {
+                viewModel.MainList.Value.Add(entry);
+                // ToDo: Sort ... see DxxDBViewerWindow.xaml.cs SortInfo, etc...
+            });
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
@@ -261,6 +292,9 @@ namespace ytplayer {
         }
 
         private void OnClipboardUpdated(object sender, EventArgs e) {
+            if(viewModel.IsSettingNow.Value) {
+                return; // ダイアログ表示中は何もしない
+            }
             RegisterUrl(Clipboard.GetText());
             //download(Clipboard.GetText());
         }
@@ -273,22 +307,23 @@ namespace ytplayer {
 
         }
 
-        Storage IDownloadHost.Storage => mStorage;
-
-        bool IDownloadHost.StandardOutput(string msg) {
+        private bool Output(string msg, bool error) {
             if (null == msg) return false;
-            Dispatcher.Invoke(() => {
-                viewModel.OutputList.Add(new OutputMessage(msg, error: false));
-            });
+            msg = msg.Trim();
+            if (msg.Length != 0) {
+                Dispatcher.Invoke(() => {
+                    viewModel.OutputList.Add(new OutputMessage(msg, error));
+                });
+            }
             return true;
         }
 
+        bool IDownloadHost.StandardOutput(string msg) {
+            return Output(msg, error: false);
+        }
+
         bool IDownloadHost.ErrorOutput(string msg) {
-            if (null == msg) return false;
-            Dispatcher.Invoke(() => {
-                viewModel.OutputList.Add(new OutputMessage(msg, error: true));
-            });
-            return true;
+            return Output(msg, error: true);
         }
     }
 }

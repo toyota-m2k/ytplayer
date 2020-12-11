@@ -122,15 +122,15 @@ namespace ytplayer.data {
                 @"CREATE TABLE IF NOT EXISTS t_download (
                     url TEXT NOT NULL PRIMARY KEY,
                     name TEXT,
-                    path TEXT,
-                    category TEXT,
-                    desc TEXT,
+                    vpath TEXT,
+                    apath TEXT,
+                    date INTEGER DEFAULT '0',
+                    media INTEGER DEFAULT '0',
                     status INTEGER DEFAULT '0',
                     rating INTEGER DEFAULT '0',
-                    date INTEGER DEFAULT '0',
-                    media INTEGER DEFAULT '0'
+                    category TEXT,
+                    desc TEXT
                 )",
-                @"CREATE INDEX IF NOT EXISTS idx_path ON t_download(path)",
                 @"CREATE INDEX IF NOT EXISTS idx_category ON t_download(category)",
                 @"CREATE TABLE IF NOT EXISTS t_map (
                     name TEXT NOT NULL PRIMARY KEY,

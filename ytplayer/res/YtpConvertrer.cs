@@ -11,7 +11,7 @@ using ytplayer.data;
 namespace ytplayer {
     public class MediaFlagToVisibilityConverter : IValueConverter {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
-            bool music = (parameter as string) == "music";
+            bool audio = (parameter as string) == "audio";
 
             if (Enum.IsDefined(value.GetType(), value) == false) {
                 return DependencyProperty.UnsetValue;
@@ -20,9 +20,9 @@ namespace ytplayer {
                 case MediaFlag.BOTH:
                     return Visibility.Visible;
                 case MediaFlag.AUDIO:
-                    return music ? Visibility.Visible : Visibility.Hidden;
+                    return audio ? Visibility.Visible : Visibility.Hidden;
                 case MediaFlag.VIDEO:
-                    return music ? Visibility.Hidden : Visibility.Visible;
+                    return audio ? Visibility.Hidden : Visibility.Visible;
                 default:
                     return Visibility.Hidden;
             }

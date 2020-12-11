@@ -10,35 +10,51 @@ namespace ytplayer.download {
     public interface IDownloadHost {
         bool StandardOutput(string msg);
         bool ErrorOutput(string msg);
-        Storage Storage { get; }
     }
     public class DownloadManager {
-        private Queue<DLEntry> Queue = new Queue<DLEntry>();
-        private DLEntry Current = null;
+        public Storage Storage { get; private set; }
+
+        private class DLTarget {
+            public DLEntry Entry;
+            public MediaFlag Media;
+            public DLTarget(DLEntry entry, MediaFlag media) {
+                Entry = entry;
+                Media = media;
+            }
+        }
+        private Queue<DLTarget> Queue = new Queue<DLTarget>();
+        private DLTarget Current = null;
         private AutoResetEvent QueueingEvent = new AutoResetEvent(false);
         private bool Alive = true;
         private TaskCompletionSource<object> TerminationSource = new TaskCompletionSource<object>();
-        private Storage Storage => Host.Storage;
         private IDownloadHost Host;
 
-        public DownloadManager(IDownloadHost host) {
+        public DownloadManager(IDownloadHost host, Storage strage) {
             Host = host;
-            Open();
+            Storage = strage;
+            Start();
         }
 
-        public void Open() {
+        private void Start() {
             Task.Run(() => {
                 while(Alive) {
                     if(QueueingEvent.WaitOne(500)) {
-                        Next();
+                        while(Next()) { }
                     }
                 }
                 TerminationSource.SetResult(null);
             });
         }
 
-        public async Task Close() {
+        public async void Dispose() {
+            await CloseAsync();
+            Storage?.Dispose();
+            Storage = null;
+        }
+
+        private async Task CloseAsync() {
             Alive = false;
+            BusyChanged = null;
             await TerminationSource.Task;
         }
 
@@ -49,13 +65,25 @@ namespace ytplayer.download {
                 }
             }
         }
+        public event Action<bool> BusyChanged;
 
-        public void Enqueue(DLEntry target) {
+        public void Enqueue(DLEntry target, MediaFlag media) {
             lock(this) {
                 SetStatus(target, Status.WAITING);
-                Queue.Enqueue(target);
+                Queue.Enqueue(new DLTarget(target, media));
                 QueueingEvent.Set();
             }
+            BusyChanged?.Invoke(IsBusy);
+        }
+        public void Enqueue(IEnumerable<DLEntry> targets, MediaFlag media) {
+            lock (this) {
+                foreach(var e in targets) {
+                    SetStatus(e, Status.WAITING);
+                    Queue.Enqueue(new DLTarget(e, media));
+                }
+                QueueingEvent.Set();
+            }
+            BusyChanged?.Invoke(IsBusy);
         }
 
         public void Cancel() {
@@ -63,8 +91,8 @@ namespace ytplayer.download {
             lock (this) {
                 while (Queue.Count > 0) {
                     var e = Queue.Dequeue();
-                    if (e.Status != Status.DOWNLOADED) {
-                        if(SetStatus(e, Status.CANCELLED, false)) {
+                    if (e.Entry.Status != Status.DOWNLOADED) {
+                        if(SetStatus(e.Entry, Status.CANCELLED, false)) {
                             update = true;
                         }
                     }
@@ -73,6 +101,7 @@ namespace ytplayer.download {
             if (update) {
                 Storage.DLTable.Update();
             }
+            BusyChanged?.Invoke(IsBusy);
         }
 
         private bool SetStatus(DLEntry e, Status status, bool update=true) {
@@ -86,28 +115,49 @@ namespace ytplayer.download {
             return false;
         }
 
-        private DLEntry Dequeue() {
-            lock(this) {
+        private DLTarget Dequeue() {
+            bool update = false;
+            lock (this) {
                 Current = null;
                 while (Queue.Count > 0) {
                     var e = Queue.Dequeue();
-                    if(e.Status!=Status.CANCELLED) {
-                        SetStatus(e, Status.DOWNLOADING);
-                        Current = e;
-                        return e;
+                    if(e.Entry.Status!=Status.CANCELLED) {
+                        if (Alive) {
+                            SetStatus(e.Entry, Status.DOWNLOADING);
+                            Current = e;
+                            return e;
+                        }
+                        SetStatus(e.Entry, Status.CANCELLED, update:false);
+                        update = true;
                     }
                 }
-                return null;
             }
+            if(update) {
+                Storage.DLTable.Update();
+            }
+            BusyChanged?.Invoke(IsBusy);
+            return null;
         }
 
-        public void Next() {
+        public bool Next() {
+            if(!Alive) {
+                return false;
+            }
             var e = Dequeue();
             if(null==e) {
-                return;
+                return false;
             }
-            //var dl = new Downloader(e, Host);
+            var dl = CreateDownloader(e);
+            dl.Download(e.Media);
+            return true;
         }
 
+        private Downloader CreateDownloader(DLTarget e) {
+            if(Settings.Instance.UseWSL) {
+                return new WslDownloader(e.Entry, Host, Storage);
+            } else {
+                return new Downloader(e.Entry, Host, Storage);
+            }
+        }
     }
 }

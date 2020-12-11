@@ -43,11 +43,17 @@ namespace ytplayer.data {
             set => setProp(callerName(), ref name, value);
         }
 
-        [Column(Name = "path", CanBeNull = true)]
-        private string path;
-        public string Path {
-            get => path;
-            set => setProp(callerName(), ref path, value);
+        [Column(Name = "vpath", CanBeNull = true)]
+        private string vpath;
+        public string VPath {
+            get => vpath;
+            set => setProp(callerName(), ref vpath, value);
+        }
+        [Column(Name = "apath", CanBeNull = true)]
+        private string apath;
+        public string APath {
+            get => apath;
+            set => setProp(callerName(), ref apath, value);
         }
 
         [Column(Name = "status", CanBeNull = true)]
@@ -92,9 +98,10 @@ namespace ytplayer.data {
         }
 
         public DLEntry() {
-            this.url = "";
+            url = "";
             name = "";
-            path = "";
+            vpath = "";
+            apath = "";
             status = (int)Status.REGISTERED;
             rating = (int)Rating.NORMAL;
             category = "-";

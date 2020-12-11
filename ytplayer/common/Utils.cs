@@ -63,5 +63,10 @@ namespace common
         public static T[] Array<T>(params T[] args) {
             return args;
         }
+
+        // ありそうでないメソッド
+        public static bool IsEmpty(this String s) {
+            return s.Length == 0;
+        }
     }
 }

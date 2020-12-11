@@ -131,6 +131,8 @@
     <Compile Include="data\Storage.cs" />
     <Compile Include="download\Downloader.cs" />
     <Compile Include="download\DownloadManager.cs" />
+    <Compile Include="download\Processor.cs" />
+    <Compile Include="download\WslDownloader.cs" />
     <Compile Include="res\YtpConvertrer.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="YtpDef.cs" />

@@ -10,7 +10,7 @@ namespace ytplayer {
         public string YoutubeDLPath { get; set; } = "";
         public string FFMpegPath { get; set; } = "";
         public string VideoPath { get; set; } = "";
-        public string MusicPath { get; set; } = "";
+        public string AudioPath { get; set; } = "";
         public bool UseWSL { get; set; } = false;
 
         private const string SETTINGS_FILE = "settings.xml";
@@ -48,10 +48,10 @@ namespace ytplayer {
         }
 
         [System.Xml.Serialization.XmlIgnore]
-        public string EnsureMusicPath {
+        public string EnsureAudioPath {
             get {
-                if (PathUtil.isDirectory(MusicPath)) {
-                    return MusicPath;
+                if (PathUtil.isDirectory(AudioPath)) {
+                    return AudioPath;
                 }
                 return Environment.GetFolderPath(Environment.SpecialFolder.MyMusic);
             }
@@ -81,7 +81,7 @@ namespace ytplayer {
                     Environment.SetEnvironmentVariable("path", path);
                 }
             }
-            Environment.CurrentDirectory = EnsureVideoPath;
+            //Environment.CurrentDirectory = EnsureVideoPath;
         }
 
         public void Serialize() {

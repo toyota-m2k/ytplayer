@@ -25,7 +25,7 @@
             <RowDefinition Height="10"/>
             <RowDefinition Height="Auto"/>            <!-- 9: video output path -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>            <!-- 11: music output path -->
+            <RowDefinition Height="Auto"/>            <!-- 11: audio output path -->
             <RowDefinition Height="10"/>
             <RowDefinition Height="Auto"/>            <!-- 13: Ok/Cancel -->
             <RowDefinition Height="3*"/>
@@ -63,9 +63,9 @@
         <TextBox Grid.Row="9" Grid.Column="2" Text="{Binding VideoPath.Value, Mode=TwoWay}"/>
         <Button Grid.Row="9" Grid.Column="4" Content="…" Padding="8,0" Command="{Binding CommandVideoPath}"/>
 
-        <TextBlock Grid.Row="11" Grid.Column="0" Text="Music output to"/>
-        <TextBox Grid.Row="11" Grid.Column="2" Text="{Binding MusicPath.Value, Mode=TwoWay}"/>
-        <Button Grid.Row="11" Grid.Column="4" Content="…" Padding="8,0" Command="{Binding CommandMusicPath}"/>
+        <TextBlock Grid.Row="11" Grid.Column="0" Text="Audio output to"/>
+        <TextBox Grid.Row="11" Grid.Column="2" Text="{Binding AudioPath.Value, Mode=TwoWay}"/>
+        <Button Grid.Row="11" Grid.Column="4" Content="…" Padding="8,0" Command="{Binding CommandAudioPath}"/>
 
         <StackPanel Grid.Row="13" Grid.Column="0" Grid.ColumnSpan="5" HorizontalAlignment="Center" Orientation="Horizontal">
             <Button Content="OK" Command="{Binding OKCommand}" Width="100"/>

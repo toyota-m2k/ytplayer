@@ -15,7 +15,7 @@ namespace ytplayer.dialog {
         public ReactivePropertySlim<string> YoutubeDLPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> FFMpegPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> VideoPath { get; } = new ReactivePropertySlim<string>();
-        public ReactivePropertySlim<string> MusicPath { get; } = new ReactivePropertySlim<string>();
+        public ReactivePropertySlim<string> AudioPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> ErrorMessage { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<bool> Cancellable { get; } = new ReactivePropertySlim<bool>(true);
 
@@ -23,7 +23,7 @@ namespace ytplayer.dialog {
         public ReactiveCommand CommandYTDLPath { get; } = new ReactiveCommand();
         public ReactiveCommand CommandFFMpegPath { get; } = new ReactiveCommand();
         public ReactiveCommand CommandVideoPath { get; } = new ReactiveCommand();
-        public ReactiveCommand CommandMusicPath { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandAudioPath { get; } = new ReactiveCommand();
 
         public ReactiveCommand OKCommand { get; } = new ReactiveCommand();
         public ReactiveCommand CancelCommand { get; } = new ReactiveCommand();
@@ -38,14 +38,14 @@ namespace ytplayer.dialog {
             YoutubeDLPath.Value = src.YoutubeDLPath;
             FFMpegPath.Value = src.FFMpegPath;
             VideoPath.Value = src.VideoPath;
-            MusicPath.Value = src.MusicPath;
+            AudioPath.Value = src.AudioPath;
             UseWSL.Value = src.UseWSL;
 
             CommandDBPath.Subscribe(() => SelectDBFile(DBPath));
             CommandYTDLPath.Subscribe(() => SelectFolder("youtube-dl folder", YoutubeDLPath));
             CommandFFMpegPath.Subscribe(() => SelectFolder("ffmpeg folder", FFMpegPath));
             CommandVideoPath.Subscribe(() => SelectFolder("Video Folder", VideoPath));
-            CommandMusicPath.Subscribe(() => SelectFolder("Music Folder", MusicPath));
+            CommandAudioPath.Subscribe(() => SelectFolder("Audio Folder", AudioPath));
 
             OKCommand.Subscribe(() => {
                 ErrorMessage.Value = Validate();
@@ -103,9 +103,9 @@ namespace ytplayer.dialog {
                     return $"no such directory: {VideoPath.Value}";
                 }
             }
-            if (!string.IsNullOrEmpty(MusicPath.Value)) {
-                if (!PathUtil.isDirectory(MusicPath.Value)) {
-                    return $"no such directory: {MusicPath.Value}";
+            if (!string.IsNullOrEmpty(AudioPath.Value)) {
+                if (!PathUtil.isDirectory(AudioPath.Value)) {
+                    return $"no such directory: {AudioPath.Value}";
                 }
             }
 
@@ -129,7 +129,7 @@ namespace ytplayer.dialog {
             dst.YoutubeDLPath = YoutubeDLPath.Value;
             dst.FFMpegPath = FFMpegPath.Value;
             dst.VideoPath = VideoPath.Value;
-            dst.MusicPath = MusicPath.Value;
+            dst.AudioPath = AudioPath.Value;
             dst.UseWSL = UseWSL.Value;
             dst.Serialize();
             dst.ApplyEnvironment();
