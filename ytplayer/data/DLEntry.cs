@@ -1,11 +1,9 @@
 ﻿using common;
 using System;
-using System.Collections.Generic;
 using System.Data.Linq.Mapping;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using ytplayer.common;
+using ytplayer.player;
 
 namespace ytplayer.data {
     public enum Status {
@@ -15,6 +13,7 @@ namespace ytplayer.data {
         DOWNLOADED,
         FAILED,
         CANCELLED,
+        LIST,
         DELETED,
     }
     public enum Rating {
@@ -31,7 +30,7 @@ namespace ytplayer.data {
     }
 
     [Table(Name = "t_download")]
-    public class DLEntry : MicPropertyChangeNotifier {
+    public class DLEntry : MicPropertyChangeNotifier, IPlayable {
         [Column(Name = "url", IsPrimaryKey = true, CanBeNull = false)]
         private string url;
         public string Url => url;
@@ -40,7 +39,24 @@ namespace ytplayer.data {
         private string name;
         public string Name {
             get => name;
-            set => setProp(callerName(), ref name, value);
+            set => setProp(callerName(), ref name, value, "NameToDisplay");
+        }
+        static readonly private Regex RegName = new Regex(@"(?<name>.*)(?:-[a-z0-9]+)$", RegexOptions.IgnoreCase);
+        public string NameToDisplay {
+            get {
+                if (string.IsNullOrEmpty(name)) {
+                    return "<Not Downloaded Yet>";
+                } else {
+                    var m = RegName.Matches(name);
+                    if (m.Count > 0) {
+                        var n = m[0].Groups["name"];
+                        if (!string.IsNullOrEmpty(n.Value)) {
+                            return n.Value;
+                        }
+                    }
+                    return name;
+                }
+            }
         }
 
         [Column(Name = "vpath", CanBeNull = true)]
@@ -97,6 +113,12 @@ namespace ytplayer.data {
             set => setProp(callerName(), ref desc, value);
         }
 
+        public string Path => string.IsNullOrEmpty(VPath) ? APath : VPath;
+        
+        public void Delete() {
+            Status = Status.DELETED;
+        }
+        
         public DLEntry() {
             url = "";
             name = "";

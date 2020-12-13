@@ -12,8 +12,8 @@ namespace ytplayer.download {
 
         protected override string Command => "wsl";
 
-        protected override string Arguments(bool audio) {
-            return $"youtube-dl {base.Arguments(audio)}";
+        protected override string Arguments() {
+            return $"youtube-dl {base.Arguments()}";
         }
 
     }

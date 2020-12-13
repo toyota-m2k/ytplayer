@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ytplayer.common;
 using ytplayer.data;
 
@@ -21,18 +17,14 @@ namespace ytplayer.download {
 
         protected virtual string Command => "youtube-dl";
 
-        protected virtual string Arguments(bool audio) {
-            if(audio) {
-                return $"-x --audio-format mp3 {Entry.Url}";
-            } else {
-                return $"--format mp4 {Entry.Url}";
-            }
+        protected virtual string Arguments() {
+            return $"--format mp4 {Entry.Url}";
         }
 
-        private ProcessStartInfo Prepare(bool audio) {
+        private ProcessStartInfo Prepare() {
             return new ProcessStartInfo() {
                 FileName = Command,
-                Arguments = $"{Arguments(audio)}",
+                Arguments = $"{Arguments()}",
                 CreateNoWindow = true,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
@@ -48,9 +40,25 @@ namespace ytplayer.download {
             return ((int)flag & (int)MediaFlag.VIDEO) != 0;
         }
 
-        private Status DownloadSub(bool audio) {
-            var psi = Prepare(audio);
-            var processor = new Processor(Host, audio);
+        private static bool ValidateResult(DownloadItemInfo res, DLEntry entry) {
+            string dir = Settings.Instance.EnsureVideoPath;
+            string ext = "mp4";
+
+            var f = System.IO.Directory.GetFiles(dir, $"*{res.Id}.{ext}", System.IO.SearchOption.TopDirectoryOnly);
+            if (f != null && f.Length > 0) {
+                entry.Name = res.Name;
+                entry.VPath = f[0];
+                entry.Status = Status.DOWNLOADED;
+                return true;
+            } else {
+                entry.Status = Status.FAILED;
+                return false;
+            }
+        }
+
+        private void DownloadSub() {
+            var psi = Prepare();
+            var processor = new Processor(Host);
             try {
                 var process = Process.Start(psi);
                 while(true) {
@@ -64,38 +72,37 @@ namespace ytplayer.download {
                 var e = process.StandardError.ReadToEnd();
                 if (!string.IsNullOrEmpty(e)) {
                     Host.ErrorOutput(e);
-                    return Status.FAILED;
+                    Entry.Status = Status.FAILED;
+                    Entry.Media |= MediaFlag.VIDEO;
+                    return;
                 }
 
-                if(!string.IsNullOrEmpty(processor.Name)) {
-                    Entry.Name = processor.Name;
-                    Entry.Media |= processor.Media;
-                    return Status.DOWNLOADED;
+                if(processor.Results.Count==0) {
+                    Host.ErrorOutput("no data");
+                    Entry.Status = Status.FAILED;
+                    return;
                 }
-                //while (HandleResponse(process.StandardOutput.ReadLine(), audio)) { }
-                //while (Host.ErrorOutput(process.StandardError.ReadLine())) { }
-                return Status.FAILED;
+                bool result = ValidateResult(processor.Results[0], Entry);
+                Host.Completed(Entry, result);
+
+                for (int i = 1; i < processor.Results.Count; i++) {
+                    var subEntry = DLEntry.Create($"{Entry.Url} #{i}");
+                    subEntry.Media = MediaFlag.VIDEO;
+                    if (ValidateResult(processor.Results[i], subEntry)) {
+                        Host.FoundSubItem(subEntry);
+                    }
+                }
             }
             catch (Exception e) {
                 Logger.error(e);
-                return Status.FAILED;
             }
         }
 
-        public void Download(MediaFlag flag) {
-            Status resa = Status.FAILED;
-            Status resv = Status.FAILED;
+        public void Download() {
             string orgPath = Environment.CurrentDirectory;
-            if (AUDIO(flag)) {
-                Environment.CurrentDirectory = Settings.Instance.EnsureAudioPath;
-                resa = DownloadSub(true);
-            }
-            if (VIDEO(flag)) {
-                Environment.CurrentDirectory = Settings.Instance.EnsureVideoPath;
-                resv = DownloadSub(false);
-            }
+            Environment.CurrentDirectory = Settings.Instance.EnsureVideoPath;
+            DownloadSub();
             Environment.CurrentDirectory = orgPath;
-            Entry.Status = (resa == Status.DOWNLOADED || resv == Status.DOWNLOADED) ? Status.DOWNLOADED : Status.FAILED;
             Storage.DLTable.Update();
         }
     }

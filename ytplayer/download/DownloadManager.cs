@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ytplayer.data;
@@ -10,16 +8,18 @@ namespace ytplayer.download {
     public interface IDownloadHost {
         bool StandardOutput(string msg);
         bool ErrorOutput(string msg);
+        void Completed(DLEntry target, bool succeeded);
+        void FoundSubItem(DLEntry foundEntry);
     }
     public class DownloadManager {
         public Storage Storage { get; private set; }
 
         private class DLTarget {
             public DLEntry Entry;
-            public MediaFlag Media;
+            //public MediaFlag Media;
             public DLTarget(DLEntry entry, MediaFlag media) {
                 Entry = entry;
-                Media = media;
+                //Media = media;
             }
         }
         private Queue<DLTarget> Queue = new Queue<DLTarget>();
@@ -148,7 +148,7 @@ namespace ytplayer.download {
                 return false;
             }
             var dl = CreateDownloader(e);
-            dl.Download(e.Media);
+            dl.Download();
             return true;
         }
 

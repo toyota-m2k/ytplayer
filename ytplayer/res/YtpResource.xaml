@@ -16,6 +16,7 @@
 
     <!-- Colors -->
     <SolidColorBrush x:Key="ControlPanelBG" Color="#90000000" />
+    <SolidColorBrush x:Key="ToolBarBG" Color="#404080"/>
 
     <SolidColorBrush x:Key="NormalBtnBG" Color="#30FFFFFF" />
     <SolidColorBrush x:Key="MouseOverBtnBG" Color="#80888888" />
@@ -64,6 +65,12 @@
                 <Setter Property="Foreground" Value="{StaticResource DisabledBtnFG}" />
             </Trigger>
         </Style.Triggers>
+    </Style>
+
+    <Style x:Key="SmallPushButtonStyle" TargetType="Button" BasedOn="{StaticResource PushButtonStyle}">
+        <Setter Property="Width" Value="20"/>
+        <Setter Property="Height" Value="20"/>
+        <Setter Property="Padding" Value="4"/>
     </Style>
 
     <!-- Icon Toggle Button -->
@@ -187,6 +194,15 @@
     <Style x:Key="DescImage" TargetType="Image">
         <Setter Property="Source" Value="{StaticResource DescImageSource}"/>
     </Style>
+
+    <!-- Fade in/out effect -->
+    <Storyboard x:Key="MouseOverStoryboard" Duration="00:00:00.5">
+        <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="00:00:00.5" />
+    </Storyboard>
+
+    <Storyboard x:Key="MouseLeaveStoryboard" Duration="00:00:00.5">
+        <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0.01" Duration="00:00:00.5" />
+    </Storyboard>
 
 
 </ResourceDictionary>
