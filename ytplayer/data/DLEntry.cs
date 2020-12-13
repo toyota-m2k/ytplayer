@@ -21,6 +21,7 @@ namespace ytplayer.data {
         BAD = 2,
         NORMAL = 3,
         GOOD = 4,
+        EXCELLENT = 5,
     }
     public enum MediaFlag {
         NONE = 0,

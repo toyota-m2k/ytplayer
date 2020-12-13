@@ -168,6 +168,7 @@ namespace ytplayer {
         }
 
         private void OnPlayItemChanged(IPlayable obj) {
+            Storage.DLTable.Update();
             if (null == obj) return;
             if (obj != null) {
                 if (!(obj is DLEntry)) {
@@ -245,6 +246,12 @@ namespace ytplayer {
         }
 
         private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
+            Storage.DLTable.Update();
+            mClipboardMonitor.Dispose();
+            if (mPlayerWindow != null) {
+                mPlayerWindow.Close();
+                mPlayerWindow = null;
+            }
             Settings.Instance.Placement.GetPlacementFrom(this);
             Settings.Instance.Serialize();
         }
@@ -404,11 +411,6 @@ namespace ytplayer {
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) {
-            mClipboardMonitor.Dispose();
-            if(mPlayerWindow!=null) {
-                mPlayerWindow.Close();
-                mPlayerWindow = null;
-            }
         }
 
         private void OnClipboardUpdated(object sender, EventArgs e) {
@@ -454,9 +456,12 @@ namespace ytplayer {
             });
         }
 
-        void IDownloadHost.FoundSubItem(DLEntry foundEntry) {
+        void IDownloadHost.FoundSubItem(DLEntry target) {
             Dispatcher.Invoke(() => {
-                Storage.DLTable.Add(foundEntry, true);
+                Storage.DLTable.Add(target, true);
+                if (viewModel.AutoPlay.Value) {
+                    GetPlayer().PlayList.Add(target);
+                }
             });
         }
     }
