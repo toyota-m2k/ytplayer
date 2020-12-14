@@ -127,6 +127,7 @@
     <Compile Include="common\Logger.cs" />
     <Compile Include="common\MenuButton.cs" />
     <Compile Include="common\PathUtil.cs" />
+    <Compile Include="data\Category.cs" />
     <Compile Include="data\DLEntry.cs" />
     <Compile Include="data\KVEntry.cs" />
     <Compile Include="data\Storage.cs" />

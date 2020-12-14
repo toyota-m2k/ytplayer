@@ -93,7 +93,7 @@ namespace ytplayer.data {
             DLTable?.Dispose();
             KVTable?.Dispose();
 
-            if(Context!=null) {
+            if (Context!=null) {
                 Context.Dispose();
                 Context = null;
             }

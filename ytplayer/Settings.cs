@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using ytplayer.common;
+using ytplayer.data;
 using ytplayer.download;
 
 namespace ytplayer {
@@ -14,7 +15,7 @@ namespace ytplayer {
         public string AudioPath { get; set; } = "";
         public bool UseWSL { get; set; } = false;
         public DeterminationList Determinations { get; set; } = new DeterminationList();
-
+        public CategoryList Categories { get; set; } = new CategoryList();
         private const string SETTINGS_FILE = "settings.xml";
         private static Settings sInstance = null;
         private static string sOrgCurrentPath = null;
