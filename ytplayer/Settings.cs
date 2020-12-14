@@ -29,6 +29,7 @@ namespace ytplayer {
                 sOrgPath = Environment.ExpandEnvironmentVariables(Environment.GetEnvironmentVariable("path"));
                 sInstance = Deserialize();
                 sInstance.ApplyEnvironment();
+                sInstance.Categories.Initialize();
             }
         }
 
