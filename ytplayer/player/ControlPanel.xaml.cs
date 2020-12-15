@@ -84,6 +84,11 @@ namespace ytplayer.player {
             ViewModel.TrashCommand.Subscribe(Trash);
             ViewModel.FitCommand.Subscribe(FitView);
             ViewModel.PlayList.Current.Subscribe(OnCurrentChanged);
+            ViewModel.PlayList.ListItemAdded.Subscribe((v) => {
+                if(!ViewModel.IsPlaying.Value) {
+                    ViewModel.PlayList.CurrentIndex.Value = v;
+                }
+            });
 
         }
         private void OnCurrentChanged(IPlayable item) {

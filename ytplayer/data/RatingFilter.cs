@@ -3,6 +3,8 @@ using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,20 +16,31 @@ namespace ytplayer.data {
         public ReactiveProperty<bool> Bad { get; } = new ReactiveProperty<bool>(true);
         public ReactiveProperty<bool> Dreadful { get; } = new ReactiveProperty<bool>(true);
 
+        public event Action FilterChanged;
+
         private ReactiveProperty<bool>[] Filters;
 
         public RatingFilter() {
             Filters = new ReactiveProperty<bool>[] { Dreadful, Bad, Normal, Good, Excellent };
             FromArray(Settings.Instance.Ratings);
+            Normal.Subscribe(OnChanged);
+            Bad.Subscribe(OnChanged);
+            Dreadful.Subscribe(OnChanged);
+            Good.Subscribe(OnChanged);
+            Excellent.Subscribe(OnChanged);
         }
+        private void OnChanged(bool _) {
+            FilterChanged?.Invoke();
+        }
+
         private bool this[int i] {
             get => Filters[i].Value;
             set => Filters[i].Value = value;
         }
 
         public bool this[Rating i] {
-            get => Filters[(int)i].Value;
-            set => Filters[(int)i].Value = value;
+            get => Filters[(int)i-1].Value;
+            set => Filters[(int)i-1].Value = value;
         }
 
         public bool[] ToArray() {
@@ -42,6 +55,11 @@ namespace ytplayer.data {
 
         public IEnumerable<DLEntry> Filter(IEnumerable<DLEntry> src) {
             return src.Where((e) => this[e.Rating]);
+        }
+
+        public override void Dispose() {
+            base.Dispose();
+            FilterChanged = null;
         }
 
         //private static RatingFilter sInstance = null;

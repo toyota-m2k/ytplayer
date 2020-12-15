@@ -53,53 +53,57 @@
                         Command="{Binding FitCommand}"  
                         Content="{StaticResource PathMaximize}" Style="{StaticResource PushButtonStyle}"/>
         </StackPanel>
-        <StackPanel Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal">
+        <StackPanel
+            Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal">
             <TextBlock Text="{Binding PlayList.CurrentPos.Value}" Foreground="White" VerticalAlignment="Center" Margin="10,0,0,0"/>
             <TextBlock Text=" / " Foreground="White" VerticalAlignment="Center"/>
             <TextBlock Text="{Binding PlayList.TotalCount.Value}" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
 
-            <ToggleButton 
-                IsChecked="{Binding PlayList.Current.Value.Rating, Mode=TwoWay, Converter={StaticResource EnumBooleanConverter},ConverterParameter=DREADFUL}"
-                Content="{StaticResource PathDreadful}" Style="{StaticResource ToggleButtonStyle}">
+            <RadioButton 
+                IsChecked="{Binding PlayList.Current.Value.Rating, 
+                Converter={StaticResource EnumBooleanConverter}, ConverterParameter=DREADFUL, Mode=TwoWay}"  
+                Content="{StaticResource PathDreadful}" 
+                Style="{StaticResource IconRadioButton}" GroupName="Rating">
                 <ToolTipService.ToolTip>
                     <ToolTip Content="Rating: Dreadful"/>
                 </ToolTipService.ToolTip>
-            </ToggleButton>
-
-            <ToggleButton 
-                IsChecked="{Binding PlayList.Current.Value.Rating, Mode=TwoWay, Converter={StaticResource EnumBooleanConverter},ConverterParameter=BAD}"
-                Content="{StaticResource PathBad}" Style="{StaticResource ToggleButtonStyle}">
+            </RadioButton>
+            <RadioButton 
+                IsChecked="{Binding PlayList.Current.Value.Rating, 
+                Converter={StaticResource EnumBooleanConverter}, ConverterParameter=BAD, Mode=TwoWay}"  
+                Content="{StaticResource PathBad}" 
+                Style="{StaticResource IconRadioButton}" GroupName="Rating">
                 <ToolTipService.ToolTip>
                     <ToolTip Content="Rating: Bad"/>
                 </ToolTipService.ToolTip>
-            </ToggleButton>
-
-            <ToggleButton 
-                IsChecked="{Binding PlayList.Current.Value.Rating, Mode=TwoWay, Converter={StaticResource EnumBooleanConverter},ConverterParameter=NORMAL}"
-                Content="{StaticResource PathNormal}" Style="{StaticResource ToggleButtonStyle}">
+            </RadioButton>
+            <RadioButton 
+                IsChecked="{Binding PlayList.Current.Value.Rating, 
+                Converter={StaticResource EnumBooleanConverter}, ConverterParameter=NORMAL, Mode=TwoWay}"  
+                Content="{StaticResource PathNormal}" 
+                Style="{StaticResource IconRadioButton}" GroupName="Rating">
                 <ToolTipService.ToolTip>
-                    <ToolTip Content="Rating: OK"/>
+                    <ToolTip Content="Rating: Normal"/>
                 </ToolTipService.ToolTip>
-            </ToggleButton>
-
-            <ToggleButton 
-                IsChecked="{Binding PlayList.Current.Value.Rating, Mode=TwoWay, Converter={StaticResource EnumBooleanConverter},ConverterParameter=GOOD}"
-                Content="{StaticResource PathGood}" Style="{StaticResource ToggleButtonStyle}">
+            </RadioButton>
+            <RadioButton 
+                IsChecked="{Binding PlayList.Current.Value.Rating, 
+                Converter={StaticResource EnumBooleanConverter}, ConverterParameter=GOOD, Mode=TwoWay}"  
+                Content="{StaticResource PathGood}" 
+                Style="{StaticResource IconRadioButton}" GroupName="Rating">
                 <ToolTipService.ToolTip>
                     <ToolTip Content="Rating: Good"/>
                 </ToolTipService.ToolTip>
-            </ToggleButton>
-
-
-            <ToggleButton 
-                IsChecked="{Binding PlayList.Current.Value.Rating, Mode=TwoWay, Converter={StaticResource EnumBooleanConverter},ConverterParameter=EXCELLENT}"
-                Content="{StaticResource PathExcellent}" Style="{StaticResource ToggleButtonStyle}">
+            </RadioButton>
+            <RadioButton 
+                IsChecked="{Binding PlayList.Current.Value.Rating, 
+                Converter={StaticResource EnumBooleanConverter}, ConverterParameter=EXCELLENT, Mode=TwoWay}"  
+                Content="{StaticResource PathExcellent}" 
+                Style="{StaticResource IconRadioButton}" GroupName="Rating">
                 <ToolTipService.ToolTip>
                     <ToolTip Content="Rating: Excellent"/>
                 </ToolTipService.ToolTip>
-            </ToggleButton>
-
-
+            </RadioButton>
             <Button IsEnabled="{Binding IsReady.Value}"
                         Command="{Binding TrashCommand}"  
                         Content="{StaticResource PathTrash}" Style="{StaticResource PushButtonStyle}" Margin="8,0,0,0"/>

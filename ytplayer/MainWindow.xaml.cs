@@ -1,6 +1,7 @@
 ﻿using common;
 using Reactive.Bindings;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
@@ -151,6 +152,7 @@ namespace ytplayer {
             viewModel.CurrentCategory.Subscribe((c) => {
                 RefreshList();
             });
+            viewModel.RatingFilter.FilterChanged += RefreshList;
             InitializeComponent();
         }
 
@@ -194,7 +196,7 @@ namespace ytplayer {
             if(selected.Count>1) {
                 win.PlayList.SetList(selected.ToEnumerable<DLEntry>());
             } else {
-                win.PlayList.SetList(viewModel.MainList.Value.Where((e)=>(int)e.Media!=0), MainListView.SelectedItem as IPlayable);
+                win.PlayList.SetList(viewModel.MainList.Value, MainListView.SelectedItem as IPlayable);
             }
         }
 
@@ -205,7 +207,8 @@ namespace ytplayer {
 
         private void RefreshList() {
             if (Storage == null) return;
-            viewModel.MainList.Value = new ObservableCollection<DLEntry>(viewModel.CurrentCategory.Value.Filter(Storage.DLTable.List));
+            viewModel.MainList.Value = new ObservableCollection<DLEntry>(Storage.DLTable.List
+                .FilterByRating(viewModel.RatingFilter).FilterByCategory(viewModel.CurrentCategory.Value));
         }
 
         private async void RegisterUrl(string url) {
@@ -474,6 +477,15 @@ namespace ytplayer {
                     GetPlayer().PlayList.Add(target);
                 }
             });
+        }
+    }
+
+    static class FilterExt {
+        public static IEnumerable<DLEntry> FilterByRating(this IEnumerable<DLEntry> s, RatingFilter rf) {
+            return rf.Filter(s);
+        }
+        public static IEnumerable<DLEntry> FilterByCategory(this IEnumerable<DLEntry> s, Category c) {
+            return c.Filter(s);
         }
     }
 }
