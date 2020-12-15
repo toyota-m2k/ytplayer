@@ -16,6 +16,7 @@ namespace ytplayer {
         public bool UseWSL { get; set; } = false;
         public DeterminationList Determinations { get; set; } = new DeterminationList();
         public CategoryList Categories { get; set; } = new CategoryList();
+        public bool[] Ratings { get; set; }
         private const string SETTINGS_FILE = "settings.xml";
         private static Settings sInstance = null;
         private static string sOrgCurrentPath = null;

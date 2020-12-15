@@ -65,13 +65,13 @@ namespace ytplayer.download {
         private bool TryParseName(string res) {
             var matches = RegexName.Matches(res);
             if(matches.Count>0) {
-                var item = new DownloadItemInfo(matches[0].Groups["name"].Value, matches[0].Groups["name"].Value, false);
+                var item = new DownloadItemInfo(matches[0].Groups["name"].Value, matches[0].Groups["id"].Value, false);
                 Results.Add(item);
                 return true;
             }
             matches = RegexSkipped.Matches(res);
             if(matches.Count>0) {
-                var item = new DownloadItemInfo(matches[0].Groups["name"].Value, matches[0].Groups["name"].Value, true);
+                var item = new DownloadItemInfo(matches[0].Groups["name"].Value, matches[0].Groups["id"].Value, true);
                 Results.Add(item);
                 return true;
             }

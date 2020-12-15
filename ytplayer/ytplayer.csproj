@@ -130,6 +130,7 @@
     <Compile Include="data\Category.cs" />
     <Compile Include="data\DLEntry.cs" />
     <Compile Include="data\KVEntry.cs" />
+    <Compile Include="data\RatingFilter.cs" />
     <Compile Include="data\Storage.cs" />
     <Compile Include="download\DeterminationList.cs" />
     <Compile Include="download\Downloader.cs" />

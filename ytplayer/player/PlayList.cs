@@ -17,7 +17,7 @@ namespace ytplayer.player {
     }
 
     public interface IPlayList {
-        void SetList(IEnumerable<IPlayable> s, int initialIndex=0);
+        void SetList(IEnumerable<IPlayable> s, IPlayable initialItem = null);
         void Add(IPlayable item);
         ReadOnlyReactiveProperty<IPlayable> Current { get; }
     }
@@ -48,12 +48,12 @@ namespace ytplayer.player {
             }).ToReadOnlyReactiveProperty();
         }
 
-        public void SetList(IEnumerable<IPlayable> s, int initialIndex=0) {
+        public void SetList(IEnumerable<IPlayable> s, IPlayable initialItem=null) {
             List.Value = new List<IPlayable>(s);
             if(List.Value.Count==0) {
                 CurrentIndex.Value = -1;
-            } else if(0<= initialIndex && initialIndex < List.Value.Count) {
-                CurrentIndex.Value = initialIndex;
+            } else if(initialItem!=null && List.Value.Contains(initialItem)) { 
+                CurrentIndex.Value = List.Value.IndexOf(initialItem);
             } else {
                 CurrentIndex.Value = 0;
             }

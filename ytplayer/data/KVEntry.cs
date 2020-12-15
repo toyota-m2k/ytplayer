@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace ytplayer.data {
     [Table(Name = "t_map")]
-    public class KVEntry {
+    public class KVEntry : IEntry {
         [Column(Name = "name", CanBeNull = false, IsPrimaryKey = true)]
-        public string Name;
+        public string KEY { get;  private set; }
 
         [Column(Name = "ivalue", CanBeNull = true)]
         public int iValue;

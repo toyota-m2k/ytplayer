@@ -2,15 +2,21 @@
 using System.Collections.Generic;
 using System.Data.Linq;
 using System.Data.SQLite;
+using System.Linq;
+using ytplayer.common;
 
 namespace ytplayer.data {
+    public interface IEntry {
+        string KEY { get; }
+    }
+
     public class Storage : IDisposable {
         private SQLiteConnection Connection { get; set; }
 
 
-       public delegate void NotificationProc<T>(T entry) where T : class;
+       public delegate void NotificationProc<T>(T entry) where T : class, IEntry ;
 
-        public class StorageTable<T> : IDisposable where T : class {
+        public class StorageTable<T> : IDisposable where T : class, IEntry {
             public Table<T> Table { get; private set; }
             public event NotificationProc<T> AddEvent;
             public event NotificationProc<T> DelEvent;
@@ -20,25 +26,36 @@ namespace ytplayer.data {
 
             public IEnumerable<T> List => Table;
 
-            public void Add(T add, bool update = true) {
-                Table.InsertOnSubmit(add);
-                if (update) {
-                    Table.Context.SubmitChanges();
-                }
-                AddEvent?.Invoke(add);
+            public bool Contains(T entry) {
+                return Table.Where((c) =>  entry.KEY == c.KEY).Any();
             }
 
-            public void Add(IEnumerable<T> adds, bool update = true) {
-                Table.InsertAllOnSubmit(adds);
-                if (update) {
-                    Table.Context.SubmitChanges();
-                }
-                if (AddEvent != null) {
-                    foreach (var a in adds) {
-                        AddEvent(a);
+            public bool Add(T add) {
+                try {
+                    if(Contains(add)) { 
+                        // Already Registered.
+                        return false;
                     }
+                    Table.InsertOnSubmit(add);
+                    Table.Context.SubmitChanges();
+                    AddEvent?.Invoke(add);
+                    return true;
+                }
+                catch (Exception e) {
+                    Logger.error(e);
+                    return false;
                 }
             }
+
+            //public void Add(IEnumerable<T> adds) {
+            //    Table.InsertAllOnSubmit(adds);
+            //    Table.Context.SubmitChanges();
+            //    if (AddEvent != null) {
+            //        foreach (var a in adds) {
+            //            AddEvent(a);
+            //        }
+            //    }
+            //}
 
             public void Delete(T del, bool update = true) {
                 Table.DeleteOnSubmit(del);

@@ -44,6 +44,10 @@ namespace ytplayer {
         public ReactivePropertySlim<bool> ClipboardWatching { get; } = new ReactivePropertySlim<bool>(false);
         public ReactivePropertySlim<string> StatusString { get; } = new ReactivePropertySlim<string>();
         public ObservableCollection<OutputMessage> OutputList { get; } = new ObservableCollection<OutputMessage>();
+        public ObservableCollection<Category> Categories => new ObservableCollection<Category>(Settings.Instance.Categories.FilterList);
+        public ReactivePropertySlim<Category> CurrentCategory { get; } = new ReactivePropertySlim<Category>(Settings.Instance.Categories.All);
+        public RatingFilter RatingFilter { get; } = new RatingFilter();
+
         public bool BusyWithModal = false;
 
         public ReactiveCommand CommandDownloadNow { get; } = new ReactiveCommand();
@@ -93,13 +97,13 @@ namespace ytplayer {
                 DialogTask.TrySetResult(false);
                 DialogActivated.Value = false;
                 DialogTask = null;
-                BusyWithModal = true;
+                BusyWithModal = false;
             });
             CommandOk.Subscribe(() => {
                 DialogTask.TrySetResult(true);
                 DialogActivated.Value = false;
                 DialogTask = null;
-                BusyWithModal = true;
+                BusyWithModal = false;
             });
         }
     }
@@ -144,7 +148,9 @@ namespace ytplayer {
                 RootGrid.RowDefinitions[3].Height = new GridLength(0, GridUnitType.Star);
             });
             viewModel.CommandPlay.Subscribe(Play);
-
+            viewModel.CurrentCategory.Subscribe((c) => {
+                RefreshList();
+            });
             InitializeComponent();
         }
 
@@ -188,7 +194,7 @@ namespace ytplayer {
             if(selected.Count>1) {
                 win.PlayList.SetList(selected.ToEnumerable<DLEntry>());
             } else {
-                win.PlayList.SetList(viewModel.MainList.Value, MainListView.SelectedIndex);
+                win.PlayList.SetList(viewModel.MainList.Value.Where((e)=>(int)e.Media!=0), MainListView.SelectedItem as IPlayable);
             }
         }
 
@@ -198,7 +204,8 @@ namespace ytplayer {
         }
 
         private void RefreshList() {
-            viewModel.MainList.Value = new ObservableCollection<DLEntry>(Storage.DLTable.List);
+            if (Storage == null) return;
+            viewModel.MainList.Value = new ObservableCollection<DLEntry>(viewModel.CurrentCategory.Value.Filter(Storage.DLTable.List));
         }
 
         private async void RegisterUrl(string url) {
@@ -224,9 +231,10 @@ namespace ytplayer {
             }
 
             var target = DLEntry.Create(url);
-            Storage.DLTable.Add(target, true);
-            if(viewModel.AutoDownload.Value) {
-                mDownloadManager.Enqueue(target, viewModel.OnlySound.Value ? MediaFlag.AUDIO : MediaFlag.VIDEO);
+            if (Storage.DLTable.Add(target)) {
+                if (viewModel.AutoDownload.Value) {
+                    mDownloadManager.Enqueue(target, viewModel.OnlySound.Value ? MediaFlag.AUDIO : MediaFlag.VIDEO);
+                }
             }
         }
 
@@ -252,6 +260,7 @@ namespace ytplayer {
                 mPlayerWindow.Close();
                 mPlayerWindow = null;
             }
+            Settings.Instance.Ratings = viewModel.RatingFilter.ToArray();
             Settings.Instance.Placement.GetPlacementFrom(this);
             Settings.Instance.Serialize();
         }
@@ -449,16 +458,18 @@ namespace ytplayer {
         }
 
         void IDownloadHost.Completed(DLEntry target, bool succeeded) {
-            Dispatcher.Invoke(() => {
-                if (viewModel.AutoPlay.Value) {
-                    GetPlayer().PlayList.Add(target);
-                }
-            });
+            if (succeeded) {
+                Dispatcher.Invoke(() => {
+                    if (viewModel.AutoPlay.Value) {
+                        GetPlayer().PlayList.Add(target);
+                    }
+                });
+            }
         }
 
         void IDownloadHost.FoundSubItem(DLEntry target) {
             Dispatcher.Invoke(() => {
-                Storage.DLTable.Add(target, true);
+                Storage.DLTable.Add(target);
                 if (viewModel.AutoPlay.Value) {
                     GetPlayer().PlayList.Add(target);
                 }

@@ -31,10 +31,10 @@ namespace ytplayer.data {
     }
 
     [Table(Name = "t_download")]
-    public class DLEntry : MicPropertyChangeNotifier, IPlayable {
+    public class DLEntry : MicPropertyChangeNotifier, IPlayable, IEntry  {
         [Column(Name = "url", IsPrimaryKey = true, CanBeNull = false)]
-        private string url;
-        public string Url => url;
+        public string KEY { get; private set; }
+        public string Url => KEY;
 
         [Column(Name = "name", CanBeNull = true)]
         private string name;
@@ -121,7 +121,7 @@ namespace ytplayer.data {
         }
         
         public DLEntry() {
-            url = "";
+            KEY = "";
             name = "";
             vpath = "";
             apath = "";
@@ -131,7 +131,7 @@ namespace ytplayer.data {
         }
 
         public static DLEntry Create(string url_) {
-            return new DLEntry() { url = url_, Date=DateTime.UtcNow };
+            return new DLEntry() { KEY = url_, Date=DateTime.UtcNow };
         }
 
         private static readonly DateTime EpochDate = new DateTime(1970, 1, 1, 0, 0, 0);

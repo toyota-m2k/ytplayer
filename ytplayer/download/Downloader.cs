@@ -48,6 +48,7 @@ namespace ytplayer.download {
             if (f != null && f.Length > 0) {
                 entry.Name = res.Name;
                 entry.VPath = f[0];
+                entry.Media |= MediaFlag.VIDEO;
                 entry.Status = Status.DOWNLOADED;
                 return true;
             } else {
@@ -73,7 +74,6 @@ namespace ytplayer.download {
                 if (!string.IsNullOrEmpty(e)) {
                     Host.ErrorOutput(e);
                     Entry.Status = Status.FAILED;
-                    Entry.Media |= MediaFlag.VIDEO;
                     return;
                 }
 
@@ -87,7 +87,6 @@ namespace ytplayer.download {
 
                 for (int i = 1; i < processor.Results.Count; i++) {
                     var subEntry = DLEntry.Create($"{Entry.Url} #{i}");
-                    subEntry.Media = MediaFlag.VIDEO;
                     if (ValidateResult(processor.Results[i], subEntry)) {
                         Host.FoundSubItem(subEntry);
                     }

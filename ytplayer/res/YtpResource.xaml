@@ -15,18 +15,21 @@
     <local:MediaFlagToVisibilityConverter x:Key="MediaFlagToVisibilityConverter"/>
 
     <!-- Colors -->
-    <SolidColorBrush x:Key="ControlPanelBG" Color="#90000000" />
+    <SolidColorBrush x:Key="ControlPanelBG" Color="#90404080" />
     <SolidColorBrush x:Key="ToolBarBG" Color="#404080"/>
 
-    <SolidColorBrush x:Key="NormalBtnBG" Color="#30FFFFFF" />
-    <SolidColorBrush x:Key="MouseOverBtnBG" Color="#80888888" />
-    <SolidColorBrush x:Key="PressedBtnBG" Color="#80888888" />
-    <SolidColorBrush x:Key="DisabledBtnBG" Color="#30FFFFFF" />
+    <SolidColorBrush x:Key="NormalBtnBG" Color="#00FFFFFF" />
+    <SolidColorBrush x:Key="MouseOverBtnBG" Color="#505050" />
+    <SolidColorBrush x:Key="PressedBtnBG" Color="#505050" />
+    <SolidColorBrush x:Key="DisabledBtnBG" Color="#00FFFFFF" />
+    <SolidColorBrush x:Key="CheckedBtnBG" Color="#00FFFFFF" />
 
     <SolidColorBrush x:Key="NormalBtnFG" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="MouseOverBtnFG" Color="#80a0ff" />
-    <SolidColorBrush x:Key="PressedBtnFG" Color="#40FFa0" />
-    <SolidColorBrush x:Key="DisabledBtnFG" Color="#30000000" />
+    <SolidColorBrush x:Key="MouseOverBtnFG" Color="#FFFF25" />
+    <SolidColorBrush x:Key="PressedBtnFG" Color="#C4FF25" />
+    <SolidColorBrush x:Key="DisabledBtnFG" Color="#A0A0A0" />
+    <SolidColorBrush x:Key="CheckedBtnFG" Color="#FFE9FF86" />
+    <SolidColorBrush x:Key="UncheckedBtnFG" Color="#50C4FF25" />
 
     <!-- Icon Button -->
     <ControlTemplate x:Key="IconButtonTemplate"  TargetType="Button">
@@ -93,7 +96,7 @@
         <Setter Property="Width" Value="30"/>
         <Setter Property="Height" Value="30"/>
         <Setter Property="Background" Value="{StaticResource NormalBtnBG}"/>
-        <Setter Property="Foreground" Value="{StaticResource NormalBtnFG}"/>
+        <Setter Property="Foreground" Value="{StaticResource UncheckedBtnFG}"/>
         <Setter Property="Padding" Value="8"/>
         <Setter Property="Template" Value="{StaticResource IconToggleButtonTemplate}"/>
         <Style.Triggers>
@@ -110,8 +113,8 @@
                 <Setter Property="Foreground" Value="{StaticResource DisabledBtnFG}" />
             </Trigger>
             <Trigger Property="IsChecked" Value="true">
-                <Setter Property="Background" Value="#80000000"/>
-                <Setter Property="Foreground" Value="#00FFFF"/>
+                <Setter Property="Background" Value="{StaticResource CheckedBtnBG}"/>
+                <Setter Property="Foreground" Value="{StaticResource CheckedBtnFG}"/>
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -156,8 +159,8 @@
                 <Setter Property="Foreground" Value="{StaticResource DisabledBtnFG}" />
             </Trigger>
             <Trigger Property="IsChecked" Value="true">
-                <Setter Property="Background" Value="#80000000"/>
-                <Setter Property="Foreground" Value="#00FFFF"/>
+                <Setter Property="Background" Value="{StaticResource CheckedBtnBG}"/>
+                <Setter Property="Foreground" Value="{StaticResource CheckedBtnFG}"/>
             </Trigger>
         </Style.Triggers>
     </Style>
