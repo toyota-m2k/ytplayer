@@ -13,6 +13,7 @@ namespace ytplayer.player {
         string Name { get; }
         string Url { get; }
         Rating Rating { get; set; }
+        double Volume { get; set; }
         void Delete();
     }
 

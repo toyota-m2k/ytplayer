@@ -19,6 +19,7 @@
                       MediaOpened="OnMediaOpened" 
                       MediaEnded="OnMediaEnded" 
                       MediaFailed="OnMediaFailed"
+                      Volume="{Binding Volume.Value}"
                       />
         <Grid Background="{StaticResource ControlPanelBG}" 
               MouseEnter="OnMouseEnter" MouseLeave="OnMouseLeave"

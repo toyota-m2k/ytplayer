@@ -16,6 +16,20 @@ namespace ytplayer.data {
 
         [Column(Name = "svalue", CanBeNull = true)]
         public string sValue;
+
+        public KVEntry() {
+
+        }
+        public KVEntry(string name, int iValue, string sValue=null) {
+            KEY = name;
+            this.iValue = iValue;
+            this.sValue = sValue;
+        }
+        public KVEntry(string name, string sValue) {
+            KEY = name;
+            this.iValue = 0;
+            this.sValue = sValue;
+        }
     }
 
 

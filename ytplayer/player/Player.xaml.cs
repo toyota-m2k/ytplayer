@@ -2,6 +2,7 @@
 using Reactive.Bindings;
 using System;
 using System.Diagnostics;
+using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,6 +15,8 @@ namespace ytplayer.player {
         IReadOnlyReactiveProperty<double> Duration { get; }
         IReadOnlyReactiveProperty<bool> IsReady { get; }
         IReadOnlyReactiveProperty<bool> IsPlaying { get; }
+        IReactiveProperty<double> Speed { get; }
+        IReactiveProperty<double> Volume { get; }
         Subject<bool> Ended { get; }
     }
 
@@ -21,12 +24,16 @@ namespace ytplayer.player {
         IReadOnlyReactiveProperty<double> IPlayerViewModel.Duration => Duration;
         IReadOnlyReactiveProperty<bool> IPlayerViewModel.IsReady => IsReady;
         IReadOnlyReactiveProperty<bool> IPlayerViewModel.IsPlaying => IsPlaying;
-        public Subject<bool> Ended { get; } = new Subject<bool>();
+        IReactiveProperty<double> IPlayerViewModel.Speed => Speed;
+        IReactiveProperty<double> IPlayerViewModel.Volume => Volume;
 
         public ReactiveProperty<double> Duration { get; } = new ReactiveProperty<double>(100);
         public ReactiveProperty<bool> IsReady { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> IsPlaying { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> ShowPanel { get; } = new ReactiveProperty<bool>(true);
+        public ReactiveProperty<double> Speed { get; } = new ReactiveProperty<double>(0.5);
+        public ReactiveProperty<double> Volume { get; } = new ReactiveProperty<double>(0.5);
+        public Subject<bool> Ended { get; } = new Subject<bool>();
     }
 
     public interface IPlayer {
@@ -62,12 +69,17 @@ namespace ytplayer.player {
 
         public void Initialize() {
             ControlPanel.Initialize(this);
+            ViewModel.Speed.Subscribe((speed) => {
+                double sr = (speed >= 0.5) ? 1 + (speed - 0.5) * 2 /* 1 ～ 2 */ : 0.2 + 0.8 * (speed * 2)/*0.2 ～ 1*/;
+                MediaPlayer.SpeedRatio = sr;
+            });
         }
 
         public void SetSource(string path, bool start=true) {
             starting = start;
             ViewModel.IsReady.Value = false;
             ViewModel.IsPlaying.Value = false;
+            ViewModel.Speed.Value = 0.5;
             MediaPlayer.Source = string.IsNullOrEmpty(path) ? null : new Uri(path);
             if(path!=null) {
                 Debug.Assert(PathUtil.isFile(path));

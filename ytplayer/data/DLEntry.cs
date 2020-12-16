@@ -89,9 +89,9 @@ namespace ytplayer.data {
 
         [Column(Name = "category", CanBeNull = true)]
         private string category;
-        public string Category {
-            get => category;
-            set => setProp(callerName(), ref category, value);
+        public Category Category {
+            get => Settings.Instance.Categories.Get(category);
+            set => setProp(callerName(), ref category, CategoryList.CategoryToDBLabel(value));
         }
 
         [Column(Name = "media", CanBeNull = true)]
@@ -105,6 +105,22 @@ namespace ytplayer.data {
         public DateTime Date {
             get => AsTime(date);
             set => setProp(callerName(), ref date, value.ToFileTimeUtc());
+        }
+
+        [Column(Name = "volume", CanBeNull = true)]
+        private long volume;
+        const double VOL_RANGE = 200.0;
+        const double VOL_TOLERANCE = 0.01;
+        private long dbVolume(double v) {
+            if(0.5-VOL_TOLERANCE<v && v < 0.5 + VOL_TOLERANCE) {
+                return 0;
+            }
+            long r = (long)Math.Round((v - 0.5) * VOL_RANGE);
+            return Math.Max(Math.Min(0, r), 100);   // 0<=r<=100
+        }
+        public double Volume {
+            get => ((double)volume)/VOL_RANGE + 0.5;
+            set => setProp(callerName(), ref volume, dbVolume(value));
         }
 
         [Column(Name = "desc", CanBeNull = true)]
@@ -127,7 +143,7 @@ namespace ytplayer.data {
             apath = "";
             status = (int)Status.REGISTERED;
             rating = (int)Rating.NORMAL;
-            category = "-";
+            category = "";
         }
 
         public static DLEntry Create(string url_) {

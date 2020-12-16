@@ -142,6 +142,7 @@ namespace ytplayer.data {
                     status INTEGER DEFAULT '0',
                     rating INTEGER DEFAULT '0',
                     category TEXT,
+                    volume INTEGER DEFAULT '0',
                     desc TEXT
                 )",
                 @"CREATE INDEX IF NOT EXISTS idx_category ON t_download(category)",

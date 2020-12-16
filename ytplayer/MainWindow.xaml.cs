@@ -64,8 +64,9 @@ namespace ytplayer {
         public ReactiveCommand CommandCancel { get; } = new ReactiveCommand();
         public ReactiveCommand CommandOk { get; } = new ReactiveCommand();
         public class DeleteItemDialogViewModel : MicViewModelBase {
-            public ReactivePropertySlim<bool> DeleteItemsFromList { get; } = new ReactivePropertySlim<bool>(false);
-            public ReactivePropertySlim<bool> DeleteDownloadedFiles { get; } = new ReactivePropertySlim<bool>(false);
+            public ReactivePropertySlim<bool> DeleteListItem { get; } = new ReactivePropertySlim<bool>(false);
+            public ReactivePropertySlim<bool> DeleteVideoFile { get; } = new ReactivePropertySlim<bool>(false);
+            public ReactivePropertySlim<bool> DeleteAudioFile { get; } = new ReactivePropertySlim<bool>(false);
         }
         public DeleteItemDialogViewModel DeleteItemDialog { get; } = new DeleteItemDialogViewModel();
         public Task<bool> ShowDialog(DialogTypeId type, string title) {

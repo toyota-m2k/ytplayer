@@ -1,11 +1,13 @@
 ﻿using common;
 using Reactive.Bindings;
 using System;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ytplayer.data;
 
 namespace ytplayer.player {
 
@@ -17,6 +19,12 @@ namespace ytplayer.player {
         public ReadOnlyReactiveProperty<bool> IsPlaying { get; }
         public ReadOnlyReactiveProperty<bool> IsReady { get; }
         private IDisposable EndEventRegester { get; }
+        public ObservableCollection<Category> Categories => new ObservableCollection<Category>(Settings.Instance.Categories.SelectList);
+
+        [Disposal(disposable:false)]
+        public IReactiveProperty<double> Speed { get; }
+        [Disposal(disposable: false)]
+        public IReactiveProperty<double> Volume { get; }
 
         public ReactiveCommand PlayCommand { get; } = new ReactiveCommand();
         public ReactiveCommand PauseCommand { get; } = new ReactiveCommand();
@@ -24,6 +32,11 @@ namespace ytplayer.player {
         public ReactiveCommand GoForwardCommand { get; } = new ReactiveCommand();
         public ReactiveCommand TrashCommand { get; } = new ReactiveCommand();
         public ReactiveCommand FitCommand { get; } = new ReactiveCommand();
+
+        public ReactiveCommand ResetSpeedCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand ResetVolumeCommand { get; } = new ReactiveCommand();
+
+
 
         private string FormatDuration(double duration) {
             var t = TimeSpan.FromMilliseconds(duration);
@@ -34,10 +47,13 @@ namespace ytplayer.player {
         public ControlPanelViewModel() {
             var dummyString = new ReactiveProperty<string>();
             var dummyBool = new ReactiveProperty<bool>();
+            var dummyDouble = new ReactiveProperty<double>();
             DurationText = dummyString.ToReadOnlyReactiveProperty();
             PositionText = dummyString.ToReadOnlyReactiveProperty();
             IsPlaying = dummyBool.ToReadOnlyReactiveProperty();
             IsReady = dummyBool.ToReadOnlyReactiveProperty();
+            Speed = dummyDouble;
+            Volume = dummyDouble;
         }
 
         public ControlPanelViewModel(IPlayer player, TimelineSlider slider) {
@@ -46,6 +62,13 @@ namespace ytplayer.player {
             IsPlaying = player.ViewModel.IsPlaying.ToReadOnlyReactiveProperty();
             IsReady = player.ViewModel.IsReady.ToReadOnlyReactiveProperty();
             EndEventRegester = player.ViewModel.Ended.Subscribe((v) => GoForwardCommand.Execute());
+            Speed = player.ViewModel.Speed;
+            Volume = player.ViewModel.Volume;
+            Volume.Subscribe((v) => {
+                PlayList.Current.Value?.Apply((o) => o.Volume = v);
+            });
+            ResetSpeedCommand.Subscribe(() => Speed.Value = 0.5);
+            ResetVolumeCommand.Subscribe(() => Volume.Value = 0.5);
         }
     }
 

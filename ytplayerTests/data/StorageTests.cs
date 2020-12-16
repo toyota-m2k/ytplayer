@@ -49,7 +49,7 @@ namespace ytplayer.data.Tests {
             Assert.AreEqual(entry.Url, e.Url);
             e.Rating = Rating.GOOD;
             e = list.Single((v) => v.Url == "3");
-            e.Category = "hoge";
+            e.Desc = "hoge";
             dl.Update();
             storage.Dispose();
             storage = new Storage("test.db");
@@ -62,7 +62,7 @@ namespace ytplayer.data.Tests {
             e = list.Single((v) => v.Url == "3");
             Assert.AreEqual("3", e.Url);
             Assert.AreEqual(Rating.NORMAL, e.Rating);
-            Assert.AreEqual("hoge", e.Category);
+            Assert.AreEqual("hoge", e.Desc);
         }
 
         [TestMethod()]
@@ -70,26 +70,26 @@ namespace ytplayer.data.Tests {
             storage?.Dispose();
             storage = new Storage(":memory:");
             var table = storage.Context.GetTable<KVEntry>();
-            table.InsertOnSubmit(new KVEntry() { Name = "a", iValue = 123 });
+            table.InsertOnSubmit(new KVEntry("a", 123));
             storage.Context.SubmitChanges();
-            table.InsertOnSubmit(new KVEntry() { Name = "b", sValue = "xyz" });
+            table.InsertOnSubmit(new KVEntry("b", "xyz"));
             storage.Context.SubmitChanges();
-            table.InsertOnSubmit(new KVEntry() { Name = "c", iValue=999 });
+            table.InsertOnSubmit(new KVEntry("c", 999 ));
             storage.Context.SubmitChanges();
-            table.InsertOnSubmit(new KVEntry() { Name = "d", iValue = 888 });
+            table.InsertOnSubmit(new KVEntry("d", 888));
             storage.Context.SubmitChanges();
             Assert.AreEqual(4, table.Count());
 
             KVEntry entry;
-            entry = table.Single((e) => e.Name == "b");
+            entry = table.Single((e) => e.KEY == "b");
             //Assert.AreEqual(2, entry.id);
             Assert.AreEqual(0, entry.iValue);
             Assert.AreEqual("xyz", entry.sValue);
-            entry = table.Single((e) => e.Name == "c");
+            entry = table.Single((e) => e.KEY == "c");
             Assert.AreEqual(999, entry.iValue);
             Assert.IsNull(entry.sValue);
 
-            entry = table.Single((e) => e.Name == "d");
+            entry = table.Single((e) => e.KEY == "d");
             Assert.AreEqual(888, entry.iValue);
             Assert.IsNull(entry.sValue);
 
