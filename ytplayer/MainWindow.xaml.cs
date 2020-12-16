@@ -448,6 +448,7 @@ namespace ytplayer {
             if (msg.Length != 0) {
                 Dispatcher.Invoke(() => {
                     viewModel.OutputList.Add(new OutputMessage(msg, error));
+                    OutputListView.ScrollToTail();
                 });
             }
             return true;

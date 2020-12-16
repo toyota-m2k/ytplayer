@@ -115,10 +115,13 @@ namespace ytplayer.player {
 
         }
         private void OnCurrentChanged(IPlayable item) {
+            if (item != null) {
+                ViewModel.Volume.Value = item.Volume;
+            }
             Player.SetSource(item?.Path, true);
         }
 
-        public void Play() {
+            public void Play() {
             Player?.Play();
         }
         public void Pause() {

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace common
@@ -67,6 +68,13 @@ namespace common
         // ありそうでないメソッド
         public static bool IsEmpty(this String s) {
             return s.Length == 0;
+        }
+
+        public static void ScrollToTail(this ListView lv) {
+            int lastIndex = lv.Items.Count - 1;
+            if (lastIndex >= 0) {
+                lv.ScrollIntoView(lv.Items[lastIndex]);
+            }
         }
     }
 }
