@@ -300,8 +300,10 @@
                             <Setter.Value>
                                 <!-- ListViewのTagにセットしておいたWindow#DataContextを、ContextMenuのデータコンテキストにセットするセットしておく -->
                                 <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
-                                    <MenuItem Header="Reset &amp; Download" Command="{Binding ResetAndDownloadCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                                     <MenuItem Header="Delete &amp; Block" Command="{Binding DeleteAndBlockCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <MenuItem Header="Reset &amp; Download" Command="{Binding ResetAndDownloadCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <MenuItem Header="Category" Command="{Binding DeleteAndBlockCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <MenuItem Header="Extract Audio" Command="{Binding DeleteAndBlockCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                                 </ContextMenu>
                             </Setter.Value>
                         </Setter>

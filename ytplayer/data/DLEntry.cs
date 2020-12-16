@@ -131,6 +131,7 @@ namespace ytplayer.data {
         }
 
         public string Path => string.IsNullOrEmpty(VPath) ? APath : VPath;
+        public bool HasFile => (int)Media > 0;
         
         public void Delete() {
             Status = Status.DELETED;

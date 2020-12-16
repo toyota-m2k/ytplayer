@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Text;
 using System.Threading.Tasks;
 using ytplayer.data;
@@ -13,6 +14,7 @@ namespace ytplayer.player {
         string Name { get; }
         string Url { get; }
         Rating Rating { get; set; }
+        bool HasFile { get; }
         double Volume { get; set; }
         void Delete();
     }
@@ -25,7 +27,7 @@ namespace ytplayer.player {
 
     public class PlayList : IPlayList {
         private ReactiveProperty<List<IPlayable>> List { get; } = new ReactiveProperty<List<IPlayable>>();
-        private ReactiveProperty<int> CurrentIndex { get; } = new ReactiveProperty<int>(-1,ReactivePropertyMode.RaiseLatestValueOnSubscribe);
+        public ReactiveProperty<int> CurrentIndex { get; } = new ReactiveProperty<int>(-1,ReactivePropertyMode.RaiseLatestValueOnSubscribe);
         
         public ReadOnlyReactiveProperty<int> CurrentPos { get; }
         public ReadOnlyReactiveProperty<int> TotalCount { get; }
@@ -33,6 +35,8 @@ namespace ytplayer.player {
         public ReadOnlyReactiveProperty<IPlayable> Current { get; }
         public ReadOnlyReactiveProperty<bool> HasNext { get; }
         public ReadOnlyReactiveProperty<bool> HasPrev { get; }
+
+        public Subject<int> ListItemAdded = new Subject<int>();
 
         public PlayList() {
             CurrentPos = CurrentIndex.Select((v) => v + 1).ToReadOnlyReactiveProperty();
@@ -50,7 +54,7 @@ namespace ytplayer.player {
         }
 
         public void SetList(IEnumerable<IPlayable> s, IPlayable initialItem=null) {
-            List.Value = new List<IPlayable>(s);
+            List.Value = new List<IPlayable>(s.Where((e) => e.HasFile));
             if(List.Value.Count==0) {
                 CurrentIndex.Value = -1;
             } else if(initialItem!=null && List.Value.Contains(initialItem)) { 
@@ -68,6 +72,7 @@ namespace ytplayer.player {
             }
             List.Value.Add(item);
             CurrentIndex.Value = index;    // has next を更新するため
+            ListItemAdded.OnNext(List.Value.Count-1); // Endedのプレーヤーに再生を再開させるため
         }
 
         public bool Next() {

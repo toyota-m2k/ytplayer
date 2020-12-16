@@ -121,11 +121,13 @@ namespace ytplayer.player {
         }
 
         private void OnMediaEnded(object sender, RoutedEventArgs e) {
+            ViewModel.IsPlaying.Value = false;
             ViewModel.Ended.OnNext(true);
         }
 
         private void OnMediaFailed(object sender, ExceptionRoutedEventArgs e) {
             ViewModel.IsReady.Value = false;
+            ViewModel.IsPlaying.Value = false;
             ViewModel.Ended.OnNext(false);
         }
 
