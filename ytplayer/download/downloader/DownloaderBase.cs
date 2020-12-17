@@ -105,6 +105,7 @@ namespace ytplayer.download.downloader {
                 }
             }
             catch (Exception ex) {
+                Entry.Status = Status.FAILED;
                 Logger.error(ex);
             }
         }
