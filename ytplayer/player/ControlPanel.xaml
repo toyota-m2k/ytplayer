@@ -43,20 +43,25 @@
             <!-- 再生ボタンたち -->
             <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left">
                 <Button IsEnabled="{Binding IsReady.Value}"
+                        Focusable="False"
                         Visibility="{Binding IsPlaying.Value, Converter={StaticResource NegBoolVisibilityConverter}}"
                         Command="{Binding PlayCommand}"
                         Content="{StaticResource PathPlay}" Style="{StaticResource PushButtonStyle}"/>
                 <Button IsEnabled="{Binding IsReady.Value}" 
+                        Focusable="False"
                         Visibility="{Binding IsPlaying.Value, Converter={StaticResource BoolVisibilityConverter}}"
                         Command="{Binding PauseCommand}"
                         Content="{StaticResource PathPause}" Style="{StaticResource PushButtonStyle}"/>
                 <Button IsEnabled="{Binding PlayList.HasPrev.Value}" Margin="8,0,0,0"
+                        Focusable="False"
                         Command="{Binding GoBackCommand}"  
                         Content="{StaticResource PathPrev}" Style="{StaticResource PushButtonStyle}"/>
                 <Button IsEnabled="{Binding PlayList.HasNext.Value}"
+                        Focusable="False"
                         Command="{Binding GoForwardCommand}"  
                         Content="{StaticResource PathNext}" Style="{StaticResource PushButtonStyle}"/>
                 <Button IsEnabled="{Binding IsReady.Value}"
+                        Focusable="False"
                         Command="{Binding FitCommand}"  
                         Content="{StaticResource PathMaximize}" Style="{StaticResource PushButtonStyle}"/>
             </StackPanel>
@@ -100,67 +105,57 @@
             <TextBlock Grid.Row="1" Grid.Column="2" Text="Volume" Foreground="White" HorizontalAlignment="Center"/>
             <Slider  Grid.Row="0" Grid.Column="0" Minimum="0" Maximum="1" Value="{Binding Speed.Value, Mode=TwoWay}" SmallChange="0.1" LargeChange="0.1" VerticalAlignment="Center"/>
             <Slider  Grid.Row="0" Grid.Column="2" Minimum="0" Maximum="1" Value="{Binding Volume.Value, Mode=TwoWay}" SmallChange="0.1" LargeChange="0.1" VerticalAlignment="Center"/>
-            <Button Grid.Row="0" Grid.Column="1" Command="{Binding ResetSpeedCommand}" Content="{StaticResource PathResetSpeed}" Style="{StaticResource PushButtonStyle}"/>
-            <Button Grid.Row="0" Grid.Column="3" Command="{Binding ResetVolumeCommand}" Content="{StaticResource PathResetVolume}" Style="{StaticResource PushButtonStyle}"/>
+            <Button Grid.Row="0" Grid.Column="1" Command="{Binding ResetSpeedCommand}" Content="{StaticResource PathResetSpeed}" Style="{StaticResource PushButtonStyle}" Focusable="False"/>
+            <Button Grid.Row="0" Grid.Column="3" Command="{Binding ResetVolumeCommand}" Content="{StaticResource PathResetVolume}" Style="{StaticResource PushButtonStyle}" Focusable="False"/>
         </Grid>
         
         <!-- Rating / Category -->
         <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Center" Orientation="Horizontal">
             <RadioButton 
+                Focusable="False"
                 IsChecked="{Binding PlayList.Current.Value.Rating, 
-                Converter={StaticResource EnumBooleanConverter}, ConverterParameter=DREADFUL, Mode=TwoWay}"  
-                Content="{StaticResource PathDreadful}" 
+                    Converter={StaticResource EnumBooleanConverter}, ConverterParameter=DREADFUL, Mode=TwoWay}"  
+                    Content="{StaticResource PathDreadful}" 
                 Style="{StaticResource IconRadioButton}" GroupName="Rating">
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 <ToolTipService.ToolTip>
                     <ToolTip Content="Rating: Dreadful"/>
                 </ToolTipService.ToolTip>
             </RadioButton>
             <RadioButton 
+                Focusable="False"
                 IsChecked="{Binding PlayList.Current.Value.Rating, 
-                Converter={StaticResource EnumBooleanConverter}, ConverterParameter=BAD, Mode=TwoWay}"  
-                Content="{StaticResource PathBad}" 
+                    Converter={StaticResource EnumBooleanConverter}, ConverterParameter=BAD, Mode=TwoWay}"  
+                    Content="{StaticResource PathBad}" 
                 Style="{StaticResource IconRadioButton}" GroupName="Rating">
                 <ToolTipService.ToolTip>
                     <ToolTip Content="Rating: Bad"/>
                 </ToolTipService.ToolTip>
             </RadioButton>
             <RadioButton 
+                Focusable="False"
                 IsChecked="{Binding PlayList.Current.Value.Rating, 
-                Converter={StaticResource EnumBooleanConverter}, ConverterParameter=NORMAL, Mode=TwoWay}"  
-                Content="{StaticResource PathNormal}" 
+                    Converter={StaticResource EnumBooleanConverter}, ConverterParameter=NORMAL, Mode=TwoWay}"  
+                    Content="{StaticResource PathNormal}" 
                 Style="{StaticResource IconRadioButton}" GroupName="Rating">
                 <ToolTipService.ToolTip>
                     <ToolTip Content="Rating: Normal"/>
                 </ToolTipService.ToolTip>
             </RadioButton>
             <RadioButton 
+                Focusable="False"
                 IsChecked="{Binding PlayList.Current.Value.Rating, 
-                Converter={StaticResource EnumBooleanConverter}, ConverterParameter=GOOD, Mode=TwoWay}"  
-                Content="{StaticResource PathGood}" 
+                    Converter={StaticResource EnumBooleanConverter}, ConverterParameter=GOOD, Mode=TwoWay}"  
+                    Content="{StaticResource PathGood}" 
                 Style="{StaticResource IconRadioButton}" GroupName="Rating">
                 <ToolTipService.ToolTip>
                     <ToolTip Content="Rating: Good"/>
                 </ToolTipService.ToolTip>
             </RadioButton>
             <RadioButton 
+                Focusable="False"
                 IsChecked="{Binding PlayList.Current.Value.Rating, 
-                Converter={StaticResource EnumBooleanConverter}, ConverterParameter=EXCELLENT, Mode=TwoWay}"  
-                Content="{StaticResource PathExcellent}" 
+                    Converter={StaticResource EnumBooleanConverter}, ConverterParameter=EXCELLENT, Mode=TwoWay}"  
+                    Content="{StaticResource PathExcellent}" 
                 Style="{StaticResource IconRadioButton}" GroupName="Rating">
                 <ToolTipService.ToolTip>
                     <ToolTip Content="Rating: Excellent"/>
@@ -168,6 +163,7 @@
             </RadioButton>
             <!-- Category -->
             <ComboBox 
+                Focusable="False"
                 MinWidth="150" Margin="10,2" ItemsSource="{Binding Categories}"
                 SelectedItem="{Binding PlayList.Current.Value.Category, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
@@ -183,8 +179,6 @@
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
-
         </StackPanel>
-
     </Grid>
 </UserControl>

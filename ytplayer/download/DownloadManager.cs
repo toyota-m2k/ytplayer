@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using ytplayer.data;
+using ytplayer.download.processor;
 
 namespace ytplayer.download {
     public interface IDownloadHost {
@@ -14,16 +16,8 @@ namespace ytplayer.download {
     public class DownloadManager {
         public Storage Storage { get; private set; }
 
-        private class DLTarget {
-            public DLEntry Entry;
-            //public MediaFlag Media;
-            public DLTarget(DLEntry entry, MediaFlag media) {
-                Entry = entry;
-                //Media = media;
-            }
-        }
-        private Queue<DLTarget> Queue = new Queue<DLTarget>();
-        private DLTarget Current = null;
+        private Queue<DLEntry> Queue = new Queue<DLEntry>();
+        private DLEntry Current = null;
         private AutoResetEvent QueueingEvent = new AutoResetEvent(false);
         private bool Alive = true;
         private TaskCompletionSource<object> TerminationSource = new TaskCompletionSource<object>();
@@ -67,19 +61,19 @@ namespace ytplayer.download {
         }
         public event Action<bool> BusyChanged;
 
-        public void Enqueue(DLEntry target, MediaFlag media) {
+        public void Enqueue(DLEntry entry) {
             lock(this) {
-                SetStatus(target, Status.WAITING);
-                Queue.Enqueue(new DLTarget(target, media));
+                SetStatus(entry, Status.WAITING);
+                Queue.Enqueue(entry);
                 QueueingEvent.Set();
             }
             BusyChanged?.Invoke(IsBusy);
         }
-        public void Enqueue(IEnumerable<DLEntry> targets, MediaFlag media) {
+        public void Enqueue(IEnumerable<DLEntry> entries) {
             lock (this) {
-                foreach(var e in targets) {
+                foreach(var e in entries) {
                     SetStatus(e, Status.WAITING);
-                    Queue.Enqueue(new DLTarget(e, media));
+                    Queue.Enqueue(e);
                 }
                 QueueingEvent.Set();
             }
@@ -91,8 +85,8 @@ namespace ytplayer.download {
             lock (this) {
                 while (Queue.Count > 0) {
                     var e = Queue.Dequeue();
-                    if (e.Entry.Status != Status.DOWNLOADED) {
-                        if(SetStatus(e.Entry, Status.CANCELLED, false)) {
+                    if (e.Status != Status.DOWNLOADED) {
+                        if(SetStatus(e, Status.CANCELLED, false)) {
                             update = true;
                         }
                     }
@@ -115,19 +109,19 @@ namespace ytplayer.download {
             return false;
         }
 
-        private DLTarget Dequeue() {
+        private DLEntry Dequeue() {
             bool update = false;
             lock (this) {
                 Current = null;
                 while (Queue.Count > 0) {
                     var e = Queue.Dequeue();
-                    if(e.Entry.Status!=Status.CANCELLED) {
+                    if(e.Status!=Status.CANCELLED) {
                         if (Alive) {
-                            SetStatus(e.Entry, Status.DOWNLOADING);
+                            SetStatus(e, Status.DOWNLOADING);
                             Current = e;
                             return e;
                         }
-                        SetStatus(e.Entry, Status.CANCELLED, update:false);
+                        SetStatus(e, Status.CANCELLED, update:false);
                         update = true;
                     }
                 }
@@ -147,17 +141,20 @@ namespace ytplayer.download {
             if(null==e) {
                 return false;
             }
-            var dl = CreateDownloader(e);
-            dl.Download();
+            Download(e);
             return true;
         }
 
-        private Downloader CreateDownloader(DLTarget e) {
-            if(Settings.Instance.UseWSL) {
-                return new WslDownloader(e.Entry, Host, Storage);
-            } else {
-                return new Downloader(e.Entry, Host, Storage);
-            }
+        private void Download(DLEntry entry) {
+            var uri = new Uri(entry.Url);
+            var processor = ProcessorSelector.Select(uri);
+
+            string orgPath = Environment.CurrentDirectory;
+            Environment.CurrentDirectory = Settings.Instance.EnsureVideoPath;
+            processor.Download(entry, Host);
+            Environment.CurrentDirectory = orgPath;
+            Storage.DLTable.Update();
         }
+
     }
 }

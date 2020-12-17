@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using ytplayer.common;
 using ytplayer.data;
-
+#if false
 namespace ytplayer.download {
     public class Downloader {
         protected IDownloadHost Host { get; }
@@ -106,3 +106,4 @@ namespace ytplayer.download {
         }
     }
 }
+#endif

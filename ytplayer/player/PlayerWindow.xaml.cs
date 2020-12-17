@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows;
 
 namespace ytplayer.player {
@@ -25,6 +26,25 @@ namespace ytplayer.player {
         //}
 
         public IPlayList PlayList => Player.ControlPanel.PlayList;
+
+        public (IPlayable entry, double position) CurrentPlayingInfo {
+            get {
+                var entry = PlayList.Current.Value;
+                double position = 0;
+                var player = Player as IPlayer;
+                if(player.ViewModel.IsPlaying.Value) {
+                    position = player.SeekPosition;
+                }
+                return (entry, position);
+            }
+        }
+
+        public void ResumePlay(IEnumerable<IPlayable> list, IPlayable entry, double pos) {
+            if (entry != null) {
+                PlayList.SetList(list, entry);
+                Player.ReserveSeekPosition(pos);
+            }
+        }
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
             Player.Initialize();

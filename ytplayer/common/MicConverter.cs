@@ -181,6 +181,20 @@ namespace common {
         }
     }
 
+    public class EmptyStringToVisibilityConverter : IValueConverter {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
+            if (string.IsNullOrEmpty(value as string)) {
+                return Visibility.Visible;
+            } else {
+                return Visibility.Collapsed;
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
+            throw new NotImplementedException();
+        }
+    }
+
     //public class AspectStringConverter : IValueConverter {
     //    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
     //        switch (System.Convert.ToInt32(value)) {

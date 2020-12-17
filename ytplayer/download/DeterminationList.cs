@@ -11,7 +11,7 @@ namespace ytplayer.download {
             ACCEPT,
             REJECT,
         }
-        public HashSet<string> AcceptSet { get; } = new HashSet<string>() { "www.youtube.com", "i.ytimg.com",};
+        public HashSet<string> AcceptSet { get; } = new HashSet<string>() { "www.youtube.com",};
         public HashSet<string> RejectSet { get; } = new HashSet<string>();
 
         public Determination Query(string host) {

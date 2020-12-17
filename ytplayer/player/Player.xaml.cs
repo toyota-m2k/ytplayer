@@ -112,11 +112,24 @@ namespace ytplayer.player {
             }
         }
 
+        private double ReservePosition = 0;
+        public void ReserveSeekPosition(double pos) {
+            if(ViewModel.IsReady.Value) {
+                MediaPlayer.Position = TimeSpan.FromMilliseconds(pos);
+            } else {
+                ReservePosition = pos;
+            }
+        }
+
         private void OnMediaOpened(object sender, RoutedEventArgs e) {
             ViewModel.IsReady.Value = true;
             ViewModel.Duration.Value = MediaPlayer.NaturalDuration.TimeSpan.TotalMilliseconds;
             if(starting) {
                 Play();
+                if(ReservePosition>0 && ReservePosition<ViewModel.Duration.Value) {
+                    MediaPlayer.Position = TimeSpan.FromMilliseconds(ReservePosition);
+                    ReservePosition = 0;
+                }
             }
         }
 

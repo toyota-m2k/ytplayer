@@ -76,5 +76,9 @@ namespace common
                 lv.ScrollIntoView(lv.Items[lastIndex]);
             }
         }
+
+        public static bool ContainsIgnoreCase(this string s, string partialText) {
+            return s.IndexOf(partialText, StringComparison.CurrentCultureIgnoreCase) >= 0;
+        }
     }
 }

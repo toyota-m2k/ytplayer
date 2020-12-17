@@ -39,8 +39,9 @@ namespace ytplayer {
         public ReactiveProperty<ObservableCollection<DLEntry>> MainList { get; } = new ReactiveProperty<ObservableCollection<DLEntry>>(new ObservableCollection<DLEntry>());
         public ReactivePropertySlim<bool> AutoDownload { get; } = new ReactivePropertySlim<bool>(true);
         public ReactivePropertySlim<bool> AutoPlay { get; } = new ReactivePropertySlim<bool>(true);
-        public ReactivePropertySlim<bool> OnlySound { get; } = new ReactivePropertySlim<bool>(false);
+        //public ReactivePropertySlim<bool> OnlySound { get; } = new ReactivePropertySlim<bool>(false);
         public ReactivePropertySlim<bool> IsBusy { get; } = new ReactivePropertySlim<bool>(false);
+        public ReactivePropertySlim<bool> ShowFilterEditor { get; } = new ReactivePropertySlim<bool>(false);
         //public ReactivePropertySlim<bool> IsSettingNow { get; } = new ReactivePropertySlim<bool>(false);
         public ReactivePropertySlim<bool> ClipboardWatching { get; } = new ReactivePropertySlim<bool>(false);
         public ReactivePropertySlim<string> StatusString { get; } = new ReactivePropertySlim<string>();
@@ -48,14 +49,27 @@ namespace ytplayer {
         public ObservableCollection<Category> Categories => new ObservableCollection<Category>(Settings.Instance.Categories.FilterList);
         public ReactivePropertySlim<Category> CurrentCategory { get; } = new ReactivePropertySlim<Category>(Settings.Instance.Categories.All);
         public RatingFilter RatingFilter { get; } = new RatingFilter();
+        public ObservableCollection<string> SearchHistory => Settings.Instance.SearchHistories.History;
+        public ReactivePropertySlim<string> SearchText { get; } = new ReactivePropertySlim<string>();
 
         public bool BusyWithModal = false;
 
-        public ReactiveCommand CommandDownloadNow { get; } = new ReactiveCommand();
+        //public ReactiveCommand CommandDownloadNow { get; } = new ReactiveCommand();
         public ReactiveCommand CommandSettings { get; } = new ReactiveCommand();
         public ReactiveCommand CommandClearOutput { get; } = new ReactiveCommand();
         public ReactiveCommand CommandFoldOutput { get; } = new ReactiveCommand();
         public ReactiveCommand CommandPlay { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandSearch { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandClearSearchText { get; } = new ReactiveCommand();
+
+        // Context Menu
+        public ReactiveCommand OpenInWebBrowserCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand DeleteAndBlockCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand ResetAndDownloadCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand CategoryRatingCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand ExtractAudioCommand { get; } = new ReactiveCommand();
+
+
 
         // Dialog
         private TaskCompletionSource<bool> DialogTask { get; set; } = null;
@@ -92,9 +106,6 @@ namespace ytplayer {
         }
 
         public MainViewModel() {
-            //CommandAutoDownload.Subscribe(() => {
-            //    AutoDownload.Value = !AutoDownload.Value;
-            //});
             CommandCancel.Subscribe(() => {
                 DialogTask.TrySetResult(false);
                 DialogActivated.Value = false;
@@ -107,6 +118,7 @@ namespace ytplayer {
                 DialogTask = null;
                 BusyWithModal = false;
             });
+            CommandClearSearchText.Subscribe(() => SearchText.Value = "");
         }
     }
 
@@ -139,10 +151,10 @@ namespace ytplayer {
                 }
             });
 
-            viewModel.CommandDownloadNow.Subscribe(() => {
-                var targets = MainListView.SelectedItems.ToEnumerable<DLEntry>();
-                mDownloadManager.Enqueue(targets, viewModel.OnlySound.Value ? MediaFlag.AUDIO : MediaFlag.VIDEO);
-            });
+            //viewModel.CommandDownloadNow.Subscribe(() => {
+            //    var targets = MainListView.SelectedItems.ToEnumerable<DLEntry>();
+            //    mDownloadManager.Enqueue(targets);
+            //});
             viewModel.CommandClearOutput.Subscribe(() => {
                 viewModel.OutputList.Clear();
             });
@@ -154,6 +166,14 @@ namespace ytplayer {
                 RefreshList();
             });
             viewModel.RatingFilter.FilterChanged += RefreshList;
+            viewModel.SearchText.Subscribe((s) => {
+                RefreshList();
+            });
+            viewModel.AutoDownload.Subscribe((v) => {
+                if (!v||Storage==null) return;
+                var targets = Storage.DLTable.List.Where((e) => e.Status == Status.REGISTERED || e.Status == Status.CANCELLED);
+                mDownloadManager.Enqueue(targets);
+            });
             InitializeComponent();
         }
 
@@ -209,10 +229,13 @@ namespace ytplayer {
         private void RefreshList() {
             if (Storage == null) return;
             viewModel.MainList.Value = new ObservableCollection<DLEntry>(Storage.DLTable.List
-                .FilterByRating(viewModel.RatingFilter).FilterByCategory(viewModel.CurrentCategory.Value));
+                .FilterByRating(viewModel.RatingFilter)
+                .FilterByCategory(viewModel.CurrentCategory.Value)
+                .FilterByName(viewModel.SearchText.Value)
+                );
         }
 
-        private async void RegisterUrl(string url) {
+        private async void RegisterUrl(string url, bool silent=false) {
             url = url.Trim();
             if(!url.StartsWith("https://")&&!url.StartsWith("http://")) {
                 return;
@@ -227,17 +250,19 @@ namespace ytplayer {
                 return;
             }
             if(det==DeterminationList.Determination.UNKNOWN) {
+                if(silent) {
+                    return;
+                }
                 var r = await viewModel.ShowDeterminationDialog(uri.Host);
                 Settings.Instance.Determinations.Determine(uri.Host, r);
                 if(!r) {
                     return;
                 }
             }
-
             var target = DLEntry.Create(url);
             if (Storage.DLTable.Add(target)) {
                 if (viewModel.AutoDownload.Value) {
-                    mDownloadManager.Enqueue(target, viewModel.OnlySound.Value ? MediaFlag.AUDIO : MediaFlag.VIDEO);
+                    mDownloadManager.Enqueue(target);
                 }
             }
         }
@@ -261,9 +286,20 @@ namespace ytplayer {
             Storage.DLTable.Update();
             mClipboardMonitor.Dispose();
             if (mPlayerWindow != null) {
+                var (cur, pos) = mPlayerWindow.CurrentPlayingInfo;
+                Settings.Instance.LastPlayingUrl = cur.Url;
+                Settings.Instance.LastPlayingPos = pos;
                 mPlayerWindow.Close();
                 mPlayerWindow = null;
+            } else {
+                Settings.Instance.LastPlayingUrl = (MainListView.SelectedItem as DLEntry)?.Url;
+                Settings.Instance.LastPlayingPos = 0;
             }
+            mDownloadManager.Dispose();
+            while(mDownloadManager.IsBusy) {
+                MessageBox.Show("ダウンロード中のため終了できません。", "ytplayer", MessageBoxButton.OK);
+            }
+            mDownloadManager = null;
             Settings.Instance.Ratings = viewModel.RatingFilter.ToArray();
             Settings.Instance.Placement.GetPlacementFrom(this);
             Settings.Instance.Serialize();
@@ -309,53 +345,12 @@ namespace ytplayer {
         //    //Output.ScrollToEnd();
         //}
 
-        private async void Button_Click(object sender, RoutedEventArgs e) {
-
-            var psi = new ProcessStartInfo() {
-                FileName = "youtube-dl",
-                Arguments = "--help",
-                CreateNoWindow = true,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                //RedirectStandardError = true,
-                // RedirectStandardInput = true,
-            };
-            //psi.EnvironmentVariables["Path"] = path;
-            var process = Process.Start(psi);
-            var s = process.StandardOutput.ReadToEnd();
-            Debug.WriteLine(s);
-            //Output.Text += s;
-
-            if(!process.HasExited) {
-                await Task.Run(async () => {
-                    while (!process.HasExited) {
-                        await Task.Delay(10);
-                    }
-                });
-            }
-            //Output.Text += $"Done:{process.ExitCode}";
-        }
-
         private void Window_PreviewDragOver(object sender, DragEventArgs e) {
             e.Effects = DragDropEffects.Copy;
         }
 
         private void Window_Drop(object sender, DragEventArgs e) {
             RegisterUrl(e.Data.GetData(DataFormats.Text) as string);
-
-            //download(e.Data.GetData(DataFormats.Text) as string);
-
-            
-            
-            //var fmts = e.Data.GetFormats();
-            //foreach(var f in fmts) {
-            //    try {
-            //        var o = e.Data.GetData(f);
-            //        Debug.WriteLine($"{f}: {o.ToString()}");
-            //    } catch(Exception ex) {
-            //        Debug.WriteLine($"{f}: error.");
-            //    }
-            //}
         }
 
         private void InitStorage(bool forceCreate=false) {
@@ -392,6 +387,7 @@ namespace ytplayer {
                 mDownloadManager = new DownloadManager(this, newStorage);
                 mDownloadManager.BusyChanged += OnBusyStateChanged;
                 viewModel.IsBusy.Value = false;
+                viewModel.AutoDownload.ForceNotify();
                 newStorage.DLTable.AddEvent += OnDLEntryAdd;
                 newStorage.DLTable.DelEvent += OnDLEntryDel;
                 RefreshList();
@@ -421,6 +417,19 @@ namespace ytplayer {
             InitStorage();
             mClipboardMonitor = new ClipboardMonitor(this, true);
             mClipboardMonitor.ClipboardUpdate += OnClipboardUpdated;
+            var lastUrl = Settings.Instance.LastPlayingUrl;
+            if (!string.IsNullOrEmpty(lastUrl)) {
+                var entry = viewModel.MainList.Value.Where((c) => c.KEY == lastUrl).FirstOrDefault();
+                if(entry!=null) {
+                    MainListView.SelectedItem = entry;
+                    MainListView.ScrollIntoView(entry);
+                    var pos = Settings.Instance.LastPlayingPos;
+                    if (pos > 0) {
+                        var win = GetPlayer();
+                        win.ResumePlay(viewModel.MainList.Value, entry, pos);
+                    }
+                }
+            }
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) {
@@ -439,7 +448,7 @@ namespace ytplayer {
         }
 
         private void OnListItemDoubleClick(object sender, MouseButtonEventArgs e) {
-
+            viewModel.CommandPlay.Execute();
         }
 
         private bool Output(string msg, bool error) {
@@ -480,6 +489,10 @@ namespace ytplayer {
                 }
             });
         }
+
+        private void OnSearchBoxLostFocus(object sender, RoutedEventArgs e) {
+            Settings.Instance.SearchHistories.Put(viewModel.SearchText.Value);
+        }
     }
 
     static class FilterExt {
@@ -488,6 +501,10 @@ namespace ytplayer {
         }
         public static IEnumerable<DLEntry> FilterByCategory(this IEnumerable<DLEntry> s, Category c) {
             return c.Filter(s);
+        }
+        public static IEnumerable<DLEntry> FilterByName(this IEnumerable<DLEntry> s, string search) {
+            search = search?.Trim();
+            return string.IsNullOrEmpty(search) ? s : s.Where((e) => e.Name?.ContainsIgnoreCase(search) ?? false);
         }
     }
 }

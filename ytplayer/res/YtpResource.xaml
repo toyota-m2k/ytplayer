@@ -12,6 +12,7 @@
     <common:NegEnumVisibilityConverter x:Key="NegEnumVisibilityConverter"/>
     <common:DateStringConverter x:Key="DateStringConverter"/>
     <common:DecimalStringConverter x:Key="DecimalStringConverter"/>
+    <common:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter"/>
     <local:MediaFlagToVisibilityConverter x:Key="MediaFlagToVisibilityConverter"/>
 
     <!-- Colors -->
