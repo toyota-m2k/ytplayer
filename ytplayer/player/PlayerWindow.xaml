@@ -6,6 +6,9 @@
         xmlns:local="clr-namespace:ytplayer.player"
         Loaded="OnLoaded"
         Unloaded="OnUnloaded"
+        AllowDrop="True"
+        Drop="Window_Drop"
+        PreviewDragOver="Window_PreviewDragOver"
         mc:Ignorable="d"
         Title="PlayerWindow" Height="450" Width="800">
     <Grid>

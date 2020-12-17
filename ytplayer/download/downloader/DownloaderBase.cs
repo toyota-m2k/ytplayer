@@ -5,7 +5,7 @@ using System.Diagnostics;
 using ytplayer.common;
 using ytplayer.data;
 
-namespace ytplayer.download.processor {
+namespace ytplayer.download.downloader {
     /**
      * プロセッサが返すダウンロードアイテム情報を保持するクラス
      */
@@ -23,7 +23,7 @@ namespace ytplayer.download.processor {
     /**
      * Processor の共通実装
      */
-    public abstract class ProcessorBase : IProcessor {
+    public abstract class DownloaderBase : IDownloader {
         /**
          * ダウンロード結果を保持するリスト
          */
@@ -40,13 +40,18 @@ namespace ytplayer.download.processor {
          */
         public int Progress { get; protected set; } = 0;
 
-        protected ProcessorBase() {
+        protected DLEntry Entry { get; }
+        protected IDownloadHost Host { get; }
+
+        protected DownloaderBase(DLEntry entry, IDownloadHost host) {
+            Entry = entry;
+            Host = host;
         }
 
-        protected ProcessStartInfo Prepare(DLEntry entry) {
+        protected ProcessStartInfo Prepare() {
             return new ProcessStartInfo() {
                 FileName = "youtube-dl",
-                Arguments = $"{SpecialArguments} { entry.Url }",
+                Arguments = $"{SpecialArguments} { Entry.Url }",
                 CreateNoWindow = true,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
@@ -55,41 +60,46 @@ namespace ytplayer.download.processor {
         }
 
 
-        public void Download(DLEntry entry, IDownloadHost host) {
+        public void Execute() {
+            if(Entry.Status==Status.CANCELLED) {
+                return;
+            }
+            Entry.Status = Status.DOWNLOADING;
+
             Progress = 0;
             Results.Clear();
 
             try {
-                var psi = Prepare(entry);
+                var psi = Prepare();
                 var process = Process.Start(psi);
                 while (true) {
                     var response = process.StandardOutput.ReadLine();
-                    if (!ProcessResponse(response, host)) {
+                    if (!ProcessResponse(response)) {
                         break;
                     }
                 }
                 var error = process.StandardError.ReadToEnd();
                 if (!string.IsNullOrEmpty(error)) {
-                    host.ErrorOutput(error);
-                    entry.Status = Status.FAILED;
+                    Host.ErrorOutput(error);
+                    Entry.Status = Status.FAILED;
                     return;
                 }
 
                 if (Results.Count == 0) {
-                    host.ErrorOutput("no data");
-                    entry.Status = Status.FAILED;
+                    Host.ErrorOutput("no data");
+                    Entry.Status = Status.FAILED;
                     return;
                 }
-                bool result = ValidateAndGetResult(Results[0], entry);
-                host.Completed(entry, result);
+                bool result = ValidateAndGetResult(Results[0], Entry);
+                Host.Completed(Entry, result);
 
                 if (Results.Count > 1) {
                     // リストだった場合
-                    var baseUri = new Uri(entry.Url);
+                    var baseUri = new Uri(Entry.Url);
                     for (int i = 1; i < Results.Count; i++) {
                         var subEntry = DLEntry.Create(NormalizeSubUrlForKey(baseUri, i, Results[i].Id));
                         if (ValidateAndGetResult(Results[i], subEntry)) {
-                            host.FoundSubItem(subEntry);
+                            Host.FoundSubItem(subEntry);
                         }
                     }
                 }
@@ -99,11 +109,17 @@ namespace ytplayer.download.processor {
             }
         }
 
+        public void Cancel() {
+            if(Entry.Status==Status.WAITING) {
+                Entry.Status = Status.CANCELLED;
+            }
+        }
+
         /**
          * @param res: youtube-dlからのレスポンス（１行分）
          * @return true: go ahead / false: reached to EOS
          */
-        public bool ProcessResponse(string res, IDownloadHost host) {
+        public bool ProcessResponse(string res) {
             if (res == null) {
                 return false;
             }
@@ -112,13 +128,13 @@ namespace ytplayer.download.processor {
                 Logger.debug(res);
                 do {
                     if (TryParseName(res)) {
-                        host.StandardOutput(res);
+                        Host.StandardOutput(res);
                         break;
                     }
                     if (TryParseProgress(res)) {
                         break;
                     }
-                    host.StandardOutput(res);
+                    Host.StandardOutput(res);
                 } while (false);
             }
             return true;
@@ -148,7 +164,6 @@ namespace ytplayer.download.processor {
         protected abstract bool TryParseName(string res);
         protected abstract bool TryParseProgress(string res);
 
-        public abstract bool IsAcceptableUrl(Uri uri);
         public abstract string GetIDStringFromURL(Uri uri);
         public abstract string NormalizeUrlForKey(Uri uri);
         public abstract string NormalizeSubUrlForKey(Uri uri, int index, string id);

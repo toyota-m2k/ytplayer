@@ -26,12 +26,15 @@ namespace ytplayer.player {
         [Disposal(disposable: false)]
         public IReactiveProperty<double> Volume { get; }
 
+        public ReactiveProperty<bool> FitMode { get; } = new ReactiveProperty<bool>();
+        public ReactiveProperty<bool> MaximumWindow { get; } = new ReactiveProperty<bool>();
+
         public ReactiveCommand PlayCommand { get; } = new ReactiveCommand();
         public ReactiveCommand PauseCommand { get; } = new ReactiveCommand();
         public ReactiveCommand GoBackCommand { get; } = new ReactiveCommand();
         public ReactiveCommand GoForwardCommand { get; } = new ReactiveCommand();
         public ReactiveCommand TrashCommand { get; } = new ReactiveCommand();
-        public ReactiveCommand FitCommand { get; } = new ReactiveCommand();
+        //public ReactiveCommand FitCommand { get; } = new ReactiveCommand();
 
         public ReactiveCommand ResetSpeedCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ResetVolumeCommand { get; } = new ReactiveCommand();
@@ -105,14 +108,17 @@ namespace ytplayer.player {
             ViewModel.GoForwardCommand.Subscribe(Next);
             ViewModel.GoBackCommand.Subscribe(Prev);
             ViewModel.TrashCommand.Subscribe(Trash);
-            ViewModel.FitCommand.Subscribe(FitView);
+            //ViewModel.FitCommand.Subscribe(FitView);
             ViewModel.PlayList.Current.Subscribe(OnCurrentChanged);
             ViewModel.PlayList.ListItemAdded.Subscribe((v) => {
                 if(!ViewModel.IsPlaying.Value) {
                     ViewModel.PlayList.CurrentIndex.Value = v;
                 }
             });
-
+            ViewModel.FitMode.Value = player.Stretch == Stretch.UniformToFill;
+            ViewModel.FitMode.Subscribe(FitView);
+            ViewModel.MaximumWindow.Value = Window.GetWindow(this).WindowStyle == WindowStyle.None;
+            ViewModel.MaximumWindow.Subscribe(MaximizeWindow);
         }
         private void OnCurrentChanged(IPlayable item) {
             if (item != null) {
@@ -121,7 +127,7 @@ namespace ytplayer.player {
             Player.SetSource(item?.Path, true);
         }
 
-            public void Play() {
+        public void Play() {
             Player?.Play();
         }
         public void Pause() {
@@ -139,8 +145,18 @@ namespace ytplayer.player {
             ViewModel.PlayList.Current.Value.Delete();
             Next();
         }
-        public void FitView() {
-            Player?.Apply((player) => player.Stretch = (player.Stretch == Stretch.UniformToFill) ? Stretch.Uniform : Stretch.UniformToFill);
+        public void FitView(bool mode) {
+            Player?.Apply((player) => player.Stretch = mode ? Stretch.UniformToFill : Stretch.Uniform);
+        }
+        public void MaximizeWindow(bool max) {
+            var win = Window.GetWindow(this);
+            if (max) {
+                win.WindowStyle = WindowStyle.None;         // タイトルバーと境界線を表示しない
+                win.WindowState = WindowState.Maximized;    // 最大化表示
+            } else {
+                win.WindowStyle = WindowStyle.SingleBorderWindow;
+                win.WindowState = WindowState.Normal;
+            }
         }
         private void OnUnloaded(object sender, RoutedEventArgs e) {
             ViewModel.Dispose();

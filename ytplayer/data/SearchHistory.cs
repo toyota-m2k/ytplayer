@@ -13,8 +13,12 @@ namespace ytplayer.data {
         public void Put(string value) {
             value = value?.Trim();
             if (string.IsNullOrEmpty(value)) return;
-            History.Remove(value);
-            History.Insert(0, value);
+            int i = History.IndexOf(value);
+            if (i < 0) {
+                History.Insert(0, value);
+            } else if(i!=0) {
+                History.Move(i, 0);
+            }
         }
 
         //public List<string> List {

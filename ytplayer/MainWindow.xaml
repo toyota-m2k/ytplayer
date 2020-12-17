@@ -175,7 +175,8 @@
                 <Grid>
                     <ComboBox 
                         Grid.Column="1" FontSize="14" x:Name="urlInput" VerticalContentAlignment="Center" 
-                        IsEditable="True" Text="{Binding SearchText.Value}" ItemsSource="{Binding SearchHistory}"
+                        IsEditable="True" Text="{Binding SearchText.Value, Mode=TwoWay}" 
+                        ItemsSource="{Binding SearchHistory}"
                         MinWidth="150" Margin="0,2" LostFocus="OnSearchBoxLostFocus"
                         >
                     </ComboBox>

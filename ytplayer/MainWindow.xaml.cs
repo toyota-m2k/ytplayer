@@ -69,8 +69,6 @@ namespace ytplayer {
         public ReactiveCommand CategoryRatingCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ExtractAudioCommand { get; } = new ReactiveCommand();
 
-
-
         // Dialog
         private TaskCompletionSource<bool> DialogTask { get; set; } = null;
         public ReactivePropertySlim<bool> DialogActivated { get; } = new ReactivePropertySlim<bool>(false);
@@ -131,6 +129,12 @@ namespace ytplayer {
         private ClipboardMonitor mClipboardMonitor = null;
         private Storage Storage => mDownloadManager?.Storage;
 
+        private static WeakReference<MainWindow> sInstance = null;
+        public static MainWindow Instance {
+            get => sInstance?.GetValue();
+            private set => sInstance = new WeakReference<MainWindow>(value);
+        }
+
         public MainWindow() {
             viewModel = new MainViewModel();
             viewModel.CommandSettings.Subscribe(() => {
@@ -174,7 +178,18 @@ namespace ytplayer {
                 var targets = Storage.DLTable.List.Where((e) => e.Status == Status.REGISTERED || e.Status == Status.CANCELLED);
                 mDownloadManager.Enqueue(targets);
             });
+
+            viewModel.OpenInWebBrowserCommand.Subscribe(OpenInWebBrower);
+
             InitializeComponent();
+        }
+
+        private DLEntry SelectedEntry => MainListView.SelectedItem as DLEntry;
+        private void OpenInWebBrower() {
+            var url = SelectedEntry?.Url;
+            if (url != null) {
+                Process.Start(url);
+            }
         }
 
         private PlayerWindow mPlayerWindow = null;
@@ -235,7 +250,7 @@ namespace ytplayer {
                 );
         }
 
-        private async void RegisterUrl(string url, bool silent=false) {
+        public async void RegisterUrl(string url, bool silent=false) {
             url = url.Trim();
             if(!url.StartsWith("https://")&&!url.StartsWith("http://")) {
                 return;
@@ -295,6 +310,7 @@ namespace ytplayer {
                 Settings.Instance.LastPlayingUrl = (MainListView.SelectedItem as DLEntry)?.Url;
                 Settings.Instance.LastPlayingPos = 0;
             }
+            Instance = null;
             mDownloadManager.Dispose();
             while(mDownloadManager.IsBusy) {
                 MessageBox.Show("ダウンロード中のため終了できません。", "ytplayer", MessageBoxButton.OK);
@@ -414,6 +430,7 @@ namespace ytplayer {
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
+            Instance = this;
             InitStorage();
             mClipboardMonitor = new ClipboardMonitor(this, true);
             mClipboardMonitor.ClipboardUpdate += OnClipboardUpdated;

@@ -99,6 +99,7 @@ namespace ytplayer.player {
 
         public void Pause() {
             if(ViewModel.IsPlaying.Value) {
+                ViewModel.IsPlaying.Value = false;
                 MediaPlayer.Pause();
             }
         }

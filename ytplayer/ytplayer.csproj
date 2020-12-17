@@ -140,14 +140,13 @@
     <Compile Include="data\SearchHistory.cs" />
     <Compile Include="data\Storage.cs" />
     <Compile Include="download\DeterminationList.cs" />
-    <Compile Include="download\IDownloader.cs" />
     <Compile Include="download\Downloader.cs" />
     <Compile Include="download\DownloadManager.cs" />
-    <Compile Include="download\processor\impl\CommonProcessor.cs" />
-    <Compile Include="download\processor\IProcessor.cs" />
-    <Compile Include="download\processor\ProcessorBase.cs" />
-    <Compile Include="download\processor\ProcessorSelector.cs" />
-    <Compile Include="download\processor\impl\YoutubeProcessor.cs" />
+    <Compile Include="download\downloader\impl\CommonDownloader.cs" />
+    <Compile Include="download\downloader\IDownloader.cs" />
+    <Compile Include="download\downloader\DownloaderBase.cs" />
+    <Compile Include="download\downloader\DownloaderSelector.cs" />
+    <Compile Include="download\downloader\impl\YoutubeDownloader.cs" />
     <Compile Include="player\ControlPanel.xaml.cs">
       <DependentUpon>ControlPanel.xaml</DependentUpon>
     </Compile>

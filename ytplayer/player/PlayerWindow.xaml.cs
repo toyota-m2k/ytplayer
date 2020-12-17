@@ -63,5 +63,13 @@ namespace ytplayer.player {
             PlayWindowClosed = null;
             PlayItemChanged = null;
         }
+
+        private void Window_PreviewDragOver(object sender, DragEventArgs e) {
+            e.Effects = DragDropEffects.Copy;
+        }
+
+        private void Window_Drop(object sender, DragEventArgs e) {
+            MainWindow.Instance?.RegisterUrl(e.Data.GetData(DataFormats.Text) as string, true);
+        }
     }
 }

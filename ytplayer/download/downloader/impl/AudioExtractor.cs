@@ -4,8 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ytplayer.download {
-    public interface IDownloader {
-        void Download();
+namespace ytplayer.download.downloader.impl {
+    class Class1 {
     }
 }

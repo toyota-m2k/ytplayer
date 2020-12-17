@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Text.RegularExpressions;
+using ytplayer.data;
 
-namespace ytplayer.download.processor.impl {
-    public class CommonProcessor : ProcessorBase {
-        public CommonProcessor() {
+namespace ytplayer.download.downloader.impl {
+    public class CommonDownloader : DownloaderBase {
+        public CommonDownloader(DLEntry entry, IDownloadHost host) : base(entry,host) {
 
         }
 
@@ -47,10 +48,6 @@ namespace ytplayer.download.processor.impl {
             return false;
         }
 
-        public override bool IsAcceptableUrl(Uri uri) {
-            return true;    // CommonProcessorは、なんでもokする。
-        }
-
         public override string GetIDStringFromURL(Uri uri) {
             return uri.ToString();
         }
@@ -60,6 +57,16 @@ namespace ytplayer.download.processor.impl {
         }
         public override string NormalizeSubUrlForKey(Uri uri, int index, string id) {
             return $"{uri.ToString()} #{index}";
+        }
+    }
+
+    public class CommonDownloaderFactory : IDownloaderFactory {
+        public IDownloader Create(DLEntry entry, IDownloadHost host) {
+            return new CommonDownloader(entry, host);
+        }
+
+        public bool IsAcceptableUrl(Uri uri) {
+            return true;
         }
     }
 }
