@@ -140,6 +140,9 @@
     <Compile Include="data\RatingFilter.cs" />
     <Compile Include="data\SearchHistory.cs" />
     <Compile Include="data\Storage.cs" />
+    <Compile Include="dialog\CategoryRatingDialog.xaml.cs">
+      <DependentUpon>CategoryRatingDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="download\DeterminationList.cs" />
     <Compile Include="download\Downloader.cs" />
     <Compile Include="download\downloader\impl\AudioExtractor.cs" />
@@ -163,6 +166,10 @@
     <Compile Include="res\YtpConvertrer.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="YtpDef.cs" />
+    <Page Include="dialog\CategoryRatingDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="dialog\SettingDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

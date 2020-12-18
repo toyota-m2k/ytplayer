@@ -69,13 +69,6 @@ namespace ytplayer.data {
                 if (string.IsNullOrEmpty(name)) {
                     return $"({Url})";
                 } else {
-                    var m = RegName.Matches(name);
-                    if (m.Count > 0) {
-                        var n = m[0].Groups["name"];
-                        if (!string.IsNullOrEmpty(n.Value)) {
-                            return n.Value;
-                        }
-                    }
                     return name;
                 }
             }

@@ -45,13 +45,13 @@ namespace ytplayer.common {
                 return;
                 //this.Measure(new Size(Double.PositiveInfinity, Double.PositiveInfinity));
             }
-            double remainingSpace = this.ActualWidth;
+            double remainingSpace = this.ActualWidth - 30;
             for (int i = 0; i < gridView.Columns.Count; i++) {
                 if (i != sci) {
                     remainingSpace -= (this.View as GridView).Columns[i].ActualWidth;
                 }
             }
-            (this.View as GridView).Columns[sci].Width = Math.Max(StretchColumnMinWidth, remainingSpace);
+            gridView.Columns[sci].Width = Math.Max(StretchColumnMinWidth, remainingSpace);
         }
     }
 }

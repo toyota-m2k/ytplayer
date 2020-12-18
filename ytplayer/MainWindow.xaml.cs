@@ -512,6 +512,14 @@ namespace ytplayer {
                     }
                 }
             }
+            var version = FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            //Debug.WriteLine(v.ToString());
+#if DEBUG
+            string dbg = "  <DBG>  ";
+#else
+            string dbg = "  ";
+#endif
+            this.Title = String.Format("{0}{5} - v{1}.{2}.{3}.{4}", version.ProductName, version.FileMajorPart, version.FileMinorPart, version.FileBuildPart, version.ProductPrivatePart, dbg);
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) {

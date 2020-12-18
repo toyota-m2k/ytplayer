@@ -15,8 +15,8 @@ namespace ytplayer.download.downloader.impl {
             return (null != f && f.Length > 0) ? f[0] : null;
         }
 
-        const string PtnVideoName = @"\[(?:(?:download)|(?:ffmpeg))\]\s+Destination:\s+(?<name>.*-(?<id>.{11}))\.mp4(?!\w)";
-        const string PtnVideoSkipped = @"\[download\]\s+(?<name>.*-(?<id>.{11}))\.mp4\s+has already been downloaded";
+        const string PtnVideoName = @"\[(?:(?:download)|(?:ffmpeg))\]\s+Destination:\s+(?<name>.*)-(?<id>.{11})\.mp4(?!\w)";
+        const string PtnVideoSkipped = @"\[download\]\s+(?<name>.*)-(?<id>.{11})\.mp4\s+has already been downloaded";
         const string PtnProgress = @"\[download\]\s+(?<progress>[0-9]+)\.[0-9]%";
         static Regex RegexVideoName = new Regex(PtnVideoName, RegexOptions.IgnoreCase);
         static Regex RegexAudioName = new Regex(PtnVideoName.Replace("mp4", "mp3"), RegexOptions.IgnoreCase);
