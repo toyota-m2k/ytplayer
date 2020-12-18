@@ -67,7 +67,7 @@ namespace ytplayer.data {
         public string NameToDisplay {
             get {
                 if (string.IsNullOrEmpty(name)) {
-                    return "<Not Downloaded Yet>";
+                    return $"({Url})";
                 } else {
                     var m = RegName.Matches(name);
                     if (m.Count > 0) {

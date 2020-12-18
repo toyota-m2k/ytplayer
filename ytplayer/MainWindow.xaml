@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         xmlns:local="clr-namespace:ytplayer"
-        xmlns:common="clr-namespace:common"
+        xmlns:common="clr-namespace:ytplayer.common"
         mc:Ignorable="d"
         AllowDrop="True"
         Drop="Window_Drop"
@@ -262,8 +262,8 @@
                     </Style.Triggers>
                 </Style>
             </Grid.Resources>
-            <ListView x:Name="MainListView" ItemsSource="{Binding MainList.Value}" 
-                  GridViewColumnHeader.Click="OnHeaderClick">
+            <common:StretchListView x:Name="MainListView" ItemsSource="{Binding MainList.Value}" 
+                  GridViewColumnHeader.Click="OnHeaderClick" StretchColumnIndex="0" StretchColumnMinWidth="100">
                 <ListView.Resources>
                     <DataTemplate x:Key="SortHeaderTemplate">
                         <DockPanel>
@@ -316,9 +316,9 @@
                 </ListView.ItemContainerStyle>
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="URL" Width="100" DisplayMemberBinding="{Binding Url}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
+                        <!--<GridViewColumn Header="URL" Width="100" DisplayMemberBinding="{Binding Url}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>-->
                         <GridViewColumn Header="Name" Width="100" DisplayMemberBinding="{Binding NameToDisplay}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
-                        <GridViewColumn Header="Status" Width="40" HeaderTemplate="{StaticResource SortHeaderTemplate}">
+                        <GridViewColumn Header="Status" Width="Auto" HeaderTemplate="{StaticResource SortHeaderTemplate}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <Viewbox Width="20" Height="20">
@@ -329,7 +329,7 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="Rating" Width="40" HeaderTemplate="{StaticResource SortHeaderTemplate}">
+                        <GridViewColumn Header="Rating" Width="Auto" HeaderTemplate="{StaticResource SortHeaderTemplate}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <Viewbox Width="20" Height="20">
@@ -341,7 +341,7 @@
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
 
-                        <GridViewColumn Header="Category" Width="80" HeaderTemplate="{StaticResource SortHeaderTemplate}">
+                        <GridViewColumn Header="Category" Width="Auto" HeaderTemplate="{StaticResource SortHeaderTemplate}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
@@ -356,7 +356,7 @@
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
 
-                        <GridViewColumn Header="Date" Width="80" HeaderTemplate="{StaticResource SortHeaderTemplate}">
+                        <GridViewColumn Header="Date" Width="Auto" HeaderTemplate="{StaticResource SortHeaderTemplate}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Date, Converter={StaticResource DateStringConverter}}"/>
@@ -364,7 +364,7 @@
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
 
-                        <GridViewColumn Header="Media" Width="80" HeaderTemplate="{StaticResource SortHeaderTemplate}">
+                        <GridViewColumn Header="Media" Width="Auto" HeaderTemplate="{StaticResource SortHeaderTemplate}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
@@ -388,10 +388,10 @@
                         <GridViewColumn Header="Desc" Width="50" DisplayMemberBinding="{Binding Desc}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
                     </GridView>
                 </ListView.View>
-            </ListView>
+            </common:StretchListView>
         </Grid>
         
-        <GridSplitter Grid.Row="2" Height="3" HorizontalAlignment="Stretch" Background="{StaticResource ToolBarBG}"/>
+        <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" Background="{StaticResource ToolBarBG}"/>
 
         <!-- ######## アウトプット ######## -->
         <Grid Grid.Row="3">
@@ -444,9 +444,9 @@
         </Grid>
 
         <!-- ######## ステータスバー ######## -->
-        <StackPanel Grid.Row="4" Orientation="Horizontal" Background="{StaticResource ToolBarBG}">
+        <!--<StackPanel Grid.Row="4" Orientation="Horizontal" Background="{StaticResource ToolBarBG}">
             <TextBlock Text="{Binding StatusString}" Foreground="White"/>
-        </StackPanel>
+        </StackPanel>-->
 
         <!-- ######## ダイアログ ######## -->
         <Grid Grid.Row="0" Grid.RowSpan="5" 
