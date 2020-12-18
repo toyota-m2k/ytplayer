@@ -23,10 +23,12 @@ namespace ytplayer.common {
             return System.IO.File.Exists(path) || System.IO.Directory.Exists(path);
         }
         public static bool isDirectory(string path) {
-            return isExists(path) && System.IO.Directory.Exists(path);
+            if (string.IsNullOrEmpty(path)) return false;
+            return System.IO.Directory.Exists(path);
         }
         public static bool isFile(string path) {
-            return isExists(path);
+            if (string.IsNullOrEmpty(path)) return false;
+            return System.IO.File.Exists(path);
         }
 
         public static string getDirectoryName(string path) {
@@ -41,6 +43,19 @@ namespace ytplayer.common {
             catch (Exception e) {
                 Logger.error(e);
                 return null;
+            }
+        }
+
+        public static bool safeDeleteFile(string path) {
+            if(!isFile(path)) {
+                return false;
+            }
+            try {
+                System.IO.File.Delete(path);
+                return true;
+            } catch(Exception e) {
+                Logger.error(e);
+                return false;
             }
         }
 

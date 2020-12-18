@@ -59,7 +59,9 @@
   </Choose>
   <ItemGroup>
     <Compile Include="common\PathUtilTests.cs" />
+    <Compile Include="common\UtilsTests.cs" />
     <Compile Include="data\StorageTests.cs" />
+    <Compile Include="data\MediaFlagTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

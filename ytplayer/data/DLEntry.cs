@@ -7,14 +7,13 @@ using ytplayer.player;
 
 namespace ytplayer.data {
     public enum Status {
-        REGISTERED = 0,
-        WAITING,
-        DOWNLOADING,
-        DOWNLOADED,
-        FAILED,
-        CANCELLED,
-        LIST,
-        DELETED,
+        INITIAL = 0,        // 初期状態（作成直後～DBに登録された状態）
+        WAITING,            // ダウンロード処理待ち（キューに積まれた状態）
+        DOWNLOADING,        // ダウンロード中
+        COMPLETED,          // ダウンロード成功
+        FAILED,             // ダウンロード失敗
+        CANCELLED,          // ダウンロードがキャンセルされた
+        BLOCKED,            // 削除済み：再びダウンロードされないようブロックされている
     }
     public enum Rating {
         DREADFUL = 1,
@@ -23,11 +22,33 @@ namespace ytplayer.data {
         GOOD = 4,
         EXCELLENT = 5,
     }
+    [Flags]
     public enum MediaFlag {
         NONE = 0,
         AUDIO = 1,
         VIDEO = 2,
         BOTH = 3,
+    }
+
+    public static class FlagExt {
+        public static bool HasAudio(this MediaFlag flag) {
+            return (flag & MediaFlag.AUDIO) == MediaFlag.AUDIO;
+        }
+        public static bool HasVideo(this MediaFlag flag) {
+            return (flag & MediaFlag.VIDEO) == MediaFlag.VIDEO;
+        }
+        public static MediaFlag PlusAudio(this MediaFlag flag) {
+            return flag | MediaFlag.AUDIO;
+        }
+        public static MediaFlag MinusAudio(this MediaFlag flag) {
+            return flag & ~MediaFlag.AUDIO;
+        }
+        public static MediaFlag PlusVideo(this MediaFlag flag) {
+            return flag | MediaFlag.VIDEO;
+        }
+        public static MediaFlag MinusVideo(this MediaFlag flag) {
+            return flag & ~MediaFlag.VIDEO;
+        }
     }
 
     [Table(Name = "t_download")]
@@ -132,9 +153,16 @@ namespace ytplayer.data {
 
         public string Path => string.IsNullOrEmpty(VPath) ? APath : VPath;
         public bool HasFile => (int)Media > 0;
-        
+
+        private int progress;
+        public int Progress {
+            get => progress;
+            set => setProp(callerName(), ref progress, value);
+        }
+
+
         public void Delete() {
-            Status = Status.DELETED;
+            Status = Status.BLOCKED;
         }
         
         public DLEntry() {
@@ -142,7 +170,7 @@ namespace ytplayer.data {
             name = "";
             vpath = "";
             apath = "";
-            status = (int)Status.REGISTERED;
+            status = (int)Status.INITIAL;
             rating = (int)Rating.NORMAL;
             category = "";
         }

@@ -5,7 +5,7 @@ using ytplayer.data;
 namespace ytplayer.download.downloader.impl {
 
     public class YoutubeDownloader : CommonDownloader {
-        public YoutubeDownloader(DLEntry entry, IDownloadHost host) : base(entry,host) {
+        public YoutubeDownloader(DLEntry entry, IDownloadHost host, bool extractAudio) : base(entry, host, extractAudio) {
         }
 
         public override string GetIDStringFromURL(Uri uri) {
@@ -27,8 +27,8 @@ namespace ytplayer.download.downloader.impl {
     }
 
     public class YoutubeDownloaderFactory : IDownloaderFactory {
-        public IDownloader Create(DLEntry entry, IDownloadHost host) {
-            return new CommonDownloader(entry, host);
+        public IDownloader Create(DLEntry entry, IDownloadHost host, bool extractAudio) {
+            return new CommonDownloader(entry, host, extractAudio);
         }
 
         // 対応する書式

@@ -9,70 +9,33 @@ using ytplayer.data;
 
 namespace ytplayer.download.downloader.impl {
     public class AudioExtractor : IDownloader {
-        DLEntry Entry { get; }
-        IDownloadHost Host { get; }
-        bool DeleteVideo;
-        bool Overwrite;
-
-
-        protected AudioExtractor(DLEntry entry, IDownloadHost host, bool deleteVideo, bool overwrite) {
+        public DLEntry Entry { get; }
+        private IDownloadHost Host;
+        private IDownloader Downloader;
+        private bool DeleteVideoFile;
+        public AudioExtractor(DLEntry entry, IDownloadHost host, bool deleteVideoFile) {
+            DeleteVideoFile = deleteVideoFile;
             Entry = entry;
             Host = host;
-            DeleteVideo = deleteVideo;
-            Overwrite = overwrite;
+            Downloader = DownloaderSelector.Select(new Uri(entry.Url)).Create(entry,host,true);
         }
 
         public void Cancel() {
-            if (Entry.Status == Status.WAITING) {
-                Entry.Status = Status.CANCELLED;
-            }
-        }
-
-        protected ProcessStartInfo Prepare(string outFile) {
-            return new ProcessStartInfo() {
-                FileName = "ffmpeg",
-                Arguments = $"-y -i \"{Entry.VPath}\" -ab 192k \"{outFile}\"",
-                CreateNoWindow = true,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-            };
+            Downloader.Cancel();
         }
 
         public void Execute() {
-            if (Entry.Status == Status.CANCELLED) {
-                return;
-            }
-            string outFile = System.IO.Path.Combine(Settings.Instance.AudioPath, System.IO.Path.GetFileNameWithoutExtension(Entry.VPath) + ".mp3");
-            if (PathUtil.isFile(outFile)&&!Overwrite) {
-                Entry.APath = outFile;
-                Entry.Status = Status.DOWNLOADED;
-                Entry.Media |= MediaFlag.AUDIO;
-                return;
-            }
-            Entry.Status = Status.DOWNLOADING;
-            try {
-                var psi = Prepare(outFile);
-                var process = Process.Start(psi);
-                while (true) {
-                    var response = process.StandardOutput.ReadLine();
-                    if (!ProcessResponse(response)) {
-                        break;
-                    }
-                }
-                var error = process.StandardError.ReadToEnd();
-                if (!string.IsNullOrEmpty(error)) {
-                    Host.ErrorOutput(error);
-                    Entry.Status = Status.FAILED;
-                    return;
+            var statusOrg = Entry.Status;
+            Downloader.Execute();
+            if(DeleteVideoFile && Entry.Media.HasAudio()) { 
+                if (PathUtil.safeDeleteFile(Entry.VPath)) {
+                    Entry.Media = Entry.Media.MinusVideo();
+                    Entry.VPath = null;
                 }
             }
-            catch (Exception ex) {
-                Logger.error(ex);
+            if (statusOrg == Status.COMPLETED) {
+                Entry.Status = Status.COMPLETED;
             }
-        }
-        bool ProcessResponse(string res) {
-            return false;
         }
     }
 }

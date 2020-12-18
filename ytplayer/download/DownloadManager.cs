@@ -1,16 +1,19 @@
-﻿using System;
+﻿using common;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ytplayer.data;
 using ytplayer.download.downloader;
+using ytplayer.download.downloader.impl;
 
 namespace ytplayer.download {
     public interface IDownloadHost {
         bool StandardOutput(string msg);
         bool ErrorOutput(string msg);
-        void Completed(DLEntry target, bool succeeded);
+        void Completed(DLEntry target, bool succeeded, bool extractAudio);
         void FoundSubItem(DLEntry foundEntry);
     }
     public class DownloadManager {
@@ -62,28 +65,39 @@ namespace ytplayer.download {
         private IDownloader CreateDownloader(DLEntry entry) {
             var uri = new Uri(entry.Url);
             var factory = DownloaderSelector.Select(uri);
-            return factory.Create(entry, Host);
+            return factory.Create(entry, Host, false);
         }
 
         public event Action<bool> BusyChanged;
 
-        public void Enqueue(DLEntry entry) {
-            lock(this) {
-                SetStatus(entry, Status.WAITING);
-                Queue.Enqueue(CreateDownloader(entry));
-                QueueingEvent.Set();
+        private void InternalEnqueue(IEnumerable<IDownloader> dls) {
+            if(Utils.IsNullOrEmpty(dls)) {
+                return;
             }
-            BusyChanged?.Invoke(IsBusy);
-        }
-        public void Enqueue(IEnumerable<DLEntry> entries) {
-            lock (this) {
-                foreach(var entry in entries) {
-                    SetStatus(entry, Status.WAITING);
-                    Queue.Enqueue(CreateDownloader(entry));
+            lock(this) {
+                foreach(var d in dls) {
+                    SetStatus(d.Entry, Status.WAITING);
+                    Queue.Enqueue(d);
                 }
                 QueueingEvent.Set();
             }
             BusyChanged?.Invoke(IsBusy);
+        }
+
+        public void Enqueue(DLEntry entry) {
+            Enqueue(entry.ToSingleEnumerable());
+        }
+        
+        public void Enqueue(IEnumerable<DLEntry> entries) {
+            InternalEnqueue(entries.Select((entry) => CreateDownloader(entry)));
+        }
+        
+        public void EnqueueExtractAudio(bool deleteVideo, DLEntry entry) {
+            EnqueueExtractAudio(deleteVideo, entry.ToSingleEnumerable());
+        }
+        
+        public void EnqueueExtractAudio(bool deleteVideo, IEnumerable<DLEntry> entries) {
+            InternalEnqueue(entries.Select((entry) => new AudioExtractor(entry, Host, deleteVideo)));
         }
 
         public void Cancel() {
@@ -138,10 +152,7 @@ namespace ytplayer.download {
         }
 
         private void Execute(IDownloader dl) {
-            string orgPath = Environment.CurrentDirectory;
-            Environment.CurrentDirectory = Settings.Instance.EnsureVideoPath;
             dl.Execute();
-            Environment.CurrentDirectory = orgPath;
             Storage.DLTable.Update();
         }
 

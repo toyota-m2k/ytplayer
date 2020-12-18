@@ -29,10 +29,20 @@ namespace ytplayer.download.downloader {
          */
         protected List<DownloadItemInfo> Results { get; } = new List<DownloadItemInfo>();
 
+        protected virtual string BasicArguments {
+            get {
+                if(!ExtractAudio) {
+                    return "--format mp4";
+                } else {
+                    return "-x --audio-format mp3";
+                }
+            }
+        }
+
         /**
          * youtube-dlに渡す、サイト固有の引数（不要なら空文字）
          */
-        protected virtual string SpecialArguments => "--format mp4";
+        protected virtual string SpecialArguments => "";
 
         /**
          * ダウンロード進捗(%)を保持するプロパティ... とりあえず int型。未使用。
@@ -40,18 +50,25 @@ namespace ytplayer.download.downloader {
          */
         public int Progress { get; protected set; } = 0;
 
-        protected DLEntry Entry { get; }
+        public DLEntry Entry { get; }
         protected IDownloadHost Host { get; }
+        protected bool ExtractAudio { get; }
 
-        protected DownloaderBase(DLEntry entry, IDownloadHost host) {
+        protected string TargetUrlOrId => (!ExtractAudio) ? Entry.Url : GetIDStringFromURL(new Uri(Entry.Url));
+        protected string OutputDir => !ExtractAudio ? Settings.Instance.EnsureVideoPath : Settings.Instance.EnsureAudioPath;
+        protected string OutputExtension => !ExtractAudio ? "mp4" : "mp3";
+
+
+        protected DownloaderBase(DLEntry entry, IDownloadHost host, bool extractAudio) {
             Entry = entry;
             Host = host;
+            ExtractAudio = extractAudio;
         }
 
         protected ProcessStartInfo Prepare() {
             return new ProcessStartInfo() {
                 FileName = "youtube-dl",
-                Arguments = $"{SpecialArguments} { Entry.Url }",
+                Arguments = $"{BasicArguments} {SpecialArguments} {Entry.Url}",
                 CreateNoWindow = true,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
@@ -61,13 +78,13 @@ namespace ytplayer.download.downloader {
 
 
         public void Execute() {
-            if(Entry.Status==Status.CANCELLED) {
+            if (Entry.Status==Status.CANCELLED) {
                 return;
             }
             Entry.Status = Status.DOWNLOADING;
 
-            Progress = 0;
-            Results.Clear();
+            string orgPath = Environment.CurrentDirectory;
+            Environment.CurrentDirectory = OutputDir;
 
             try {
                 var psi = Prepare();
@@ -91,7 +108,7 @@ namespace ytplayer.download.downloader {
                     return;
                 }
                 bool result = ValidateAndGetResult(Results[0], Entry);
-                Host.Completed(Entry, result);
+                Host.Completed(Entry, result, ExtractAudio);
 
                 if (Results.Count > 1) {
                     // リストだった場合
@@ -105,6 +122,7 @@ namespace ytplayer.download.downloader {
                 }
             }
             catch (Exception ex) {
+                Environment.CurrentDirectory = orgPath;
                 Entry.Status = Status.FAILED;
                 Logger.error(ex);
             }
@@ -147,15 +165,21 @@ namespace ytplayer.download.downloader {
          * ProcessResponse()がFalseを返した後（EOSに達した後）、
          * DLEntryに結果を取り出す。
          */
-        public bool ValidateAndGetResult(DownloadItemInfo info, DLEntry entry) {
+        private bool ValidateAndGetResult(DownloadItemInfo info, DLEntry entry) {
             var fname = GetSavedFilePath(info);
             if (!string.IsNullOrEmpty(fname)) { 
                 entry.Name = info.Name;
-                entry.VPath = fname;
-                entry.Media |= MediaFlag.VIDEO;
-                entry.Status = Status.DOWNLOADED;
+                entry.Status = Status.COMPLETED;
+                if (!ExtractAudio) {
+                    entry.VPath = fname;
+                    entry.Media = entry.Media.PlusVideo();
+                } else {
+                    entry.APath = fname;
+                    entry.Media = entry.Media.PlusAudio();
+                }
                 return true;
             } else {
+                Host.ErrorOutput($"not found: {fname}");
                 entry.Status = Status.FAILED;
                 return false;
             }

@@ -81,10 +81,12 @@
         <!-- ポジション（Timeline） Slider -->
         <StackPanel Grid.Row="1" Orientation="Vertical" HorizontalAlignment="Stretch">
             <local:TimelineSlider 
+                    Focusable="False"
                     VerticalAlignment="Center"
                     HorizontalAlignment="Stretch"
                     x:Name="TimelineSlider" 
                     MinWidth="300"
+                    SmallChange="10000" LargeChange="10000"
                     />
             <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
                 <TextBlock Text="{Binding PositionText.Value}" Foreground="White"/>
@@ -108,8 +110,8 @@
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Row="1" Grid.Column="0" Text="Speed" Foreground="White" HorizontalAlignment="Center"/>
             <TextBlock Grid.Row="1" Grid.Column="2" Text="Volume" Foreground="White" HorizontalAlignment="Center"/>
-            <Slider  Grid.Row="0" Grid.Column="0" Minimum="0" Maximum="1" Value="{Binding Speed.Value, Mode=TwoWay}" SmallChange="0.1" LargeChange="0.1" VerticalAlignment="Center"/>
-            <Slider  Grid.Row="0" Grid.Column="2" Minimum="0" Maximum="1" Value="{Binding Volume.Value, Mode=TwoWay}" SmallChange="0.1" LargeChange="0.1" VerticalAlignment="Center"/>
+            <Slider Grid.Row="0" Grid.Column="0" Minimum="0" Maximum="1" Value="{Binding Speed.Value, Mode=TwoWay}" SmallChange="0.1" LargeChange="0.1" VerticalAlignment="Center" Focusable="False"/>
+            <Slider Grid.Row="0" Grid.Column="2" Minimum="0" Maximum="1" Value="{Binding Volume.Value, Mode=TwoWay}" SmallChange="0.1" LargeChange="0.1" VerticalAlignment="Center" Focusable="False"/>
             <Button Grid.Row="0" Grid.Column="1" Command="{Binding ResetSpeedCommand}" Content="{StaticResource PathResetSpeed}" Style="{StaticResource PushButtonStyle}" Focusable="False"/>
             <Button Grid.Row="0" Grid.Column="3" Command="{Binding ResetVolumeCommand}" Content="{StaticResource PathResetVolume}" Style="{StaticResource PushButtonStyle}" Focusable="False"/>
         </Grid>

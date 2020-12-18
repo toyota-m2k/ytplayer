@@ -70,7 +70,9 @@ namespace ytplayer.player {
                 List.Value = new List<IPlayable>();
                 index = 0;
             }
-            List.Value.Add(item);
+            if (!List.Value.Where((v) => v.Url == item.Url).Any()) {
+                List.Value.Add(item);
+            }
             CurrentIndex.Value = index;    // has next を更新するため
             ListItemAdded.OnNext(List.Value.Count-1); // Endedのプレーヤーに再生を再開させるため
         }

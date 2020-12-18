@@ -33,6 +33,7 @@ namespace ytplayer {
     public enum DialogTypeId {
         DELETE_COMFIRM,
         ACCEPT_DETERMINATION,
+        EXTRACT_AUDIO,
     }
 
     public class MainViewModel : MicViewModelBase {
@@ -76,12 +77,6 @@ namespace ytplayer {
         public ReactivePropertySlim<DialogTypeId> DialogType { get; } = new ReactivePropertySlim<DialogTypeId>();
         public ReactiveCommand CommandCancel { get; } = new ReactiveCommand();
         public ReactiveCommand CommandOk { get; } = new ReactiveCommand();
-        public class DeleteItemDialogViewModel : MicViewModelBase {
-            public ReactivePropertySlim<bool> DeleteListItem { get; } = new ReactivePropertySlim<bool>(false);
-            public ReactivePropertySlim<bool> DeleteVideoFile { get; } = new ReactivePropertySlim<bool>(false);
-            public ReactivePropertySlim<bool> DeleteAudioFile { get; } = new ReactivePropertySlim<bool>(false);
-        }
-        public DeleteItemDialogViewModel DeleteItemDialog { get; } = new DeleteItemDialogViewModel();
         public Task<bool> ShowDialog(DialogTypeId type, string title) {
             BusyWithModal = true;
             DialogTask = new TaskCompletionSource<bool>();
@@ -90,9 +85,19 @@ namespace ytplayer {
             DialogActivated.Value = true;
             return DialogTask.Task;
         }
+
+        // Delete Item Dialog
+        public class DeleteItemDialogViewModel : MicViewModelBase {
+            public ReactivePropertySlim<bool> BlockItem { get; } = new ReactivePropertySlim<bool>(false);
+            public ReactivePropertySlim<bool> DeleteVideoFile { get; } = new ReactivePropertySlim<bool>(false);
+            public ReactivePropertySlim<bool> DeleteAudioFile { get; } = new ReactivePropertySlim<bool>(false);
+        }
+        public DeleteItemDialogViewModel DeleteItemDialog { get; } = new DeleteItemDialogViewModel();
         public Task<bool> ShowDeleteItemDialog() {
             return ShowDialog(DialogTypeId.DELETE_COMFIRM, "Delete Items");
         }
+
+        // Accept/Reject Determination Dialog
         public class DeterminationDialogViewModel : MicViewModelBase {
             public ReactivePropertySlim<string> Host { get; } = new ReactivePropertySlim<string>();
             public ReactiveCommand CommandOk { get; } = new ReactiveCommand();
@@ -101,6 +106,15 @@ namespace ytplayer {
         public Task<bool> ShowDeterminationDialog(string host) {
             DeterminationDialog.Host.Value = host;
             return ShowDialog(DialogTypeId.ACCEPT_DETERMINATION, "Accept or Reject");
+        }
+
+        // Extract Audio Dialog
+        public class ExtractAudoDialogViewModel : MicViewModelBase {
+            public ReactiveProperty<bool> DeleteVideo { get; } = new ReactiveProperty<bool>();
+        }
+        public ExtractAudoDialogViewModel ExtractAudoDialog { get; } = new ExtractAudoDialogViewModel();
+        public Task<bool> ShowExtractAudioDialog() {
+            return ShowDialog(DialogTypeId.EXTRACT_AUDIO, "Extract Audio");
         }
 
         public MainViewModel() {
@@ -175,16 +189,67 @@ namespace ytplayer {
             });
             viewModel.AutoDownload.Subscribe((v) => {
                 if (!v||Storage==null) return;
-                var targets = Storage.DLTable.List.Where((e) => e.Status == Status.REGISTERED || e.Status == Status.CANCELLED);
+                var targets = Storage.DLTable.List.Where((e) => e.Status == Status.INITIAL || e.Status == Status.CANCELLED);
                 mDownloadManager.Enqueue(targets);
             });
 
             viewModel.OpenInWebBrowserCommand.Subscribe(OpenInWebBrower);
+            viewModel.ExtractAudioCommand.Subscribe(ExtractAudio);
+            viewModel.ResetAndDownloadCommand.Subscribe(ResetAndDownload);
+            viewModel.DeleteAndBlockCommand.Subscribe(DeleteAndBlock);
 
             InitializeComponent();
         }
 
         private DLEntry SelectedEntry => MainListView.SelectedItem as DLEntry;
+        private IEnumerable<DLEntry> SelectedEntries => MainListView.SelectedItems.ToEnumerable<DLEntry>();
+
+        private void ProcessSelectedEntries(Action<IEnumerable<DLEntry>> action) {
+            var entries = SelectedEntries;
+            if (Utils.IsNullOrEmpty(entries)) {
+                return;
+            }
+            action(entries);
+        }
+
+        private void DeleteAndBlock(object obj) {
+            ProcessSelectedEntries(async (entries) => {
+                if (await viewModel.ShowDeleteItemDialog()) {
+                    var delVideo = viewModel.DeleteItemDialog.DeleteVideoFile.Value;
+                    var delAudio = viewModel.DeleteItemDialog.DeleteAudioFile.Value;
+                    var block = viewModel.DeleteItemDialog.BlockItem.Value;
+                    foreach (var e in entries) {
+                        if (delVideo && PathUtil.safeDeleteFile(e.VPath)) {
+                            e.VPath = null;
+                            e.Media = e.Media.MinusVideo();
+                        }
+                        if (delAudio && PathUtil.safeDeleteFile(e.APath)) {
+                            e.APath = null;
+                            e.Media = e.Media.MinusVideo();
+                        }
+                        if (block) {
+                            e.Delete();
+                        }
+                    }
+                    Storage.DLTable.Update();
+                }
+            });
+        }
+
+        private void ResetAndDownload(object obj) {
+            ProcessSelectedEntries((entries) => {
+                mDownloadManager.Enqueue(entries);
+            });
+        }
+
+        private void ExtractAudio(object obj) {
+            ProcessSelectedEntries(async (entries) => {
+                if (await viewModel.ShowExtractAudioDialog()) {
+                    mDownloadManager.EnqueueExtractAudio(viewModel.ExtractAudoDialog.DeleteVideo.Value, entries);
+                }
+            });
+        }
+
         private void OpenInWebBrower() {
             var url = SelectedEntry?.Url;
             if (url != null) {
@@ -488,8 +553,8 @@ namespace ytplayer {
             return Output(msg, error: true);
         }
 
-        void IDownloadHost.Completed(DLEntry target, bool succeeded) {
-            if (succeeded) {
+        void IDownloadHost.Completed(DLEntry target, bool succeeded, bool extractAudio) {
+            if (succeeded && !extractAudio) {
                 Dispatcher.Invoke(() => {
                     if (viewModel.AutoPlay.Value) {
                         GetPlayer().PlayList.Add(target);

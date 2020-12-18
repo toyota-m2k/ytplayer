@@ -61,6 +61,10 @@ namespace common
             }
         }
 
+        public static IEnumerable<T> ToSingleEnumerable<T>(this T item) {
+            yield return item;
+        }
+
         public static T[] Array<T>(params T[] args) {
             return args;
         }

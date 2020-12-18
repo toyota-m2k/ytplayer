@@ -4,23 +4,28 @@ using ytplayer.data;
 
 namespace ytplayer.download.downloader.impl {
     public class CommonDownloader : DownloaderBase {
-        public CommonDownloader(DLEntry entry, IDownloadHost host) : base(entry,host) {
+        public CommonDownloader(DLEntry entry, IDownloadHost host, bool extractAudio) : base(entry,host,extractAudio) {
 
         }
 
         protected override string GetSavedFilePath(DownloadItemInfo info) {
-            string dir = Settings.Instance.EnsureVideoPath;
-            string ext = "mp4";
+            string dir = OutputDir;
+            string ext = OutputExtension;
             var f = System.IO.Directory.GetFiles(dir, $"*-{info.Id}.{ext}", System.IO.SearchOption.TopDirectoryOnly);
             return (null != f && f.Length > 0) ? f[0] : null;
         }
 
-        const string PtnSkipped = @"\[download\]\s+(?<name>.*-(?<id>.{11}))\.mp4\s+has already been downloaded";
         const string PtnVideoName = @"\[(?:(?:download)|(?:ffmpeg))\]\s+Destination:\s+(?<name>.*-(?<id>.{11}))\.mp4(?!\w)";
+        const string PtnVideoSkipped = @"\[download\]\s+(?<name>.*-(?<id>.{11}))\.mp4\s+has already been downloaded";
         const string PtnProgress = @"\[download\]\s+(?<progress>[0-9]+)\.[0-9]%";
-        static Regex RegexSkipped = new Regex(PtnSkipped, RegexOptions.IgnoreCase);
-        static Regex RegexName = new Regex(PtnVideoName, RegexOptions.IgnoreCase);
+        static Regex RegexVideoName = new Regex(PtnVideoName, RegexOptions.IgnoreCase);
+        static Regex RegexAudioName = new Regex(PtnVideoName.Replace("mp4", "mp3"), RegexOptions.IgnoreCase);
+        static Regex RegexVideoSkipped = new Regex(PtnVideoSkipped, RegexOptions.IgnoreCase);
+        static Regex RegexAudioSkipped = new Regex(PtnVideoSkipped.Replace("mp4", "mp3"), RegexOptions.IgnoreCase);
         static Regex RegexProgress = new Regex(PtnProgress, RegexOptions.IgnoreCase);
+
+        Regex RegexName => !ExtractAudio ? RegexVideoName : RegexAudioName;
+        Regex RegexSkipped => !ExtractAudio ? RegexVideoSkipped : RegexAudioSkipped;
 
         protected override bool TryParseName(string res) {
             var matches = RegexName.Matches(res);
@@ -61,8 +66,8 @@ namespace ytplayer.download.downloader.impl {
     }
 
     public class CommonDownloaderFactory : IDownloaderFactory {
-        public IDownloader Create(DLEntry entry, IDownloadHost host) {
-            return new CommonDownloader(entry, host);
+        public IDownloader Create(DLEntry entry, IDownloadHost host, bool extractAudio) {
+            return new CommonDownloader(entry, host, extractAudio);
         }
 
         public bool IsAcceptableUrl(Uri uri) {
