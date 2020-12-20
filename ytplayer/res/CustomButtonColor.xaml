@@ -1,0 +1,24 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Icon Button (CustomButtopn Template) の色　-->
+    <!-- 通常時の背景/前景は、ボタンのBackground/Foregroundに従う-->
+    <!-- マウスオーバー/クリック時の枠: 色/太さ -->
+    <SolidColorBrush x:Key="CBActiveBorderColor" Color="White"/>
+    <Thickness x:Key="CBActiveBorderThickness" Left="3" Top="3" Right="3" Bottom="3"/>
+    <SolidColorBrush x:Key="CBActiveBackgroundColor" Color="Indigo"/>
+
+    <!-- Icon Toggle Button (CustomButtopn Template) の色　-->
+    <!-- 通常時の背景/前景は、ボタンのBackground/Foregroundに従う-->
+    <!-- マウスオーバー/クリック時の枠: 色/太さ -->
+    <SolidColorBrush x:Key="CTBActiveBorderColor" Color="White"/>
+    <Thickness x:Key="CTBActiveBorderThickness" Left="3" Top="3" Right="3" Bottom="3"/>
+    <!-- マウスオーバー時の枠: ボタン背景色 -->
+    <SolidColorBrush x:Key="CTBActiveBackgroundColor" Color="Indigo"/>
+    <!-- チェック時の表示色 / 前景色 -->
+    <SolidColorBrush x:Key="CTBCheckColor" Color="White"/>
+    <SolidColorBrush x:Key="CTBCheckForegroundColor" Color="DarkViolet"/>
+
+
+
+</ResourceDictionary>

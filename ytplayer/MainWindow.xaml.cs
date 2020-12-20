@@ -198,6 +198,14 @@ namespace ytplayer {
             viewModel.ResetAndDownloadCommand.Subscribe(ResetAndDownload);
             viewModel.DeleteAndBlockCommand.Subscribe(DeleteAndBlock);
 
+            viewModel.ShowFilterEditor.Subscribe((v) => {
+                if (v) {
+                    GetFilterEditorWindow();
+                } else {
+                    mFilterEditorWindow?.Close();
+                }
+            });
+
             InitializeComponent();
         }
 
@@ -255,6 +263,50 @@ namespace ytplayer {
             if (url != null) {
                 Process.Start(url);
             }
+        }
+
+        private CategoryRatingDialog mFilterEditorWindow = null;
+        private CategoryRatingDialog GetFilterEditorWindow() {
+            if(mFilterEditorWindow==null) {
+                mFilterEditorWindow = new CategoryRatingDialog();
+                mFilterEditorWindow.EditorWindowClosed += OnEditorWindowClosed;
+                mFilterEditorWindow.CategoryRatingSelected += OnCategoryRatingChanged;
+                mFilterEditorWindow.ShowActivated = false;
+                mFilterEditorWindow.ShowInTaskbar = false;
+                mFilterEditorWindow.Owner = this;
+                if(CategoryRatingDialog.StartPosition.HasValue) {
+                    mFilterEditorWindow.Left = CategoryRatingDialog.StartPosition.Value.X;
+                    mFilterEditorWindow.Top = CategoryRatingDialog.StartPosition.Value.Y;
+                } else {
+                    mFilterEditorWindow.Left = this.Left + this.ActualWidth - 200;
+                    mFilterEditorWindow.Top = this.Top + this.ActualWidth - 300;
+                }
+                mFilterEditorWindow.Show();
+            }
+            return mFilterEditorWindow;
+        }
+
+        private void OnEditorWindowClosed(CategoryRatingDialog obj) {
+            if (obj == mFilterEditorWindow) {
+                mFilterEditorWindow.EditorWindowClosed -= OnEditorWindowClosed;
+                mFilterEditorWindow.CategoryRatingSelected -= OnCategoryRatingChanged;
+                mFilterEditorWindow = null;
+                viewModel.ShowFilterEditor.Value = false;
+            }
+        }
+
+        private void OnCategoryRatingChanged(Rating? rating, Category category) {
+            if (rating.HasValue) {
+                foreach(DLEntry e in MainListView.SelectedItems) {
+                    e.Rating = rating.Value;
+                }
+            }
+            if (category != null) {
+                foreach (DLEntry e in MainListView.SelectedItems) {
+                    e.Category = category;
+                }
+            }
+            Storage.DLTable.Update();
         }
 
         private PlayerWindow mPlayerWindow = null;
