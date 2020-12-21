@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -62,6 +63,9 @@ namespace ytplayer {
         public ReactiveCommand CommandPlay { get; } = new ReactiveCommand();
         public ReactiveCommand CommandSearch { get; } = new ReactiveCommand();
         public ReactiveCommand CommandClearSearchText { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandExport { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandImport { get; } = new ReactiveCommand();
+
 
         // Context Menu
         public ReactiveCommand OpenInWebBrowserCommand { get; } = new ReactiveCommand();
@@ -205,8 +209,49 @@ namespace ytplayer {
                     mFilterEditorWindow?.Close();
                 }
             });
-
+            viewModel.CommandExport.Subscribe(ExportUrlList);
+            viewModel.CommandImport.Subscribe(ImportUrlList);
             InitializeComponent();
+        }
+
+        private void ExportUrlList(object obj) {
+            var sel = MainListView.SelectedItems;
+            IEnumerable<DLEntry> list;
+            if(sel.Count>1) {
+                list = sel.ToEnumerable<DLEntry>();
+            } else {
+                list = viewModel.MainList.Value.Where((e) => e.Status != Status.BLOCKED);
+            }
+            if (Utils.IsNullOrEmpty(list)) return;
+            var path = SaveFileDialogBuilder.Create()
+                .addFileType("Text", "*.txt")
+                .defaultExtension("txt")
+                .overwritePrompt(true)
+                .defaultFilename("url-list")
+                .GetFilePath(this);
+            if (path == null) return;
+
+            using (var writer = new StreamWriter(path, false, System.Text.Encoding.UTF8)) {
+                foreach (var e in list) {
+                    writer.WriteLine(e.Url);
+                }
+            }
+        }
+
+        private void ImportUrlList(object obj) {
+            var path = OpenFileDialogBuilder.Create()
+                .addFileType("Text", "*.txt")
+                .defaultExtension("txt")
+                .defaultFilename("url-list")
+                .GetFilePath(this);
+            if (path == null) return;
+            using (var reader = new StreamReader(path, System.Text.Encoding.UTF8)) {
+                for(; ; ) {
+                    var line = reader.ReadLine();
+                    if (line == null) break;
+                    RegisterUrl(line);
+                }
+            }
         }
 
         private DLEntry SelectedEntry => MainListView.SelectedItem as DLEntry;

@@ -37,12 +37,6 @@
     <SolidColorBrush x:Key="CheckedBtnFG" Color="#FFE9FF86" />
     <SolidColorBrush x:Key="UncheckedBtnFG" Color="#50C4FF25" />
 
-    <SolidColorBrush x:Key="IconExcellentColor"  Color="Red"/>
-    <SolidColorBrush x:Key="IconGoodColor"      Color="Orange"/>
-    <SolidColorBrush x:Key="IconNormalColor"    Color="Gray"/>
-    <SolidColorBrush x:Key="IconBadColor"       Color="CornflowerBlue"/>
-    <SolidColorBrush x:Key="IconDreadfulColor"  Color="MidnightBlue"/>
-
     <Style x:Key="IconButtonStyle" TargetType="Button">
         <Setter Property="OverridesDefaultStyle" Value="True" />
         <Setter Property="Width" Value="30"/>
@@ -61,6 +55,50 @@
         <Setter Property="Foreground" Value="White"/>
         <Setter Property="Padding" Value="2"/>
         <Setter Property="Template" Value="{StaticResource CustomToggleButton}"/>
+    </Style>
+
+
+    <SolidColorBrush x:Key="IconExcellentColor"  Color="Red"/>
+    <SolidColorBrush x:Key="IconGoodColor"      Color="Orange"/>
+    <SolidColorBrush x:Key="IconNormalColor"    Color="Gray"/>
+    <SolidColorBrush x:Key="IconBadColor"       Color="CornflowerBlue"/>
+    <SolidColorBrush x:Key="IconDreadfulColor"  Color="MidnightBlue"/>
+
+
+    <Style x:Key="RatingExcellentButtonStyle" BasedOn="{StaticResource IconToggleButtonStyle}" TargetType="ToggleButton">
+        <Style.Triggers>
+            <Trigger Property="IsChecked" Value="true">
+                <Setter Property="Foreground" Value="{StaticResource IconExcellentColor}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="RatingGoodButtonStyle" BasedOn="{StaticResource IconToggleButtonStyle}" TargetType="ToggleButton">
+        <Style.Triggers>
+            <Trigger Property="IsChecked" Value="true">
+                <Setter Property="Foreground" Value="{StaticResource IconGoodColor}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="RatingNormalButtonStyle" BasedOn="{StaticResource IconToggleButtonStyle}" TargetType="ToggleButton">
+        <Style.Triggers>
+            <Trigger Property="IsChecked" Value="true">
+                <Setter Property="Foreground" Value="{StaticResource IconNormalColor}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="RatingBadButtonStyle" BasedOn="{StaticResource IconToggleButtonStyle}" TargetType="ToggleButton">
+        <Style.Triggers>
+            <Trigger Property="IsChecked" Value="true">
+                <Setter Property="Foreground" Value="{StaticResource IconBadColor}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="RatingDreadfulButtonStyle" BasedOn="{StaticResource IconToggleButtonStyle}" TargetType="ToggleButton">
+        <Style.Triggers>
+            <Trigger Property="IsChecked" Value="true">
+                <Setter Property="Foreground" Value="{StaticResource IconDreadfulColor}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
 

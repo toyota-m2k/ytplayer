@@ -29,7 +29,7 @@ namespace ytplayer.player {
         public IReactiveProperty<double> Volume { get; }
 
         public ReactiveProperty<bool> FitMode { get; } = new ReactiveProperty<bool>();
-        public ReactiveProperty<bool> MaximumWindow { get; } = new ReactiveProperty<bool>();
+        //public ReactiveProperty<bool> MaximumWindow { get; } = new ReactiveProperty<bool>();
 
         public ReactiveCommand PlayCommand { get; } = new ReactiveCommand();
         public ReactiveCommand PauseCommand { get; } = new ReactiveCommand();
@@ -119,8 +119,8 @@ namespace ytplayer.player {
             });
             ViewModel.FitMode.Value = player.Stretch == Stretch.UniformToFill;
             ViewModel.FitMode.Subscribe(FitView);
-            ViewModel.MaximumWindow.Value = Window.GetWindow(this).WindowStyle == WindowStyle.None;
-            ViewModel.MaximumWindow.Subscribe(MaximizeWindow);
+            //ViewModel.MaximumWindow.Value = Window.GetWindow(this).WindowStyle == WindowStyle.None;
+            //ViewModel.MaximumWindow.Subscribe(MaximizeWindow);
         }
 
         public void Terminate() {
@@ -156,16 +156,16 @@ namespace ytplayer.player {
         public void FitView(bool mode) {
             Player?.Apply((player) => player.Stretch = mode ? Stretch.UniformToFill : Stretch.Uniform);
         }
-        public void MaximizeWindow(bool max) {
-            var win = Window.GetWindow(this);
-            if (max) {
-                win.WindowStyle = WindowStyle.None;         // タイトルバーと境界線を表示しない
-                win.WindowState = WindowState.Maximized;    // 最大化表示
-            } else {
-                win.WindowStyle = WindowStyle.SingleBorderWindow;
-                win.WindowState = WindowState.Normal;
-            }
-        }
+        //public void MaximizeWindow(bool max) {
+        //    var win = Window.GetWindow(this);
+        //    if (max) {
+        //        win.WindowStyle = WindowStyle.None;         // タイトルバーと境界線を表示しない
+        //        win.WindowState = WindowState.Maximized;    // 最大化表示
+        //    } else {
+        //        win.WindowStyle = WindowStyle.SingleBorderWindow;
+        //        win.WindowState = WindowState.Normal;
+        //    }
+        //}
         private void OnUnloaded(object sender, RoutedEventArgs e) {
         }
     }
