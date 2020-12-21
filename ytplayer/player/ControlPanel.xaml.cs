@@ -18,7 +18,9 @@ namespace ytplayer.player {
         public ReadOnlyReactiveProperty<string> PositionText { get; }
         public ReadOnlyReactiveProperty<bool> IsPlaying { get; }
         public ReadOnlyReactiveProperty<bool> IsReady { get; }
+#pragma warning disable IDE0052 // 読み取られていないプライベート メンバーを削除
         private IDisposable EndEventRegester { get; }
+#pragma warning restore IDE0052 // 読み取られていないプライベート メンバーを削除
         public ObservableCollection<Category> Categories => new ObservableCollection<Category>(Settings.Instance.Categories.SelectList);
 
         [Disposal(disposable:false)]

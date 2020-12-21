@@ -8,22 +8,12 @@ namespace ytplayer.player {
     /// </summary>
     public partial class PlayerWindow : Window {
         public PlayerWindow() {
+            DataContext = this;
             InitializeComponent();
         }
 
         public event Action<IPlayable> PlayItemChanged;
         public event Action<PlayerWindow> PlayWindowClosed;
-
-        //private static PlayerWindow sInstance = null;
-        //public static PlayerWindow Instance {
-        //    get {
-        //        if(sInstance==null) {
-        //            sInstance = new PlayerWindow();
-        //            sInstance.Show();
-        //        }
-        //        return sInstance;
-        //    }
-        //}
 
         public IPlayList PlayList => Player.ControlPanel.PlayList;
 

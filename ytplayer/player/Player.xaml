@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ytplayer.player"
+             xmlns:common="clr-namespace:ytplayer.common"
              Loaded="OnLoaded"
              Unloaded="OnUnloaded"
              mc:Ignorable="d" 
@@ -24,8 +25,46 @@
         <Grid Background="{StaticResource ControlPanelBG}" 
               MouseEnter="OnMouseEnter" MouseLeave="OnMouseLeave"
               Opacity="0"
+              VerticalAlignment="Top"
+              HorizontalAlignment="Right"
+              Tag="SizingPanel"
+              >
+            <Grid.Style>
+                <!-- Fade in/out effect -->
+                <Style TargetType="Grid">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ShowSizePanel.Value}" Value="True">
+                            <DataTrigger.EnterActions>
+                                <StopStoryboard BeginStoryboardName="MouseLeaveStoryboard" />
+                                <BeginStoryboard Name="MouseOverStoryboard" Storyboard="{StaticResource MouseOverStoryboard}" />
+                            </DataTrigger.EnterActions>
+                            <DataTrigger.ExitActions>
+                                <StopStoryboard BeginStoryboardName="MouseOverStoryboard" />
+                                <BeginStoryboard Name="MouseLeaveStoryboard" Storyboard="{StaticResource MouseLeaveStoryboard}" />
+                            </DataTrigger.ExitActions>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
+            <StackPanel Orientation="Horizontal" Margin="10">
+                <Button Focusable="False"
+                        Command="{Binding MaximizeCommand}"
+                        Style="{StaticResource IconButtonStyle}">
+                    <Grid>
+                        <common:PathView Path="M 3 21 L 3 12 L 6 15 L 9 12 L 12 15 L 9 18 L 12 21 L 3 21 Z M 21 3 L 21 12 L 18 9 L 15 12 L 12 9 L 15 6 L 12 3 L 21 3 Z M 4 20 L 4 14.4142 L 6 16.412 L 9 13.4142 L 10.5858 15 L 7.5858 18 L 9.5858 20 L 5 20 Z M 20 4 L 20 9.5858 L 18 7.5858 L 15 10.5858 L 13.4142 9 L 16.4142 6 L 14.4142 4 L 20 4 Z" Visibility="{Binding Fullscreen.Value, Converter={StaticResource NegBoolVisibilityConverter}}"/>
+                        <common:PathView Path="M 11 13 L 11 22 L 8 19 L 4 23 L 1 20 L 5 16 L 2 13 L 11 13 M 10 14 L 10 19.5858 L 8 17.5858 L 4 21.5858 L 2.4142 20 L 6.4142 16 L 4.4142 14 Z M 13 11 L 13 2 L 16 5 L 20 1 L 23 4 L 19 8 L 22 11      L 13 11 M 14 10 L 14 4.4142 L 16 6.4142 L 20 2.4142 L 21.5858 4 L 17.5858 8 L 19.5858 10 Z" Visibility="{Binding Fullscreen.Value, Converter={StaticResource BoolVisibilityConverter}}"/>
+                    </Grid>
+                </Button>
+            </StackPanel>
+
+        </Grid>
+
+        <Grid Background="{StaticResource ControlPanelBG}" 
+              MouseEnter="OnMouseEnter" MouseLeave="OnMouseLeave"
+              Opacity="0"
               VerticalAlignment="Bottom"
               HorizontalAlignment="Right"
+              Tag="ControlPanel"
               >
             <Grid.Style>
                 <!-- Fade in/out effect -->

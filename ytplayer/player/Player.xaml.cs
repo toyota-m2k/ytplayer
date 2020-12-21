@@ -30,10 +30,15 @@ namespace ytplayer.player {
         public ReactiveProperty<double> Duration { get; } = new ReactiveProperty<double>(100);
         public ReactiveProperty<bool> IsReady { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> IsPlaying { get; } = new ReactiveProperty<bool>(false);
-        public ReactiveProperty<bool> ShowPanel { get; } = new ReactiveProperty<bool>(true);
+        public ReactiveProperty<bool> ShowPanel { get; } = new ReactiveProperty<bool>(false);
+        public ReactiveProperty<bool> ShowSizePanel { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<double> Speed { get; } = new ReactiveProperty<double>(0.5);
         public ReactiveProperty<double> Volume { get; } = new ReactiveProperty<double>(0.5);
         public Subject<bool> Ended { get; } = new Subject<bool>();
+
+        public ReactiveProperty<bool> Fullscreen { get; } = new ReactiveProperty<bool>(false);
+        public ReactiveCommand MaximizeCommand { get; } = new ReactiveCommand();
+
     }
 
     public interface IPlayer {
@@ -64,6 +69,7 @@ namespace ytplayer.player {
 
         public Player() {
             ViewModel = new PlayerViewModel();
+            ViewModel.MaximizeCommand.Subscribe(ToggleFullscreen);
             InitializeComponent();
         }
 
@@ -145,16 +151,42 @@ namespace ytplayer.player {
             ViewModel.Ended.OnNext(false);
         }
 
+        private void ShowPanel(FrameworkElement panel, bool show) {
+            switch (panel?.Tag as string) {
+                case "ControlPanel":
+                    ViewModel.ShowPanel.Value = show;
+                    break;
+                case "SizingPanel":
+                    ViewModel.ShowSizePanel.Value = show;
+                    break;
+                default:
+                    break;
+            }
+        }
+
         private void OnMouseEnter(object sender, MouseEventArgs e) {
-            ViewModel.ShowPanel.Value = true;
+            ShowPanel(sender as FrameworkElement, true);
         }
 
         private void OnMouseLeave(object sender, MouseEventArgs e) {
-            ViewModel.ShowPanel.Value = false;
+            ShowPanel(sender as FrameworkElement, false);
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
-            ////ControlPanel.Initialize(this);
+            ViewModel.Fullscreen.Value = Window.GetWindow(this).WindowStyle == WindowStyle.None;
+        }
+
+        private void ToggleFullscreen() {
+            var win = Window.GetWindow(this);
+            if (win.WindowStyle == WindowStyle.None) {
+                win.WindowStyle = WindowStyle.SingleBorderWindow;
+                win.WindowState = WindowState.Normal;
+                ViewModel.Fullscreen.Value = false;
+            } else {
+                win.WindowStyle = WindowStyle.None;         // タイトルバーと境界線を表示しない
+                win.WindowState = WindowState.Maximized;    // 最大化表示
+                ViewModel.Fullscreen.Value = true;
+            }
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) {
