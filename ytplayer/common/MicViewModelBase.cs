@@ -70,11 +70,17 @@ namespace common {
                 return;
             }
             foreach (var prop in props) {
-                var obj = prop.GetValue(this);
-                if (obj is IDisposable) {
-                    var attrs = prop.GetCustomAttributes(false).Where((v) => v is Disposal);
-                    if (((Disposal)attrs.FirstOrDefault())?.ToBeDisposed ?? true) {
-                        ((IDisposable)obj).Dispose();
+                // インデクサを除外する
+                //  インデクサに対して GetValue()すると例外が出る。
+                //  インデクサは表記をちょっとだけ簡潔にする「シンタックスシュガー的」に定義すると思うので、普通は他の方法でDisposeするはず。
+                var indexer = prop.GetIndexParameters();
+                if (indexer.Length == 0) {
+                    var obj = prop.GetValue(this);
+                    if (obj is IDisposable) {
+                        var attrs = prop.GetCustomAttributes(false).Where((v) => v is Disposal);
+                        if (((Disposal)attrs.FirstOrDefault())?.ToBeDisposed ?? true) {
+                            ((IDisposable)obj).Dispose();
+                        }
                     }
                 }
             }

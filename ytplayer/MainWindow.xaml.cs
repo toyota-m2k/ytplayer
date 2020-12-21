@@ -355,7 +355,10 @@ namespace ytplayer {
 
         private MainViewModel viewModel {
             get => DataContext as MainViewModel;
-            set => DataContext = value;
+            set {
+                viewModel?.Dispose();
+                DataContext = value;
+            }
         }
 
         private void RefreshList() {
@@ -433,9 +436,12 @@ namespace ytplayer {
                 MessageBox.Show("ダウンロード中のため終了できません。", "ytplayer", MessageBoxButton.OK);
             }
             mDownloadManager = null;
+            mFilterEditorWindow?.Close();
+
             Settings.Instance.Ratings = viewModel.RatingFilter.ToArray();
             Settings.Instance.Placement.GetPlacementFrom(this);
             Settings.Instance.Serialize();
+            viewModel = null;
         }
 
         //private readonly string[] youtube_urls = {

@@ -37,6 +37,12 @@
     <SolidColorBrush x:Key="CheckedBtnFG" Color="#FFE9FF86" />
     <SolidColorBrush x:Key="UncheckedBtnFG" Color="#50C4FF25" />
 
+    <SolidColorBrush x:Key="IconExcellentColor"  Color="Red"/>
+    <SolidColorBrush x:Key="IconGoodColor"      Color="Orange"/>
+    <SolidColorBrush x:Key="IconNormalColor"    Color="Gray"/>
+    <SolidColorBrush x:Key="IconBadColor"       Color="CornflowerBlue"/>
+    <SolidColorBrush x:Key="IconDreadfulColor"  Color="MidnightBlue"/>
+
     <Style x:Key="IconButtonStyle" TargetType="Button">
         <Setter Property="OverridesDefaultStyle" Value="True" />
         <Setter Property="Width" Value="30"/>

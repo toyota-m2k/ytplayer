@@ -81,6 +81,12 @@ namespace ytplayer.player {
             });
         }
 
+        public void Terminate() {
+            ControlPanel.Terminate();
+            ViewModel.Dispose();
+            ViewModel = null;
+        }
+
         public void SetSource(string path, bool start=true) {
             starting = start;
             ViewModel.IsReady.Value = false;
@@ -190,8 +196,6 @@ namespace ytplayer.player {
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) {
-            ViewModel.Dispose();
-            ViewModel = null;
         }
     }
 }

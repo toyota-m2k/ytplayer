@@ -122,6 +122,12 @@ namespace ytplayer.player {
             ViewModel.MaximumWindow.Value = Window.GetWindow(this).WindowStyle == WindowStyle.None;
             ViewModel.MaximumWindow.Subscribe(MaximizeWindow);
         }
+
+        public void Terminate() {
+            ViewModel.Dispose();
+            ViewModel = null;
+        }
+
         private void OnCurrentChanged(IPlayable item) {
             if (item != null) {
                 ViewModel.Volume.Value = item.Volume;
@@ -161,8 +167,6 @@ namespace ytplayer.player {
             }
         }
         private void OnUnloaded(object sender, RoutedEventArgs e) {
-            ViewModel.Dispose();
-            ViewModel = null;
         }
     }
 }

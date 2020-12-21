@@ -11,7 +11,7 @@
             <Border
                 x:Name="ButtonVisual"
                 BorderBrush="Transparent"
-                BorderThickness="2"
+                BorderThickness="{StaticResource CTBActiveBorderThickness}"
                 Padding="{TemplateBinding Padding}"
                 >
                 <Grid>
@@ -66,7 +66,7 @@
             <Border
                 x:Name="ButtonVisual"
                 BorderBrush="Transparent"
-                BorderThickness="2"
+                BorderThickness="{StaticResource CTBActiveBorderThickness}"
                 Padding="{TemplateBinding Padding}"
                 >
                 <Grid>

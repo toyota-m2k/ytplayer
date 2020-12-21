@@ -33,8 +33,11 @@ namespace ytplayer.dialog {
     /// </summary>
     public partial class CategoryRatingDialog : Window {
         private CategoryRatingDialogViewModel ViewModel {
-            get => (CategoryRatingDialogViewModel)DataContext;
-            set => DataContext = value;
+            get => DataContext as CategoryRatingDialogViewModel;
+            set {
+                ViewModel?.Dispose();
+                DataContext = value;
+            }
         }
 
         public CategoryRatingDialog() {
@@ -65,10 +68,9 @@ namespace ytplayer.dialog {
         public event Action<Rating?, Category> CategoryRatingSelected;
         public static Point? StartPosition = null;
 
-        private void OnClose(object sender, EventArgs e) {
+        private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
             StartPosition = new Point(Left, Top);
-            ViewModel?.Dispose();
-            ViewModel = null;
+            //ViewModel = null;
             EditorWindowClosed?.Invoke(this);
         }
     }
