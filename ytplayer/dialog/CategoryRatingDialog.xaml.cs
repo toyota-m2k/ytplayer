@@ -70,7 +70,7 @@ namespace ytplayer.dialog {
 
         private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
             StartPosition = new Point(Left, Top);
-            //ViewModel = null;
+            ViewModel = null;
             EditorWindowClosed?.Invoke(this);
         }
     }
