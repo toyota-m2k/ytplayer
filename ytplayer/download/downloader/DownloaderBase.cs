@@ -12,11 +12,13 @@ namespace ytplayer.download.downloader {
     public class DownloadItemInfo {
         public string Name { get; }
         public string Id { get; }
+        public bool Completed { get; set; }
         public bool AlreadyDownloaded { get; }
         public DownloadItemInfo(string name, string id, bool already) {
             Name = name;
             Id = id;
             AlreadyDownloaded = already;
+            Completed = already;
         }
     }
 
@@ -54,10 +56,13 @@ namespace ytplayer.download.downloader {
         protected IDownloadHost Host { get; }
         protected bool ExtractAudio { get; }
 
+
         protected string TargetUrlOrId => (!ExtractAudio) ? Entry.Url : GetIDStringFromURL(new Uri(Entry.Url));
         protected string OutputDir => !ExtractAudio ? Settings.Instance.EnsureVideoPath : Settings.Instance.EnsureAudioPath;
         protected string OutputExtension => !ExtractAudio ? "mp4" : "mp3";
 
+        private Process DownloadProcess { get; set; } = null;
+        private bool Alive { get; set; } = true;
 
         protected DownloaderBase(DLEntry entry, IDownloadHost host, bool extractAudio) {
             Entry = entry;
@@ -76,9 +81,18 @@ namespace ytplayer.download.downloader {
             };
         }
 
+        private Process BeginProcess() {
+            lock(this) {
+                if(!Alive) {
+                    return null;
+                }
+                DownloadProcess = Process.Start(Prepare());
+                return DownloadProcess;
+            }
+        }
 
         public void Execute() {
-            if (Entry.Status==Status.CANCELLED) {
+            if (Entry.Status == Status.CANCELLED) {
                 return;
             }
             Entry.Status = Status.DOWNLOADING;
@@ -87,9 +101,12 @@ namespace ytplayer.download.downloader {
             Environment.CurrentDirectory = OutputDir;
 
             try {
-                var psi = Prepare();
-                var process = Process.Start(psi);
-                while (true) {
+                var process = BeginProcess();
+                if(process==null) {
+                    Entry.Status = Status.CANCELLED;
+                    return;
+                }
+                while (Alive) {
                     var response = process.StandardOutput.ReadLine();
                     if (!ProcessResponse(response)) {
                         break;
@@ -129,8 +146,15 @@ namespace ytplayer.download.downloader {
         }
 
         public void Cancel() {
-            if(Entry.Status==Status.WAITING) {
-                Entry.Status = Status.CANCELLED;
+            lock (this) {
+                if (Entry.Status == Status.WAITING) {
+                    Entry.Status = Status.CANCELLED;
+                }
+                Alive = false;
+                if(null!=DownloadProcess) {
+                    DownloadProcess.Kill();
+                    DownloadProcess = null;
+                }
             }
         }
 
@@ -167,17 +191,23 @@ namespace ytplayer.download.downloader {
          */
         private bool ValidateAndGetResult(DownloadItemInfo info, DLEntry entry) {
             var fname = GetSavedFilePath(info);
-            if (!string.IsNullOrEmpty(fname)) { 
-                entry.Name = info.Name;
-                entry.Status = Status.COMPLETED;
-                if (!ExtractAudio) {
-                    entry.VPath = fname;
-                    entry.Media = entry.Media.PlusVideo();
+            if (!string.IsNullOrEmpty(fname)) {
+                if (info.Completed) {
+                    entry.Name = info.Name;
+                    entry.Status = Status.COMPLETED;
+                    if (!ExtractAudio) {
+                        entry.VPath = fname;
+                        entry.Media = entry.Media.PlusVideo();
+                    } else {
+                        entry.APath = fname;
+                        entry.Media = entry.Media.PlusAudio();
+                    }
+                    return true;
                 } else {
-                    entry.APath = fname;
-                    entry.Media = entry.Media.PlusAudio();
+                    entry.Status = (Alive) ? Status.FAILED : Status.CANCELLED;
+                    PathUtil.safeDeleteFile(fname);
+                    return false;
                 }
-                return true;
             } else {
                 Host.ErrorOutput($"not found: {fname}");
                 entry.Status = Status.FAILED;

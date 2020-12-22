@@ -463,6 +463,17 @@ namespace ytplayer {
         }
 
         private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
+            if(mDownloadManager.IsBusy) {
+                var r = MessageBox.Show("ダウンロード中のため終了できません。キャンセルしますか？", "ytplayer", MessageBoxButton.YesNo);
+                if (r == MessageBoxResult.No) {
+                    e.Cancel = true;
+                    return;
+                }
+                mDownloadManager.Cancel();
+                e.Cancel = true;
+                return;
+            }
+
             Storage.DLTable.Update();
             mClipboardMonitor.Dispose();
             if (mPlayerWindow != null) {
@@ -477,9 +488,6 @@ namespace ytplayer {
             }
             Instance = null;
             mDownloadManager.Dispose();
-            while(mDownloadManager.IsBusy) {
-                MessageBox.Show("ダウンロード中のため終了できません。", "ytplayer", MessageBoxButton.OK);
-            }
             mDownloadManager = null;
             mFilterEditorWindow?.Close();
 
