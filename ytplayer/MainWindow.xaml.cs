@@ -211,6 +211,11 @@ namespace ytplayer {
             });
             viewModel.CommandExport.Subscribe(ExportUrlList);
             viewModel.CommandImport.Subscribe(ImportUrlList);
+            viewModel.ClipboardWatching.Subscribe((v) => {
+                if (v) {
+                    Process.Start("btytbrs:");
+                }
+            });
             InitializeComponent();
         }
 
@@ -640,8 +645,12 @@ namespace ytplayer {
             if(viewModel.BusyWithModal || !viewModel.ClipboardWatching.Value) {
                 return; // ダイアログ表示中は何もしない
             }
-            RegisterUrl(Clipboard.GetText());
-            //download(Clipboard.GetText());
+            try {
+                RegisterUrl(Clipboard.GetText());
+            } catch(Exception ex) {
+                Logger.error(ex);
+                ((IDownloadHost)this).ErrorOutput(ex.Message);
+            }
         }
 
         private void OnHeaderClick(object sender, RoutedEventArgs e) {
