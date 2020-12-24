@@ -8,7 +8,7 @@
     <ProjectGuid>{806EC4B2-8086-4C79-890B-40D06542A3AE}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <RootNamespace>ytplayer</RootNamespace>
-    <AssemblyName>ytplayer</AssemblyName>
+    <AssemblyName>BooTube</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -51,6 +51,9 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>ytplayer.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CustomMarshalers" />
@@ -260,6 +263,7 @@
     <Content Include="..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.113.3\build\net451\x86\SQLite.Interop.dll">
       <Link>lib\x86\SQLite.Interop.dll</Link>
     </Content>
+    <Resource Include="ytplayer.ico" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.7.2">
