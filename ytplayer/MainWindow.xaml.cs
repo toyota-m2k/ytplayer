@@ -50,6 +50,7 @@ namespace ytplayer {
         public ObservableCollection<OutputMessage> OutputList { get; } = new ObservableCollection<OutputMessage>();
         public ObservableCollection<Category> Categories => new ObservableCollection<Category>(Settings.Instance.Categories.FilterList);
         public ReactivePropertySlim<Category> CurrentCategory { get; } = new ReactivePropertySlim<Category>(Settings.Instance.Categories.All);
+        public ReactivePropertySlim<bool> ShowBlocked { get; } = new ReactivePropertySlim<bool>(false);
         public RatingFilter RatingFilter { get; } = new RatingFilter();
         public ObservableCollection<string> SearchHistory => Settings.Instance.SearchHistories.History;
         public ReactivePropertySlim<string> SearchText { get; } = new ReactivePropertySlim<string>();
@@ -184,13 +185,10 @@ namespace ytplayer {
                 RootGrid.RowDefinitions[3].Height = new GridLength(0, GridUnitType.Star);
             });
             viewModel.CommandPlay.Subscribe(Play);
-            viewModel.CurrentCategory.Subscribe((c) => {
-                RefreshList();
-            });
+            viewModel.CurrentCategory.Subscribe((c) => RefreshList());
             viewModel.RatingFilter.FilterChanged += RefreshList;
-            viewModel.SearchText.Subscribe((s) => {
-                RefreshList();
-            });
+            viewModel.SearchText.Subscribe((s) => RefreshList());
+            viewModel.ShowBlocked.Subscribe((s) => RefreshList());
             viewModel.AutoDownload.Subscribe((v) => {
                 if (!v||Storage==null) return;
                 var targets = Storage.DLTable.List.Where((e) => e.Status == Status.INITIAL || e.Status == Status.CANCELLED);
@@ -329,7 +327,7 @@ namespace ytplayer {
                     mFilterEditorWindow.Top = CategoryRatingDialog.StartPosition.Value.Y;
                 } else {
                     mFilterEditorWindow.Left = this.Left + this.ActualWidth - 200;
-                    mFilterEditorWindow.Top = this.Top + this.ActualWidth - 300;
+                    mFilterEditorWindow.Top = this.Top + this.ActualHeight - 300;
                 }
                 mFilterEditorWindow.Show();
             }
@@ -417,6 +415,7 @@ namespace ytplayer {
                 .FilterByRating(viewModel.RatingFilter)
                 .FilterByCategory(viewModel.CurrentCategory.Value)
                 .FilterByName(viewModel.SearchText.Value)
+                .Where((c)=> viewModel.ShowBlocked.Value || c.Status!=Status.BLOCKED)
                 );
         }
 

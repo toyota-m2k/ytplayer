@@ -63,6 +63,7 @@
     <SolidColorBrush x:Key="IconNormalColor"    Color="Gray"/>
     <SolidColorBrush x:Key="IconBadColor"       Color="CornflowerBlue"/>
     <SolidColorBrush x:Key="IconDreadfulColor"  Color="MidnightBlue"/>
+    <SolidColorBrush x:Key="IconBlockedColor"  Color="Red"/>
 
 
     <Style x:Key="RatingExcellentButtonStyle" BasedOn="{StaticResource IconToggleButtonStyle}" TargetType="ToggleButton">
@@ -97,6 +98,13 @@
         <Style.Triggers>
             <Trigger Property="IsChecked" Value="true">
                 <Setter Property="Foreground" Value="{StaticResource IconDreadfulColor}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="ShowBlockedButtonStyle" BasedOn="{StaticResource IconToggleButtonStyle}" TargetType="ToggleButton">
+        <Style.Triggers>
+            <Trigger Property="IsChecked" Value="true">
+                <Setter Property="Foreground" Value="{StaticResource IconBlockedColor}"/>
             </Trigger>
         </Style.Triggers>
     </Style>
