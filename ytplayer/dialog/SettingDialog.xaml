@@ -8,6 +8,7 @@
         Title="Settings" 
         Background="#EFEFEF"
         Closed="OnClosed"
+        IsEnabled="{Binding Ready.Value}"
         Height="321" Width="600">
     <Window.Resources>
         <ResourceDictionary Source="../res/YtpResource.xaml"/>
@@ -69,7 +70,8 @@
 
         <StackPanel Grid.Row="13" Grid.Column="0" Grid.ColumnSpan="5" HorizontalAlignment="Center" Orientation="Horizontal">
             <Button Content="OK" Command="{Binding OKCommand}" Width="100"/>
-            <Button Content="Cancel" Command="{Binding OKCommand}" Width="100" Margin="20,0,0,0" Visibility="{Binding Cancellable.Value, Converter={StaticResource BoolVisibilityConverter}}"/>
+            <Button Content="Cancel" Command="{Binding CancelCommand}" Width="100" Margin="20,0,0,0" Visibility="{Binding Cancellable.Value, Converter={StaticResource BoolVisibilityConverter}}"/>
+            <Button Content="Update youtube-dl" Command="{Binding UpdateCommand}" Width="100" Margin="20,0,0,0" Visibility="{Binding CanUpdateYTD.Value, Converter={StaticResource BoolVisibilityConverter}}"/>
         </StackPanel>
 
         <TextBlock Grid.Row="14" Grid.Column="0" Grid.ColumnSpan="5" Margin="0,10,0,0" Text="{Binding ErrorMessage.Value}" Height="30" VerticalAlignment="Top"/>

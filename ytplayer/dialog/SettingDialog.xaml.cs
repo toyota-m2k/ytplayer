@@ -1,6 +1,8 @@
 ﻿using common;
 using Reactive.Bindings;
 using System;
+using System.Net.Http;
+using System.Reactive.Linq;
 using System.Windows;
 using ytplayer.common;
 using ytplayer.data;
@@ -18,6 +20,8 @@ namespace ytplayer.dialog {
         public ReactivePropertySlim<string> AudioPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> ErrorMessage { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<bool> Cancellable { get; } = new ReactivePropertySlim<bool>(true);
+        public ReadOnlyReactivePropertySlim<bool> CanUpdateYTD { get; }
+        public ReactivePropertySlim<bool> Ready { get; } = new ReactivePropertySlim<bool>(true);
 
         public ReactiveCommand CommandDBPath { get; } = new ReactiveCommand();
         public ReactiveCommand CommandYTDLPath { get; } = new ReactiveCommand();
@@ -27,6 +31,7 @@ namespace ytplayer.dialog {
 
         public ReactiveCommand OKCommand { get; } = new ReactiveCommand();
         public ReactiveCommand CancelCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand UpdateCommand { get; } = new ReactiveCommand();
         public ReactiveCommand<bool> Completed { get; } = new ReactiveCommand<bool>();
 
         [Disposal(false)]
@@ -40,6 +45,8 @@ namespace ytplayer.dialog {
             VideoPath.Value = src.VideoPath;
             AudioPath.Value = src.AudioPath;
             UseWSL.Value = src.UseWSL;
+
+            CanUpdateYTD = YoutubeDLPath.Select((v) => PathUtil.isFile(System.IO.Path.Combine(v, "youtube-dl.exe"))).ToReadOnlyReactivePropertySlim();
 
             CommandDBPath.Subscribe(() => SelectDBFile(DBPath));
             CommandYTDLPath.Subscribe(() => SelectFolder("youtube-dl folder", YoutubeDLPath));
@@ -56,6 +63,7 @@ namespace ytplayer.dialog {
                 Completed.Execute(true);
             });
             CancelCommand.Subscribe(() => Completed.Execute(false));
+            UpdateCommand.Subscribe(UpdateYTD);
         }
 
         private void SelectFolder(string title, ReactivePropertySlim<string> path) {
@@ -133,6 +141,20 @@ namespace ytplayer.dialog {
             dst.UseWSL = UseWSL.Value;
             dst.Serialize();
             dst.ApplyEnvironment();
+        }
+
+        private async void UpdateYTD(object obj) {
+            Ready.Value = false;
+            try {
+                using (var client = new HttpClient())
+                using (var stream = await client.GetStreamAsync("https://youtube-dl.org/downloads/latest/youtube-dl.exe"))
+                using (var file = System.IO.File.Create(System.IO.Path.Combine(YoutubeDLPath.Value, "youtube-dl.exe"))) {
+                    await stream.CopyToAsync(file);
+                    await file.FlushAsync();
+                }
+            } finally {
+                Ready.Value = true;
+            }
         }
     }
 
