@@ -144,6 +144,20 @@ namespace ytplayer.data {
             set => setProp(callerName(), ref desc, value);
         }
 
+        [Column(Name = "duration", CanBeNull = true)]
+        private ulong? duration;
+        public ulong DurationInSec {
+            get => duration ?? 0;
+            set => setProp(callerName(), ref duration, value, "DurationText");
+        }
+
+        private string FormatDuration(ulong durationInSec) {
+            var t = TimeSpan.FromSeconds(durationInSec);
+            return string.Format("{0}:{1:00}:{2:00}", t.Hours, t.Minutes, t.Seconds);
+        }
+
+        public string DurationText => DurationInSec > 0 ? FormatDuration(DurationInSec) : "";
+
         public string Path => string.IsNullOrEmpty(VPath) ? APath : VPath;
         public bool HasFile => (int)Media > 0;
 

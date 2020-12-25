@@ -132,6 +132,36 @@ namespace ytplayer.data {
                 }
             }
         }
+
+        public int getVersion() {
+            using (var cmd = Connection.CreateCommand()) {
+                cmd.CommandText = $"SELECT ivalue FROM t_map WHERE name='version'";
+                using (var reader = cmd.ExecuteReader()) {
+                    if (reader.Read()) {
+                        return Convert.ToInt32(reader["ivalue"]);
+                    }
+                }
+            }
+            return 0;
+        }
+
+        public bool setVersion(int version) {
+            using (var cmd = Connection.CreateCommand()) {
+                try {
+                    cmd.CommandText = $"UPDATE t_map SET ivalue='{version}' WHERE name='version'";
+                    if (1 == cmd.ExecuteNonQuery()) {
+                        return true;
+                    }
+                    cmd.CommandText = $"INSERT INTO t_map (name,ivalue) VALUES('version','{version}')";
+                    return 1 == cmd.ExecuteNonQuery();
+                }
+                catch (SQLiteException) {
+                    return false;
+                }
+            }
+        }
+
+
         private void InitTables() {
             executeSql(
                 @"CREATE TABLE IF NOT EXISTS t_download (
@@ -145,6 +175,7 @@ namespace ytplayer.data {
                     rating INTEGER DEFAULT '0',
                     category TEXT,
                     volume INTEGER DEFAULT '0',
+                    duration INTEGER DEFAULT '0',
                     desc TEXT
                 )",
                 @"CREATE INDEX IF NOT EXISTS idx_category ON t_download(category)",
@@ -154,6 +185,11 @@ namespace ytplayer.data {
                     svalue TEXT
                 )"
             );
+
+            if(getVersion()==0) {
+                executeSql(@"ALTER TABLE t_download ADD COLUMN duration INTEGER DEFAULT '0'");
+                setVersion(1);
+            }
         }
     }
 }

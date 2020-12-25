@@ -20,6 +20,7 @@ namespace ytplayer.player {
         public ReadOnlyReactiveProperty<bool> IsReady { get; }
 #pragma warning disable IDE0052 // 読み取られていないプライベート メンバーを削除
         private IDisposable EndEventRegester { get; }
+        private IDisposable DurationRegester { get; }
 #pragma warning restore IDE0052 // 読み取られていないプライベート メンバーを削除
         public ObservableCollection<Category> Categories => new ObservableCollection<Category>(Settings.Instance.Categories.SelectList);
 
@@ -67,6 +68,11 @@ namespace ytplayer.player {
             IsPlaying = player.ViewModel.IsPlaying.ToReadOnlyReactiveProperty();
             IsReady = player.ViewModel.IsReady.ToReadOnlyReactiveProperty();
             EndEventRegester = player.ViewModel.Ended.Subscribe((v) => GoForwardCommand.Execute());
+            DurationRegester = player.ViewModel.Duration.Subscribe((v)=> {
+                if (v>0 && null != PlayList.Current.Value) {
+                    PlayList.Current.Value.DurationInSec = (ulong)Math.Round(v/1000);
+                }
+            });
             Speed = player.ViewModel.Speed;
             Volume = player.ViewModel.Volume;
             Volume.Subscribe((v) => {

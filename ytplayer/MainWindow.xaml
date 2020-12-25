@@ -394,6 +394,13 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
+                        <GridViewColumn Header="Duration" Width="Auto" HeaderTemplate="{StaticResource SortHeaderTemplate}">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DurationText}" HorizontalAlignment="Right"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
 
                         <GridViewColumn Header="Desc" Width="50" DisplayMemberBinding="{Binding Desc}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
                     </GridView>

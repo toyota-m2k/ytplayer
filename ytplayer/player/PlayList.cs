@@ -16,6 +16,7 @@ namespace ytplayer.player {
         Rating Rating { get; set; }
         bool HasFile { get; }
         double Volume { get; set; }
+        ulong DurationInSec { get; set; }
         void Delete();
     }
 

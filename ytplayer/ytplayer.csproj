@@ -132,6 +132,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="common\ColorUtil.cs" />
     <Compile Include="common\FileDialogBuilder.cs" />
     <Compile Include="common\Logger.cs" />
     <Compile Include="common\MenuButton.cs" />

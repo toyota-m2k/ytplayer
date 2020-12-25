@@ -409,7 +409,7 @@ namespace ytplayer {
                 .FilterByRating(viewModel.RatingFilter)
                 .FilterByCategory(viewModel.CurrentCategory.Value)
                 .FilterByName(viewModel.SearchText.Value)
-                .Where((c)=> viewModel.ShowBlocked.Value || c.Status!=Status.BLOCKED)
+                .Where((c)=> viewModel.ShowBlocked.Value || (c.Status!=Status.BLOCKED&&c.Status!=Status.FAILED))
                 );
         }
 
