@@ -1,6 +1,8 @@
 ﻿using common;
 using Reactive.Bindings;
 using System;
+using System.ComponentModel;
+using System.Linq;
 using System.Net.Http;
 using System.Reactive.Linq;
 using System.Windows;
@@ -77,15 +79,49 @@ namespace ytplayer.dialog {
         }
 
         private void SelectDBFile(ReactivePropertySlim<string> path) {
-            var r = SaveFileDialogBuilder.Create()
+            var r = OpenFileDialogBuilder.Create()
                 .title("DB File")
+                .ensureFileExists(false)
                 .initialDirectory(PathUtil.getDirectoryName(path.Value))
-                .showFolders(true)
                 .defaultExtension(YtpDef.DB_EXT)
                 .defaultFilename(YtpDef.DEFAULT_DBNAME)
                 .GetFilePath(Owner);
             if (null != r) {
+                if(PathUtil.isFile(r)) {
+                    if(!CheckDB(r)) {
+                        // ytplayer用のDBファイルではない
+                        MessageBox.Show(Owner, "このファイルはいけません。", "DBファイル", MessageBoxButton.OK);
+                        return;
+                    }
+                }
+
                 path.Value = r;
+            }
+        }
+
+        private bool CheckDB(string path) {
+            try {
+                using (var s = new Storage(path, dontCreateTable: true)) {
+                    var v = s.DLTable.List.First();
+
+                    return true;
+                }
+            } catch(Exception e) {
+                return false;
+            }
+        }
+
+        private Storage TryOpenStorage(string path) {
+            try {
+                if(!CheckDB(path)) {
+                    return null;
+                }
+                return new Storage(path);
+            }
+            catch (Exception e) {
+                // 開けなかったらNG
+                Logger.error(e);
+                return null;
             }
         }
 
@@ -119,12 +155,8 @@ namespace ytplayer.dialog {
 
             if (Owner.CurrentStorage == null || !PathUtil.isEqualDirectoryName(Owner.CurrentStorage.DBPath, DBPath.Value)) {
                 // 現在と異なるDBファイルが指定された・・・開いてみる。
-                try {
-                    NewStorage = new Storage(DBPath.Value);
-                } catch(Exception e) {
-                    // 開けなかったらNG
-                    Logger.error(e);
-                    NewStorage = null;
+                NewStorage = TryOpenStorage(DBPath.Value);
+                if(null==NewStorage) {
                     return $"cannot create db.";
                 }
             }
@@ -162,16 +194,24 @@ namespace ytplayer.dialog {
     /// SettingDialog.xaml の相互作用ロジック
     /// </summary>
     public partial class SettingDialog : Window {
-        public bool Result { get; private set; } = false;
+        public class DResult {
+            public bool Ok { get; }
+            public Storage NewStorage { get; }
+
+            public DResult(bool ok, Storage newStorage) {
+                Ok = ok;
+                NewStorage = newStorage;
+            }
+        }
+        public DResult Result { get; private set; } = null;
         public Storage CurrentStorage { get; }
-        public Storage NewStorage => viewModel.NewStorage;
+
         public SettingDialog(Storage currentStorage) {
             viewModel = new SettingsViewModel(this);
             viewModel.Cancellable.Value = currentStorage!=null;
-
             InitializeComponent();
             viewModel.Completed.Subscribe((res) => {
-                Result = res;
+                Result = new DResult(res, viewModel.NewStorage);
                 Close();
             });
         }
@@ -180,8 +220,16 @@ namespace ytplayer.dialog {
             set => DataContext = value;
         }
 
-        private void OnClosed(object sender, EventArgs e) {
+        protected override void OnClosed(EventArgs e) {
+            base.OnClosed(e);
             viewModel?.Dispose();
+        }
+
+        protected override void OnClosing(CancelEventArgs e) {
+            base.OnClosing(e);
+            if(!viewModel.Cancellable.Value && Result==null) {
+                e.Cancel = true;
+            }
         }
     }
 }

@@ -7,7 +7,6 @@
         mc:Ignorable="d"
         Title="Settings" 
         Background="#EFEFEF"
-        Closed="OnClosed"
         IsEnabled="{Binding Ready.Value}"
         Height="321" Width="600">
     <Window.Resources>

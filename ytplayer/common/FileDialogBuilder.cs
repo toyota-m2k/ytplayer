@@ -41,6 +41,10 @@ namespace ytplayer.common {
             }
             return this as TBuilderClass;
         }
+        public TBuilderClass ensureFileExists(bool exists = true) {
+            mDialog.EnsureFileExists = exists;
+            return this as TBuilderClass;
+        }
 
         public string GetFilePath(Window owner) {
             using (mDialog) {

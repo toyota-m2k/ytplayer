@@ -162,13 +162,7 @@ namespace ytplayer {
                 }
                 viewModel.BusyWithModal = true;
                 try {
-                    var dlg = new SettingDialog(Storage);
-                    dlg.ShowDialog();
-                    if (dlg.Result) {
-                        if (dlg.NewStorage != null) {
-                            SetStorage(dlg.NewStorage);
-                        }
-                    }
+                    ShowSettingDialog(Storage);
                 } finally {
                     viewModel.BusyWithModal = false;
                 }
@@ -549,15 +543,27 @@ namespace ytplayer {
             RegisterUrl(e.Data.GetData(DataFormats.Text) as string);
         }
 
+        /**
+         * @return true:DBがセットされた / false:DBはセットされなかった
+         */
+        private bool ShowSettingDialog(Storage currentStorage) {
+            var dlg = new SettingDialog(null);
+            dlg.Owner = this;
+            dlg.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            dlg.ShowDialog();
+            if (dlg.Result.Ok && dlg.Result.NewStorage != null) {
+                SetStorage(dlg.Result.NewStorage);
+                return true;
+            }
+            return false;
+        }
+
         private void InitStorage(bool forceCreate=false) {
             if (forceCreate || !PathUtil.isFile(Settings.Instance.EnsureDBPath)) {
                 while(true) {
                     viewModel.BusyWithModal= true;
                     try {
-                        var dlg = new SettingDialog(null);
-                        dlg.ShowDialog();
-                        if (dlg.Result && dlg.NewStorage != null) {
-                            SetStorage(dlg.NewStorage);
+                        if(ShowSettingDialog(null)) {
                             return;
                         }
                     } finally {

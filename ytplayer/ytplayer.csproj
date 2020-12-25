@@ -137,6 +137,7 @@
     <Compile Include="common\MenuButton.cs" />
     <Compile Include="common\PathUtil.cs" />
     <Compile Include="common\PathView.cs" />
+    <Compile Include="common\RectUtil.cs" />
     <Compile Include="common\StretchListView.cs" />
     <Compile Include="data\Category.cs" />
     <Compile Include="data\DLEntry.cs" />

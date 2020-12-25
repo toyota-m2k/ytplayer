@@ -93,12 +93,14 @@ namespace ytplayer.data {
 
         public string DBPath { get; }
 
-        public Storage(string path) {
+        public Storage(string path, bool dontCreateTable=false) {
             DBPath = path;
             var builder = new SQLiteConnectionStringBuilder() { DataSource = path };
             Connection = new SQLiteConnection(builder.ConnectionString);
             Connection.Open();
-            InitTables();
+            if (!dontCreateTable) {
+                InitTables();
+            }
 
             Context = new DataContext(Connection);
             Context.Log = Console.Out;
