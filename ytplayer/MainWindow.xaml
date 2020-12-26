@@ -269,6 +269,28 @@
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
+
+                <Style x:Key="MarkIconStyle" TargetType="Path">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Path=Mark}" Value="MARK_NONE">
+                            <Setter Property="Data" Value=""/>
+                            <Setter Property="Fill" Value="White"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Path=Mark}" Value="MARK_STAR">
+                            <Setter Property="Data" Value="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/>
+                            <Setter Property="Fill" Value="Blue"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Path=Mark}" Value="MARK_FLAG">
+                            <Setter Property="Data" Value="M14.4,6L14,4H5V21H7V14H12.6L13,16H20V6H14.4Z"/>
+                            <Setter Property="Fill" Value="Green"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Path=Mark}" Value="MARK_HEART">
+                            <Setter Property="Data" Value="M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z"/>
+                            <Setter Property="Fill" Value="Magenta"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+
             </Grid.Resources>
             <common:StretchListView x:Name="MainListView" ItemsSource="{Binding MainList.Value}" 
                   GridViewColumnHeader.Click="OnHeaderClick" StretchColumnIndex="2" StretchColumnMinWidth="100">
@@ -359,14 +381,38 @@
 
                         <GridViewColumn Header="Name" Width="100" DisplayMemberBinding="{Binding NameToDisplay}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
 
+                        <GridViewColumn Header="Mark" Width="Auto" HeaderTemplate="{StaticResource SortHeaderTemplate}">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Height="20" Padding="0" Background="Transparent"
+                                            FocusVisualStyle="{x:Null}"
+                                            Click="OnDLEntryMarkClicked" 
+                                            Tag="{Binding}" BorderThickness="0" 
+                                            HorizontalAlignment="Stretch">
+                                        <Viewbox Width="20" Height="20">
+                                            <Canvas Width="24" Height="24">
+                                                <Path Style="{StaticResource MarkIconStyle}"/>
+                                            </Canvas>
+                                        </Viewbox>
+                                    </Button>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+
                         <GridViewColumn Header="Rating" Width="Auto" HeaderTemplate="{StaticResource SortHeaderTemplate}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
+                                    <Button Height="20" Padding="0" Background="Transparent"
+                                            FocusVisualStyle="{x:Null}"
+                                            Click="OnDLEntryRatingClicked" 
+                                            Tag="{Binding}" BorderThickness="0"
+                                            HorizontalAlignment="Stretch">
                                     <Viewbox Width="20" Height="20">
                                         <Canvas Width="24" Height="24">
                                             <Path Style="{StaticResource RatingIconStyle}"/>
                                         </Canvas>
                                     </Viewbox>
+                                    </Button>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>

@@ -8,7 +8,7 @@ namespace ytplayer.player {
     /// </summary>
     public partial class PlayerWindow : Window {
         public PlayerWindow() {
-            //DataContext = this;
+            DataContext = this;
             InitializeComponent();
         }
 
@@ -48,11 +48,13 @@ namespace ytplayer.player {
             });
         }
 
-        private void OnUnloaded(object sender, RoutedEventArgs e) {
+        protected override void OnClosed(EventArgs e) {
+            base.OnClosed(e);
             PlayWindowClosed?.Invoke(this);
             PlayWindowClosed = null;
             PlayItemChanged = null;
             Player.Terminate();
+
         }
 
         private void Window_PreviewDragOver(object sender, DragEventArgs e) {

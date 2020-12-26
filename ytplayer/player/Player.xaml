@@ -6,8 +6,8 @@
              xmlns:local="clr-namespace:ytplayer.player"
              xmlns:common="clr-namespace:ytplayer.common"
              Loaded="OnLoaded"
-             Unloaded="OnUnloaded"
              mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance Type=local:PlayerViewModel}"
              d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
         <ResourceDictionary Source="../res/YtpResource.xaml"/>

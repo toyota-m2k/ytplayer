@@ -176,6 +176,7 @@ namespace ytplayer.data {
                     category TEXT,
                     volume INTEGER DEFAULT '0',
                     duration INTEGER DEFAULT '0',
+                    mark INTEGER DEFAULT '0',
                     desc TEXT
                 )",
                 @"CREATE INDEX IF NOT EXISTS idx_category ON t_download(category)",
@@ -189,6 +190,10 @@ namespace ytplayer.data {
             if(getVersion()==0) {
                 executeSql(@"ALTER TABLE t_download ADD COLUMN duration INTEGER DEFAULT '0'");
                 setVersion(1);
+            }
+            if (getVersion() == 1) {
+                executeSql(@"ALTER TABLE t_download ADD COLUMN mark INTEGER DEFAULT '0'");
+                setVersion(2);
             }
         }
     }

@@ -132,6 +132,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Sorter.cs" />
     <Compile Include="common\ColorUtil.cs" />
     <Compile Include="common\FileDialogBuilder.cs" />
     <Compile Include="common\Logger.cs" />
@@ -150,7 +151,6 @@
       <DependentUpon>CategoryRatingDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="download\DeterminationList.cs" />
-    <Compile Include="download\Downloader.cs" />
     <Compile Include="download\downloader\impl\AudioExtractor.cs" />
     <Compile Include="download\DownloadManager.cs" />
     <Compile Include="download\downloader\impl\CommonDownloader.cs" />

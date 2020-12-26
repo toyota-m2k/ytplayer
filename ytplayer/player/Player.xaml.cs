@@ -196,8 +196,5 @@ namespace ytplayer.player {
                 ViewModel.Fullscreen.Value = true;
             }
         }
-
-        private void OnUnloaded(object sender, RoutedEventArgs e) {
-        }
     }
 }

@@ -4,7 +4,6 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive.Linq;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using ytplayer.data;
@@ -23,26 +22,20 @@ namespace ytplayer.player {
         private IDisposable DurationRegester { get; }
 #pragma warning restore IDE0052 // 読み取られていないプライベート メンバーを削除
         public ObservableCollection<Category> Categories => new ObservableCollection<Category>(Settings.Instance.Categories.SelectList);
+        public ReactiveProperty<bool> FitMode { get; } = new ReactiveProperty<bool>();
 
         [Disposal(disposable:false)]
         public IReactiveProperty<double> Speed { get; }
         [Disposal(disposable: false)]
         public IReactiveProperty<double> Volume { get; }
 
-        public ReactiveProperty<bool> FitMode { get; } = new ReactiveProperty<bool>();
-        //public ReactiveProperty<bool> MaximumWindow { get; } = new ReactiveProperty<bool>();
-
         public ReactiveCommand PlayCommand { get; } = new ReactiveCommand();
         public ReactiveCommand PauseCommand { get; } = new ReactiveCommand();
         public ReactiveCommand GoBackCommand { get; } = new ReactiveCommand();
         public ReactiveCommand GoForwardCommand { get; } = new ReactiveCommand();
         public ReactiveCommand TrashCommand { get; } = new ReactiveCommand();
-        //public ReactiveCommand FitCommand { get; } = new ReactiveCommand();
-
         public ReactiveCommand ResetSpeedCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ResetVolumeCommand { get; } = new ReactiveCommand();
-
-
 
         private string FormatDuration(double duration) {
             var t = TimeSpan.FromMilliseconds(duration);
@@ -114,7 +107,6 @@ namespace ytplayer.player {
             ViewModel.GoForwardCommand.Subscribe(Next);
             ViewModel.GoBackCommand.Subscribe(Prev);
             ViewModel.TrashCommand.Subscribe(Trash);
-            //ViewModel.FitCommand.Subscribe(FitView);
             ViewModel.PlayList.Current.Subscribe(OnCurrentChanged);
             ViewModel.PlayList.ListItemAdded.Subscribe((v) => {
                 if(!ViewModel.IsPlaying.Value) {
@@ -123,8 +115,6 @@ namespace ytplayer.player {
             });
             ViewModel.FitMode.Value = player.Stretch == Stretch.UniformToFill;
             ViewModel.FitMode.Subscribe(FitView);
-            //ViewModel.MaximumWindow.Value = Window.GetWindow(this).WindowStyle == WindowStyle.None;
-            //ViewModel.MaximumWindow.Subscribe(MaximizeWindow);
         }
 
         public void Terminate() {
@@ -158,18 +148,6 @@ namespace ytplayer.player {
         }
         public void FitView(bool mode) {
             Player?.Apply((player) => player.Stretch = mode ? Stretch.UniformToFill : Stretch.Uniform);
-        }
-        //public void MaximizeWindow(bool max) {
-        //    var win = Window.GetWindow(this);
-        //    if (max) {
-        //        win.WindowStyle = WindowStyle.None;         // タイトルバーと境界線を表示しない
-        //        win.WindowState = WindowState.Maximized;    // 最大化表示
-        //    } else {
-        //        win.WindowStyle = WindowStyle.SingleBorderWindow;
-        //        win.WindowState = WindowState.Normal;
-        //    }
-        //}
-        private void OnUnloaded(object sender, RoutedEventArgs e) {
         }
     }
 }

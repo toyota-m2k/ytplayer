@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using ytplayer.common;
@@ -18,6 +19,9 @@ using ytplayer.interop;
 using ytplayer.player;
 
 namespace ytplayer {
+    /**
+     * アウトプットリストに出力する文字列エントリクラス
+     */
     public class OutputMessage {
         static Brush ErrorColor = new SolidColorBrush(Colors.Red);
         static Brush StandardColor = new SolidColorBrush(Colors.Black);
@@ -31,20 +35,24 @@ namespace ytplayer {
         }
     }
 
+    /**
+     * MainWindow上に表示する簡易ダイアログのID
+     */
     public enum DialogTypeId {
         DELETE_COMFIRM,
         ACCEPT_DETERMINATION,
         EXTRACT_AUDIO,
     }
 
+    /**
+     * ビューモデル
+     */
     public class MainViewModel : MicViewModelBase {
         public ReactiveProperty<ObservableCollection<DLEntry>> MainList { get; } = new ReactiveProperty<ObservableCollection<DLEntry>>(new ObservableCollection<DLEntry>());
         public ReactivePropertySlim<bool> AutoDownload { get; } = new ReactivePropertySlim<bool>(true);
         public ReactivePropertySlim<bool> AutoPlay { get; } = new ReactivePropertySlim<bool>(true);
-        //public ReactivePropertySlim<bool> OnlySound { get; } = new ReactivePropertySlim<bool>(false);
         public ReactivePropertySlim<bool> IsBusy { get; } = new ReactivePropertySlim<bool>(false);
         public ReactivePropertySlim<bool> ShowFilterEditor { get; } = new ReactivePropertySlim<bool>(false);
-        //public ReactivePropertySlim<bool> IsSettingNow { get; } = new ReactivePropertySlim<bool>(false);
         public ReactivePropertySlim<bool> ClipboardWatching { get; } = new ReactivePropertySlim<bool>(false);
         public ReactivePropertySlim<string> StatusString { get; } = new ReactivePropertySlim<string>();
         public ObservableCollection<OutputMessage> OutputList { get; } = new ObservableCollection<OutputMessage>();
@@ -57,7 +65,6 @@ namespace ytplayer {
 
         public bool BusyWithModal = false;
 
-        //public ReactiveCommand CommandDownloadNow { get; } = new ReactiveCommand();
         public ReactiveCommand CommandSettings { get; } = new ReactiveCommand();
         public ReactiveCommand CommandClearOutput { get; } = new ReactiveCommand();
         public ReactiveCommand CommandFoldOutput { get; } = new ReactiveCommand();
@@ -66,7 +73,6 @@ namespace ytplayer {
         public ReactiveCommand CommandClearSearchText { get; } = new ReactiveCommand();
         public ReactiveCommand CommandExport { get; } = new ReactiveCommand();
         public ReactiveCommand CommandImport { get; } = new ReactiveCommand();
-
 
         // Context Menu
         public ReactiveCommand OpenInWebBrowserCommand { get; } = new ReactiveCommand();
@@ -81,6 +87,7 @@ namespace ytplayer {
         public ReactivePropertySlim<DialogTypeId> DialogType { get; } = new ReactivePropertySlim<DialogTypeId>();
         public ReactiveCommand CommandCancel { get; } = new ReactiveCommand();
         public ReactiveCommand CommandOk { get; } = new ReactiveCommand();
+
         public Task<bool> ShowDialog(DialogTypeId type, string title) {
             BusyWithModal = true;
             DialogTask = new TaskCompletionSource<bool>();
@@ -121,6 +128,9 @@ namespace ytplayer {
             return ShowDialog(DialogTypeId.EXTRACT_AUDIO, "Extract Audio");
         }
 
+        /**
+         * ビューモデルの構築
+         */
         public MainViewModel() {
             CommandCancel.Subscribe(() => {
                 DialogTask.TrySetResult(false);
@@ -138,11 +148,12 @@ namespace ytplayer {
         }
     }
 
-    /// <summary>
-    /// MainWindow.xaml の相互作用ロジック
-    /// </summary>
+    /**
+     * MainWindowクラス
+     */
     public partial class MainWindow : Window, IDownloadHost {
-        //private Storage mStorage = null;
+        #region Properties / Fields
+
         private DownloadManager mDownloadManager = null;
         private ClipboardMonitor mClipboardMonitor = null;
         private Storage Storage => mDownloadManager?.Storage;
@@ -152,6 +163,18 @@ namespace ytplayer {
             get => sInstance?.GetValue();
             private set => sInstance = new WeakReference<MainWindow>(value);
         }
+
+        private MainViewModel viewModel {
+            get => DataContext as MainViewModel;
+            set {
+                viewModel?.Dispose();
+                DataContext = value;
+            }
+        }
+
+        #endregion
+
+        #region Initialization / Termination
 
         public MainWindow() {
             viewModel = new MainViewModel();
@@ -167,10 +190,6 @@ namespace ytplayer {
                 }
             });
 
-            //viewModel.CommandDownloadNow.Subscribe(() => {
-            //    var targets = MainListView.SelectedItems.ToEnumerable<DLEntry>();
-            //    mDownloadManager.Enqueue(targets);
-            //});
             viewModel.CommandClearOutput.Subscribe(() => {
                 viewModel.OutputList.Clear();
             });
@@ -209,6 +228,197 @@ namespace ytplayer {
             });
             InitializeComponent();
         }
+
+        protected override void OnSourceInitialized(EventArgs e) {
+            base.OnSourceInitialized(e);
+            Settings.Instance.Placement.ApplyPlacementTo(this);
+            Settings.Instance.SortInfo.SortUpdated += OnSortChanged;
+        }
+
+        private void OnLoaded(object sender, RoutedEventArgs e) {
+            Instance = this;
+            InitStorage();
+            mClipboardMonitor = new ClipboardMonitor(this, true);
+            mClipboardMonitor.ClipboardUpdate += OnClipboardUpdated;
+            var lastUrl = Settings.Instance.LastPlayingUrl;
+            if (!string.IsNullOrEmpty(lastUrl)) {
+                var entry = viewModel.MainList.Value.Where((c) => c.KEY == lastUrl).FirstOrDefault();
+                if (entry != null) {
+                    MainListView.SelectedItem = entry;
+                    MainListView.ScrollIntoView(entry);
+                    var pos = Settings.Instance.LastPlayingPos;
+                    if (pos > 0) {
+                        var win = GetPlayer();
+                        win.ResumePlay(viewModel.MainList.Value, entry, pos);
+                    }
+                }
+            }
+            var version = FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            //Debug.WriteLine(v.ToString());
+#if DEBUG
+            string dbg = "  <DBG>  ";
+#else
+            string dbg = "  ";
+#endif
+            this.Title = String.Format("{0}{5} - v{1}.{2}.{3}.{4}", version.ProductName, version.FileMajorPart, version.FileMinorPart, version.FileBuildPart, version.ProductPrivatePart, dbg);
+        }
+
+        private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
+            if (mDownloadManager.IsBusy) {
+                var r = MessageBox.Show("ダウンロード中のため終了できません。キャンセルしますか？", "ytplayer", MessageBoxButton.YesNo);
+                if (r == MessageBoxResult.No) {
+                    e.Cancel = true;
+                    return;
+                }
+                mDownloadManager.Cancel();
+                e.Cancel = true;
+                return;
+            }
+
+            Storage.DLTable.Update();
+            mClipboardMonitor.Dispose();
+            if (mPlayerWindow != null) {
+                var (cur, pos) = mPlayerWindow.CurrentPlayingInfo;
+                Settings.Instance.LastPlayingUrl = cur.Url;
+                Settings.Instance.LastPlayingPos = pos;
+                mPlayerWindow.Close();
+                mPlayerWindow = null;
+            } else {
+                Settings.Instance.LastPlayingUrl = (MainListView.SelectedItem as DLEntry)?.Url;
+                Settings.Instance.LastPlayingPos = 0;
+            }
+            Settings.Instance.SortInfo.SortUpdated -= OnSortChanged;
+            Instance = null;
+            mDownloadManager.Dispose();
+            mDownloadManager = null;
+            mFilterEditorWindow?.Close();
+
+            Settings.Instance.Ratings = viewModel.RatingFilter.ToArray();
+            Settings.Instance.Placement.GetPlacementFrom(this);
+            Settings.Instance.Serialize();
+            viewModel = null;
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e) {
+        }
+
+        #endregion
+
+        #region Storage Management
+
+        /**
+         * @return true:DBがセットされた / false:DBはセットされなかった
+         */
+        private bool ShowSettingDialog(Storage currentStorage) {
+            var dlg = new SettingDialog(currentStorage);
+            dlg.Owner = this;
+            dlg.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            dlg.ShowDialog();
+            if (dlg.Result.Ok && dlg.Result.NewStorage != null) {
+                SetStorage(dlg.Result.NewStorage);
+                return true;
+            }
+            return false;
+        }
+
+        private void InitStorage(bool forceCreate = false) {
+            if (forceCreate || !PathUtil.isFile(Settings.Instance.EnsureDBPath)) {
+                while (true) {
+                    viewModel.BusyWithModal = true;
+                    try {
+                        if (ShowSettingDialog(null)) {
+                            return;
+                        }
+                    }
+                    finally {
+                        viewModel.BusyWithModal = false;
+                    }
+                }
+            } else {
+                try {
+                    var storage = new Storage(Settings.Instance.EnsureDBPath);
+                    SetStorage(storage);
+                }
+                catch (Exception e) {
+                    Logger.error(e);
+                    InitStorage(true);
+                }
+            }
+        }
+
+        private void SetStorage(Storage newStorage) {
+            if (mDownloadManager?.Storage != newStorage) {
+                // ストレージが置き換わるときは、DownloadManagerを作り直す
+                // DownloadManager.Dispose()の中で、ストレージもDisposeされる。
+                mDownloadManager?.Dispose();
+                mDownloadManager = new DownloadManager(this, newStorage);
+                mDownloadManager.BusyChanged += OnBusyStateChanged;
+                viewModel.IsBusy.Value = false;
+                viewModel.AutoDownload.ForceNotify();
+                newStorage.DLTable.AddEvent += OnDLEntryAdd;
+                newStorage.DLTable.DelEvent += OnDLEntryDel;
+                RefreshList();
+                UpdateColumnHeaderOnSort();
+            }
+        }
+
+        private void OnDLEntryDel(DLEntry entry) {
+            Dispatcher.Invoke(() => {
+                viewModel.MainList.Value.Remove(entry);
+            });
+        }
+
+        private void OnDLEntryAdd(DLEntry entry) {
+            Dispatcher.Invoke(() => {
+                viewModel.MainList.Value.Add(entry);
+                // ToDo: Sort ... see DxxDBViewerWindow.xaml.cs SortInfo, etc...
+            });
+        }
+
+        #endregion
+
+        #region Targets List Management
+
+        private void RefreshList() {
+            if (Storage == null) return;
+            viewModel.MainList.Value = new ObservableCollection<DLEntry>(Storage.DLTable.List
+                .FilterByRating(viewModel.RatingFilter)
+                .FilterByCategory(viewModel.CurrentCategory.Value)
+                .FilterByName(viewModel.SearchText.Value)
+                .Where((c) => viewModel.ShowBlocked.Value || (c.Status != Status.BLOCKED && c.Status != Status.FAILED))
+                .Sort());
+        }
+
+        private void OnSearchBoxLostFocus(object sender, RoutedEventArgs e) {
+            Settings.Instance.SearchHistories.Put(viewModel.SearchText.Value);
+        }
+
+        private void OnDLEntryRatingClicked(object sender, RoutedEventArgs e) {
+            var entry = ((FrameworkElement)sender).Tag as DLEntry;
+            int rating = (int)entry.Rating + 1;
+            if (rating > (int)Rating.EXCELLENT) {
+                rating = 1;
+            }
+            entry.Rating = (Rating)rating;
+        }
+
+        private void OnDLEntryMarkClicked(object sender, RoutedEventArgs e) {
+            var entry = ((FrameworkElement)sender).Tag as DLEntry;
+            int mark = (int)entry.Mark + 1;
+            if (mark >= (int)Mark.MARK_LAST) {
+                mark = 0;
+            }
+            entry.Mark = (Mark)mark;
+        }
+
+
+        private void OnListItemDoubleClick(object sender, MouseButtonEventArgs e) {
+            viewModel.CommandPlay.Execute();
+        }
+
+        #endregion
+
+        #region Export / Import
 
         private void ExportUrlList(object obj) {
             var sel = MainListView.SelectedItems;
@@ -249,6 +459,10 @@ namespace ytplayer {
                 }
             }
         }
+
+        #endregion
+
+        #region Items Selection / Context Menu
 
         private DLEntry SelectedEntry => MainListView.SelectedItem as DLEntry;
         private IEnumerable<DLEntry> SelectedEntries => MainListView.SelectedItems.ToEnumerable<DLEntry>();
@@ -306,6 +520,10 @@ namespace ytplayer {
             }
         }
 
+        #endregion
+
+        #region Category & Rating Setting Panel
+
         private CategoryRatingDialog mFilterEditorWindow = null;
         private CategoryRatingDialog GetFilterEditorWindow() {
             if(mFilterEditorWindow==null) {
@@ -349,6 +567,10 @@ namespace ytplayer {
             }
             Storage.DLTable.Update();
         }
+
+        #endregion
+
+        #region Player Window
 
         private PlayerWindow mPlayerWindow = null;
         private PlayerWindow GetPlayer() {
@@ -394,23 +616,9 @@ namespace ytplayer {
             }
         }
 
-        private MainViewModel viewModel {
-            get => DataContext as MainViewModel;
-            set {
-                viewModel?.Dispose();
-                DataContext = value;
-            }
-        }
+        #endregion
 
-        private void RefreshList() {
-            if (Storage == null) return;
-            viewModel.MainList.Value = new ObservableCollection<DLEntry>(Storage.DLTable.List
-                .FilterByRating(viewModel.RatingFilter)
-                .FilterByCategory(viewModel.CurrentCategory.Value)
-                .FilterByName(viewModel.SearchText.Value)
-                .Where((c)=> viewModel.ShowBlocked.Value || (c.Status!=Status.BLOCKED&&c.Status!=Status.FAILED))
-                );
-        }
+        #region Register Items ( D&D / Clipboard )
 
         public async void RegisterUrl(string url, bool silent=false) {
             url = url.Trim();
@@ -444,205 +652,12 @@ namespace ytplayer {
             }
         }
 
-        //class PathComparator : IEqualityComparer<string> {
-        //    public new bool Equals(string x, string y) {
-        //        return System.IO.Path.GetDirectoryName(x) == System.IO.Path.GetDirectoryName(y);
-        //    }
-
-        //    public int GetHashCode(string obj) {
-        //        return System.IO.Path.GetDirectoryName(obj).GetHashCode();
-        //    }
-        //}
-
-        protected override void OnSourceInitialized(EventArgs e) {
-            base.OnSourceInitialized(e);
-            Settings.Instance.Placement.ApplyPlacementTo(this);
-        }
-
-        private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
-            if(mDownloadManager.IsBusy) {
-                var r = MessageBox.Show("ダウンロード中のため終了できません。キャンセルしますか？", "ytplayer", MessageBoxButton.YesNo);
-                if (r == MessageBoxResult.No) {
-                    e.Cancel = true;
-                    return;
-                }
-                mDownloadManager.Cancel();
-                e.Cancel = true;
-                return;
-            }
-
-            Storage.DLTable.Update();
-            mClipboardMonitor.Dispose();
-            if (mPlayerWindow != null) {
-                var (cur, pos) = mPlayerWindow.CurrentPlayingInfo;
-                Settings.Instance.LastPlayingUrl = cur.Url;
-                Settings.Instance.LastPlayingPos = pos;
-                mPlayerWindow.Close();
-                mPlayerWindow = null;
-            } else {
-                Settings.Instance.LastPlayingUrl = (MainListView.SelectedItem as DLEntry)?.Url;
-                Settings.Instance.LastPlayingPos = 0;
-            }
-            Instance = null;
-            mDownloadManager.Dispose();
-            mDownloadManager = null;
-            mFilterEditorWindow?.Close();
-
-            Settings.Instance.Ratings = viewModel.RatingFilter.ToArray();
-            Settings.Instance.Placement.GetPlacementFrom(this);
-            Settings.Instance.Serialize();
-            viewModel = null;
-        }
-
-        //private readonly string[] youtube_urls = {
-        //    "https://www.youtube.com/",
-        //    "https://i.ytimg.com/",
-        //};
-        //private bool isYoutubeUrl(string url) {
-        //    if (url != null) {
-        //        foreach (var y in youtube_urls) {
-        //            if (url.StartsWith(y)) {
-        //                return true;
-        //            }
-        //        }
-        //    }
-        //    return false;
-        //}
-
-        //private void download(string url) {
-        //    if(!isYoutubeUrl(url)) {
-        //        return;
-        //    }
-
-        //    var psi = new ProcessStartInfo() {
-        //        FileName = "youtube-dl",
-        //        Arguments = $"--get-title {url}",
-        //        CreateNoWindow = true,
-        //        UseShellExecute = false,
-        //        RedirectStandardOutput = true,
-        //        RedirectStandardError = true,
-        //        // RedirectStandardInput = true,
-        //    };
-        //    //psi.EnvironmentVariables["Path"] = path;
-        //    var process = Process.Start(psi);
-        //    var s = process.StandardOutput.ReadToEnd();
-        //    Debug.WriteLine(s);
-        //    //Output.Text += "\n";
-        //    //Output.Text += s;
-        //    s = process.StandardError.ReadToEnd();
-        //    //Output.Text += s;
-        //    //Output.ScrollToEnd();
-        //}
-
         private void Window_PreviewDragOver(object sender, DragEventArgs e) {
             e.Effects = DragDropEffects.Copy;
         }
 
         private void Window_Drop(object sender, DragEventArgs e) {
             RegisterUrl(e.Data.GetData(DataFormats.Text) as string);
-        }
-
-        /**
-         * @return true:DBがセットされた / false:DBはセットされなかった
-         */
-        private bool ShowSettingDialog(Storage currentStorage) {
-            var dlg = new SettingDialog(currentStorage);
-            dlg.Owner = this;
-            dlg.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            dlg.ShowDialog();
-            if (dlg.Result.Ok && dlg.Result.NewStorage != null) {
-                SetStorage(dlg.Result.NewStorage);
-                return true;
-            }
-            return false;
-        }
-
-        private void InitStorage(bool forceCreate=false) {
-            if (forceCreate || !PathUtil.isFile(Settings.Instance.EnsureDBPath)) {
-                while(true) {
-                    viewModel.BusyWithModal= true;
-                    try {
-                        if(ShowSettingDialog(null)) {
-                            return;
-                        }
-                    } finally {
-                        viewModel.BusyWithModal = false;
-                    }
-                }
-            } else {
-                try {
-                    var storage = new Storage(Settings.Instance.EnsureDBPath);
-                    SetStorage(storage);
-                } catch(Exception e) {
-                    Logger.error(e);
-                    InitStorage(true);
-                }
-            }
-        }
-
-        private void SetStorage(Storage newStorage) {
-            if(mDownloadManager?.Storage != newStorage) {
-                // ストレージが置き換わるときは、DownloadManagerを作り直す
-                // DownloadManager.Dispose()の中で、ストレージもDisposeされる。
-                mDownloadManager?.Dispose();
-                mDownloadManager = new DownloadManager(this, newStorage);
-                mDownloadManager.BusyChanged += OnBusyStateChanged;
-                viewModel.IsBusy.Value = false;
-                viewModel.AutoDownload.ForceNotify();
-                newStorage.DLTable.AddEvent += OnDLEntryAdd;
-                newStorage.DLTable.DelEvent += OnDLEntryDel;
-                RefreshList();
-            }
-        }
-
-        private void OnBusyStateChanged(bool busy) {
-            Dispatcher.Invoke(() => {
-                viewModel.IsBusy.Value = busy;
-            });
-        }
-
-        private void OnDLEntryDel(DLEntry entry) {
-            Dispatcher.Invoke(() => {
-                viewModel.MainList.Value.Remove(entry);
-            });
-        }
-
-        private void OnDLEntryAdd(DLEntry entry) {
-            Dispatcher.Invoke(() => {
-                viewModel.MainList.Value.Add(entry);
-                // ToDo: Sort ... see DxxDBViewerWindow.xaml.cs SortInfo, etc...
-            });
-        }
-
-        private void OnLoaded(object sender, RoutedEventArgs e) {
-            Instance = this;
-            InitStorage();
-            mClipboardMonitor = new ClipboardMonitor(this, true);
-            mClipboardMonitor.ClipboardUpdate += OnClipboardUpdated;
-            var lastUrl = Settings.Instance.LastPlayingUrl;
-            if (!string.IsNullOrEmpty(lastUrl)) {
-                var entry = viewModel.MainList.Value.Where((c) => c.KEY == lastUrl).FirstOrDefault();
-                if(entry!=null) {
-                    MainListView.SelectedItem = entry;
-                    MainListView.ScrollIntoView(entry);
-                    var pos = Settings.Instance.LastPlayingPos;
-                    if (pos > 0) {
-                        var win = GetPlayer();
-                        win.ResumePlay(viewModel.MainList.Value, entry, pos);
-                    }
-                }
-            }
-            var version = FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            //Debug.WriteLine(v.ToString());
-#if DEBUG
-            string dbg = "  <DBG>  ";
-#else
-            string dbg = "  ";
-#endif
-            this.Title = String.Format("{0}{5} - v{1}.{2}.{3}.{4}", version.ProductName, version.FileMajorPart, version.FileMinorPart, version.FileBuildPart, version.ProductPrivatePart, dbg);
-        }
-
-        private void OnUnloaded(object sender, RoutedEventArgs e) {
         }
 
         private void OnClipboardUpdated(object sender, EventArgs e) {
@@ -657,13 +672,56 @@ namespace ytplayer {
             }
         }
 
-        private void OnHeaderClick(object sender, RoutedEventArgs e) {
-            // Sort
+        #endregion
+
+        #region Sort
+
+        private static IEnumerable<T> FindVisualChildren<T>(DependencyObject depObj) where T : DependencyObject {
+            if (depObj != null) {
+                for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++) {
+                    DependencyObject child = VisualTreeHelper.GetChild(depObj, i);
+                    if (child != null && child is T) {
+                        yield return (T)child;
+                    }
+                    foreach (T childOfChild in FindVisualChildren<T>(child)) {
+                        yield return childOfChild;
+                    }
+                }
+            }
         }
 
-        private void OnListItemDoubleClick(object sender, MouseButtonEventArgs e) {
-            viewModel.CommandPlay.Execute();
+        private void UpdateColumnHeaderOnSort() {
+            var sorter = Settings.Instance.SortInfo;
+            foreach (var header in FindVisualChildren<GridViewColumnHeader>(MainListView)) {
+                Debug.WriteLine(header.ToString());
+                var textBox = FindVisualChildren<TextBlock>(header).FirstOrDefault();
+                if (null != textBox) {
+                    var key = Sorter.SortKeyFromString(textBox.Text);
+                    if (key == sorter.Key) {
+                        header.Tag = sorter.Order == SortOrder.ASCENDING ? "asc" : "desc";
+                    } else {
+                        header.Tag = null;
+                    }
+                }
+            }
         }
+
+        private void OnSortChanged() {
+            UpdateColumnHeaderOnSort();
+            RefreshList();
+        }
+
+        private void OnHeaderClick(object sender, RoutedEventArgs e) {
+            var header = e.OriginalSource as GridViewColumnHeader;
+            if (null == header) {
+                return;
+            }
+            Settings.Instance.SortInfo.SetSortKey(header.Content.ToString());
+        }
+
+        #endregion
+
+        #region Download Status / Event Handling
 
         private bool Output(string msg, bool error) {
             if (null == msg) return false;
@@ -704,9 +762,13 @@ namespace ytplayer {
             });
         }
 
-        private void OnSearchBoxLostFocus(object sender, RoutedEventArgs e) {
-            Settings.Instance.SearchHistories.Put(viewModel.SearchText.Value);
+        private void OnBusyStateChanged(bool busy) {
+            Dispatcher.Invoke(() => {
+                viewModel.IsBusy.Value = busy;
+            });
         }
+
+        #endregion
     }
 
     static class FilterExt {
@@ -719,6 +781,9 @@ namespace ytplayer {
         public static IEnumerable<DLEntry> FilterByName(this IEnumerable<DLEntry> s, string search) {
             search = search?.Trim();
             return string.IsNullOrEmpty(search) ? s : s.Where((e) => e.Name?.ContainsIgnoreCase(search) ?? false);
+        }
+        public static IOrderedEnumerable<DLEntry> Sort(this IEnumerable<DLEntry> s) {
+            return Settings.Instance.SortInfo.Sort(s);
         }
     }
 }
