@@ -57,7 +57,10 @@ namespace ytplayer.player {
     public partial class Player : UserControl, IPlayer {
         PlayerViewModel ViewModel {
             get => DataContext as PlayerViewModel;
-            set => DataContext = value;
+            set {
+                ViewModel?.Dispose();
+                DataContext = value;
+            }
         }
         IPlayerViewModel IPlayer.ViewModel => ViewModel;
         private bool starting = false;
@@ -83,7 +86,6 @@ namespace ytplayer.player {
 
         public void Terminate() {
             ControlPanel.Terminate();
-            ViewModel.Dispose();
             ViewModel = null;
         }
 

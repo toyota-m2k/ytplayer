@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using common;
-//using System.Drawing;
 using System.Windows.Media;
-using ytplayer.common;
 
 namespace ytplayer.data {
     public class Category : MicPropertyChangeNotifier {

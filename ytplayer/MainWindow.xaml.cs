@@ -72,7 +72,6 @@ namespace ytplayer {
         public ReactiveCommand OpenInWebBrowserCommand { get; } = new ReactiveCommand();
         public ReactiveCommand DeleteAndBlockCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ResetAndDownloadCommand { get; } = new ReactiveCommand();
-        public ReactiveCommand CategoryRatingCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ExtractAudioCommand { get; } = new ReactiveCommand();
 
         // Dialog
@@ -547,7 +546,7 @@ namespace ytplayer {
          * @return true:DBがセットされた / false:DBはセットされなかった
          */
         private bool ShowSettingDialog(Storage currentStorage) {
-            var dlg = new SettingDialog(null);
+            var dlg = new SettingDialog(currentStorage);
             dlg.Owner = this;
             dlg.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             dlg.ShowDialog();

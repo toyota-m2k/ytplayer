@@ -46,7 +46,6 @@ namespace ytplayer.dialog {
             FFMpegPath.Value = src.FFMpegPath;
             VideoPath.Value = src.VideoPath;
             AudioPath.Value = src.AudioPath;
-            UseWSL.Value = src.UseWSL;
 
             CanUpdateYTD = YoutubeDLPath.Select((v) => PathUtil.isFile(System.IO.Path.Combine(v, "youtube-dl.exe"))).ToReadOnlyReactivePropertySlim();
 
@@ -103,10 +102,9 @@ namespace ytplayer.dialog {
             try {
                 using (var s = new Storage(path, dontCreateTable: true)) {
                     var v = s.DLTable.List.First();
-
                     return true;
                 }
-            } catch(Exception e) {
+            } catch(Exception) {
                 return false;
             }
         }
@@ -170,7 +168,6 @@ namespace ytplayer.dialog {
             dst.FFMpegPath = FFMpegPath.Value;
             dst.VideoPath = VideoPath.Value;
             dst.AudioPath = AudioPath.Value;
-            dst.UseWSL = UseWSL.Value;
             dst.Serialize();
             dst.ApplyEnvironment();
         }

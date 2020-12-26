@@ -13,7 +13,6 @@ namespace ytplayer {
         public string FFMpegPath { get; set; } = "";
         public string VideoPath { get; set; } = "";
         public string AudioPath { get; set; } = "";
-        public bool UseWSL { get; set; } = false;
         public DeterminationList Determinations { get; set; } = new DeterminationList();
         public CategoryList Categories { get; set; } = new CategoryList();
         public SearchHistory SearchHistories { get; set; } = new SearchHistory();
@@ -84,11 +83,9 @@ namespace ytplayer {
         public string EnsureDBPath => ComplementDBPath(DBPath);
 
         public void ApplyEnvironment() {
-            if (!UseWSL) {
-                var path = PathUtil.appendPathString(sOrgPath, YoutubeDLPath, FFMpegPath);
-                if (path != sOrgPath) {
-                    Environment.SetEnvironmentVariable("path", path);
-                }
+            var path = PathUtil.appendPathString(sOrgPath, YoutubeDLPath, FFMpegPath);
+            if (path != sOrgPath) {
+                Environment.SetEnvironmentVariable("path", path);
             }
             //Environment.CurrentDirectory = EnsureVideoPath;
         }

@@ -8,7 +8,7 @@ namespace ytplayer.player {
     /// </summary>
     public partial class PlayerWindow : Window {
         public PlayerWindow() {
-            DataContext = this;
+            //DataContext = this;
             InitializeComponent();
         }
 

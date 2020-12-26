@@ -315,7 +315,6 @@
                                     <MenuItem Header="Open in Web Browser" Command="{Binding OpenInWebBrowserCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                                     <MenuItem Header="Delete &amp; Block" Command="{Binding DeleteAndBlockCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                                     <MenuItem Header="Reset &amp; Download" Command="{Binding ResetAndDownloadCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
-                                    <MenuItem Header="Category &amp; Rating" Command="{Binding CategoryRatingCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                                     <MenuItem Header="Extract Audio" Command="{Binding ExtractAudioCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                                 </ContextMenu>
                             </Setter.Value>

@@ -90,9 +90,7 @@ namespace ytplayer.player {
         private ControlPanelViewModel ViewModel {
             get => DataContext as ControlPanelViewModel;
             set {
-                if(DataContext is ControlPanelViewModel) {
-                    ((ControlPanelViewModel)DataContext).Dispose();
-                }
+                ViewModel?.Dispose();
                 DataContext = value;
             }
         }
@@ -130,7 +128,6 @@ namespace ytplayer.player {
         }
 
         public void Terminate() {
-            ViewModel.Dispose();
             ViewModel = null;
         }
 
