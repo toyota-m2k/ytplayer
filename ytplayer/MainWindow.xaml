@@ -349,11 +349,23 @@
                         <GridViewColumn Header="Status" Width="40" HeaderTemplate="{StaticResource SortHeaderTemplate}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Viewbox Width="20" Height="20">
-                                        <Canvas Width="24" Height="24">
-                                            <Path Style="{StaticResource StatusIconStyle}"/>
-                                        </Canvas>
-                                    </Viewbox>
+                                    <Grid>
+                                        <Viewbox Width="20" Height="20"
+                                                 Visibility="{Binding Status, Converter={StaticResource NegEnumVisibilityConverter},ConverterParameter=DOWNLOADING}">
+                                            <Canvas Width="24" Height="24">
+                                                <Path Style="{StaticResource StatusIconStyle}"/>
+                                            </Canvas>
+                                        </Viewbox>
+                                        <common:CircleProgressView 
+                                            Width="20" Height="20"
+                                            Visibility="{Binding Status, Converter={StaticResource EnumVisibilityConverter},ConverterParameter=DOWNLOADING}"
+                                            Progress="{Binding Progress}"
+                                            RingThicknessRatio="1"
+                                            RingStrokeColor="LightGray"
+                                            ProgressStrokeColor="Orange"
+                                            ShowLabel="False"
+                                            />
+                                    </Grid>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>

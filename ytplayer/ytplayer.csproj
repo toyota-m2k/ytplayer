@@ -132,6 +132,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="common\CircleProgressView.cs" />
     <Compile Include="Sorter.cs" />
     <Compile Include="common\ColorUtil.cs" />
     <Compile Include="common\FileDialogBuilder.cs" />
@@ -189,7 +190,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="common\CheckButton.cs" />
-    <Compile Include="common\MicConverter.cs" />
+    <Compile Include="common\Converter.cs" />
     <Compile Include="common\MicViewModelBase.cs" />
     <Compile Include="common\MicWaitCursor.cs" />
     <Compile Include="common\Utils.cs" />

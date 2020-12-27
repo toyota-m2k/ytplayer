@@ -50,7 +50,10 @@ namespace ytplayer.download.downloader {
          * ダウンロード進捗(%)を保持するプロパティ... とりあえず int型。未使用。
          * もしプログレスバーなどを表示するならその時考えるけど、わりとDLはすぐに終わるから、今のところ不要では？
          */
-        public int Progress { get; protected set; } = 0;
+        public int Progress { 
+            get => Entry.Progress; 
+            protected set => Entry.Progress = value; 
+        }
 
         public DLEntry Entry { get; }
         protected IDownloadHost Host { get; }
@@ -68,6 +71,7 @@ namespace ytplayer.download.downloader {
             Entry = entry;
             Host = host;
             ExtractAudio = extractAudio;
+            Progress = 0;
         }
 
         protected ProcessStartInfo Prepare() {

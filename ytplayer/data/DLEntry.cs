@@ -185,7 +185,6 @@ namespace ytplayer.data {
             set => setProp(callerName(), ref progress, value);
         }
 
-
         public void Delete() {
             Status = Status.BLOCKED;
         }
