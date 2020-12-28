@@ -10,7 +10,7 @@ namespace ytplayer.download.downloader.impl {
 
         }
 
-        protected override string GetSavedFilePath(DownloadItemInfo info) {
+        protected override string GetSavedFilePath(DownloadResults.ItemInfo info) {
             string dir = OutputDir;
             string ext = OutputExtension;
             var f = System.IO.Directory.GetFiles(dir, $"*-{info.Id}.{ext}", System.IO.SearchOption.TopDirectoryOnly);
@@ -32,14 +32,12 @@ namespace ytplayer.download.downloader.impl {
         protected override bool TryParseName(string res) {
             var matches = RegexName.Matches(res);
             if (matches.Count > 0) {
-                var item = new DownloadItemInfo(matches[0].Groups["name"].Value, matches[0].Groups["id"].Value, false);
-                Results.Add(item);
+                Results.AddOrUpdate(matches[0].Groups["id"].Value, matches[0].Groups["name"].Value, false);
                 return true;
             }
             matches = RegexSkipped.Matches(res);
             if (matches.Count > 0) {
-                var item = new DownloadItemInfo(matches[0].Groups["name"].Value, matches[0].Groups["id"].Value, true);
-                Results.Add(item);
+                Results.AddOrUpdate(matches[0].Groups["id"].Value, matches[0].Groups["name"].Value, true);
                 return true;
             }
             return false;
@@ -51,7 +49,7 @@ namespace ytplayer.download.downloader.impl {
                 var g = matches[0].Groups["progress"];
                 Progress = Convert.ToInt32(g.Value);
                 if(Progress==100) {
-                    Results.Last()?.Apply((item)=>item.Completed = true);
+                    Results.CompleteLast();
                 }
                 return true;
             }

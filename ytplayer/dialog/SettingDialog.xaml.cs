@@ -86,12 +86,10 @@ namespace ytplayer.dialog {
                 .defaultFilename(YtpDef.DEFAULT_DBNAME)
                 .GetFilePath(Owner);
             if (null != r) {
-                if(PathUtil.isFile(r)) {
-                    if(!CheckDB(r)) {
-                        // ytplayer用のDBファイルではない
-                        MessageBox.Show(Owner, "このファイルはいけません。", "DBファイル", MessageBoxButton.OK);
-                        return;
-                    }
+                if(!CheckDB(r)) {
+                    // ytplayer用のDBファイルではない
+                    MessageBox.Show(Owner, "このファイルはいけません。", "DBファイル", MessageBoxButton.OK);
+                    return;
                 }
 
                 path.Value = r;
@@ -100,6 +98,10 @@ namespace ytplayer.dialog {
 
         private bool CheckDB(string path) {
             try {
+                if(!PathUtil.isExists(path)) {
+                    // 存在しないときは新規作成
+                    return true;
+                }
                 using (var s = new Storage(path, dontCreateTable: true)) {
                     var v = s.DLTable.List.First();
                     return true;
@@ -204,6 +206,7 @@ namespace ytplayer.dialog {
         public Storage CurrentStorage { get; }
 
         public SettingDialog(Storage currentStorage) {
+            Result = null;
             viewModel = new SettingsViewModel(this);
             viewModel.Cancellable.Value = currentStorage!=null;
             InitializeComponent();

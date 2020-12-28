@@ -204,14 +204,14 @@ namespace ytplayer.data {
                 )"
             );
 
-            if(getVersion()==0) {
-                executeSql(@"ALTER TABLE t_download ADD COLUMN duration INTEGER DEFAULT '0'");
-                setVersion(1);
-            }
-            if (getVersion() == 1) {
-                executeSql(@"ALTER TABLE t_download ADD COLUMN mark INTEGER DEFAULT '0'");
-                setVersion(2);
-            }
+            //if(getVersion()==0) {
+            //    executeSql(@"ALTER TABLE t_download ADD COLUMN duration INTEGER DEFAULT '0'");
+            //    setVersion(1);
+            //}
+            //if (getVersion() == 1) {
+            //    executeSql(@"ALTER TABLE t_download ADD COLUMN mark INTEGER DEFAULT '0'");
+            //    setVersion(2);
+            //}
         }
     }
 }

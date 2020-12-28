@@ -2,24 +2,65 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using ytplayer.common;
 using ytplayer.data;
 
 namespace ytplayer.download.downloader {
-    /**
-     * プロセッサが返すダウンロードアイテム情報を保持するクラス
-     */
-    public class DownloadItemInfo {
-        public string Name { get; }
-        public string Id { get; }
-        public bool Completed { get; set; }
-        public bool AlreadyDownloaded { get; }
-        public DownloadItemInfo(string name, string id, bool already) {
-            Name = name;
-            Id = id;
-            AlreadyDownloaded = already;
-            Completed = already;
+
+    public class DownloadResults {
+        /**
+         * プロセッサが返すダウンロードアイテム情報を保持するクラス
+         */
+        public class ItemInfo {
+            public string Name { get; set; }
+            public string Id { get; }
+            public bool Completed { get; set; } = false;
+            public bool AlreadyDownloaded { get; set; }
+            public ItemInfo(string id) {
+                Name = "";
+                Id = id;
+            }
         }
+
+        private List<ItemInfo> ItemList = new List<ItemInfo>();
+
+        public ItemInfo LastResult => ItemList.LastOrDefault();
+
+        public IEnumerable<ItemInfo> List => ItemList;
+
+        private ItemInfo ItemAt(string id) {
+            return List.Where((c) => c.Id == id).LastOrDefault();
+        }
+
+        public void Add(string id) {
+            if(ItemAt(id)==null) {
+                return;
+            }
+            ItemList.Add(new ItemInfo(id));
+        }
+
+        public void CompleteLast() {
+            var last = ItemList.LastOrDefault();
+            if(last!=null) {
+                last.Completed = true;
+            }
+        }
+
+        public void AddOrUpdate(string id, string name, bool already) {
+            var e = ItemAt(id);
+            if(e!=null) {
+                e.Name = name;
+                e.AlreadyDownloaded = already;
+                e.Completed = true;
+            } else {
+                ItemList.Add(new ItemInfo(id) { Name = name, Completed = already, AlreadyDownloaded = already });
+            }
+        }
+
+        public int Count => ItemList.Count;
+
+        public ItemInfo this[int i] => ItemList[i];
     }
 
     /**
@@ -29,7 +70,7 @@ namespace ytplayer.download.downloader {
         /**
          * ダウンロード結果を保持するリスト
          */
-        protected List<DownloadItemInfo> Results { get; } = new List<DownloadItemInfo>();
+        protected DownloadResults Results { get; } = new DownloadResults();
 
         protected virtual string BasicArguments {
             get {
@@ -193,7 +234,7 @@ namespace ytplayer.download.downloader {
          * ProcessResponse()がFalseを返した後（EOSに達した後）、
          * DLEntryに結果を取り出す。
          */
-        private bool ValidateAndGetResult(DownloadItemInfo info, DLEntry entry) {
+        private bool ValidateAndGetResult(DownloadResults.ItemInfo info, DLEntry entry) {
             var fname = GetSavedFilePath(info);
             if (!string.IsNullOrEmpty(fname)) {
                 if (info.Completed) {
@@ -219,7 +260,7 @@ namespace ytplayer.download.downloader {
             }
         }
 
-        protected abstract string GetSavedFilePath(DownloadItemInfo info);
+        protected abstract string GetSavedFilePath(DownloadResults.ItemInfo info);
         protected abstract bool TryParseName(string res);
         protected abstract bool TryParseProgress(string res);
 

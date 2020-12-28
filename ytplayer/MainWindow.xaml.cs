@@ -315,7 +315,7 @@ namespace ytplayer {
             dlg.Owner = this;
             dlg.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             dlg.ShowDialog();
-            if (dlg.Result.Ok && dlg.Result.NewStorage != null) {
+            if (dlg.Result!=null && dlg.Result.Ok && dlg.Result.NewStorage != null) {
                 SetStorage(dlg.Result.NewStorage);
                 return true;
             }
