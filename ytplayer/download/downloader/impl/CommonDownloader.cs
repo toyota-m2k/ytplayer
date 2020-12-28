@@ -75,8 +75,20 @@ namespace ytplayer.download.downloader.impl {
             return new CommonDownloader(entry, host, extractAudio);
         }
 
+        public string IdFromUri(Uri uri) {
+            return uri.ToString();
+        }
+
         public bool IsAcceptableUrl(Uri uri) {
             return true;
+        }
+
+        public bool IsList(Uri url) {
+            return false;
+        }
+
+        public string NormalizeUrl(Uri uri) {
+            return uri.ToString();
         }
     }
 }

@@ -363,7 +363,6 @@
                                             RingThicknessRatio="1"
                                             RingStrokeColor="LightGray"
                                             ProgressStrokeColor="Orange"
-                                            ShowLabel="False"
                                             />
                                     </Grid>
                                 </DataTemplate>

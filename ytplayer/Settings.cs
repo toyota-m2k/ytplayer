@@ -20,6 +20,7 @@ namespace ytplayer {
         public string LastPlayingUrl { get; set; }
         public double LastPlayingPos { get; set; }
         public Sorter SortInfo { get; set; } = new Sorter();
+        public bool AcceptList { get; set; } = false;
 
         private const string SETTINGS_FILE = "settings.xml";
         private static Settings sInstance = null;

@@ -135,7 +135,7 @@ namespace ytplayer.download.downloader {
                     // リストだった場合
                     var baseUri = new Uri(Entry.Url);
                     for (int i = 1; i < Results.Count; i++) {
-                        var subEntry = DLEntry.Create(NormalizeSubUrlForKey(baseUri, i, Results[i].Id));
+                        var subEntry = DLEntry.Create(Results[i].Id, NormalizeSubUrlForKey(baseUri, i, Results[i].Id));
                         if (ValidateAndGetResult(Results[i], subEntry)) {
                             Host.FoundSubItem(subEntry);
                         }

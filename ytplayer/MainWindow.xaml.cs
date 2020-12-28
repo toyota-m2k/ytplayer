@@ -15,6 +15,7 @@ using ytplayer.common;
 using ytplayer.data;
 using ytplayer.dialog;
 using ytplayer.download;
+using ytplayer.download.downloader;
 using ytplayer.interop;
 using ytplayer.player;
 
@@ -629,22 +630,32 @@ namespace ytplayer {
             if(string.IsNullOrEmpty(url)) {
                 return;
             }
+
             var uri = new Uri(url);
-            var det = Settings.Instance.Determinations.Query(uri.Host);
-            if(det==DeterminationList.Determination.REJECT) {
+            var dlr = DownloaderSelector.Select(uri);
+            if (dlr == null) {
                 return;
             }
-            if(det==DeterminationList.Determination.UNKNOWN) {
-                if(silent) {
-                    return;
-                }
-                var r = await viewModel.ShowDeterminationDialog(uri.Host);
-                Settings.Instance.Determinations.Determine(uri.Host, r);
-                if(!r) {
-                    return;
-                }
+            if(!Settings.Instance.AcceptList && dlr.IsList(uri)) {
+                return;
             }
-            var target = DLEntry.Create(url);
+
+            //var det = Settings.Instance.Determinations.Query(uri.Host);
+            //if(det==DeterminationList.Determination.REJECT) {
+            //    return;
+            //}
+            //if(det==DeterminationList.Determination.UNKNOWN) {
+            //    if(silent) {
+            //        return;
+            //    }
+            //    var r = await viewModel.ShowDeterminationDialog(uri.Host);
+            //    Settings.Instance.Determinations.Determine(uri.Host, r);
+            //    if(!r) {
+            //        return;
+            //    }
+            //}
+            
+            var target = DLEntry.Create(dlr.IdFromUri(uri), url);
             if (Storage.DLTable.Add(target)) {
                 if (viewModel.AutoDownload.Value) {
                     mDownloadManager.Enqueue(target);

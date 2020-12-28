@@ -22,7 +22,7 @@ namespace ytplayer.download.downloader {
                     return f;
                 }
             }
-            return CommonProcessorFactory;
+            return null; //  CommonProcessorFactory;
         }
     }
 }

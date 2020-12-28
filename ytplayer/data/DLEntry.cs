@@ -1,6 +1,8 @@
 ﻿using common;
 using System;
 using System.Data.Linq.Mapping;
+using System.Data.SQLite;
+using System.Linq;
 using System.Text.RegularExpressions;
 using ytplayer.common;
 using ytplayer.player;
@@ -63,7 +65,7 @@ namespace ytplayer.data {
     }
 
     [Table(Name = "t_download")]
-    public class DLEntry : MicPropertyChangeNotifier, IPlayable, IEntry  {
+    public class DLEntryOld : MicPropertyChangeNotifier, IPlayable {
         [Column(Name = "url", IsPrimaryKey = true, CanBeNull = false)]
         public string KEY { get; private set; }
         public string Url => KEY;
@@ -189,7 +191,7 @@ namespace ytplayer.data {
             Status = Status.BLOCKED;
         }
         
-        public DLEntry() {
+        public DLEntryOld() {
             KEY = "";
             name = "";
             vpath = "";
@@ -199,8 +201,8 @@ namespace ytplayer.data {
             category = "";
         }
 
-        public static DLEntry Create(string url_) {
-            return new DLEntry() { KEY = url_, Date=DateTime.UtcNow };
+        public static DLEntryOld Create(string url_) {
+            return new DLEntryOld() { KEY = url_, Date=DateTime.UtcNow };
         }
 
         private static readonly DateTime EpochDate = new DateTime(1970, 1, 1, 0, 0, 0);
@@ -213,6 +215,199 @@ namespace ytplayer.data {
                 Logger.error(e);
             }
             return EpochDate;
+        }
+    }
+
+    public class DLEntryTable : StorageTable<DLEntry> {
+        public DLEntryTable(SQLiteConnection connection) : base(connection) { }
+        public override bool Contains(string key) {
+            return Table.Where((c) => c.KEY == key).Any();
+        }
+        public override bool Contains(DLEntry entry) {
+            return Contains(entry.KEY);
+        }
+        public DLEntry Find(string key) {
+            return Table.Where((c) => c.KEY == key).SingleOrDefault();
+        }
+    }
+
+
+    [Table(Name = "t_download_ex")]
+    public class DLEntry : MicPropertyChangeNotifier, IPlayable {
+        [Column(Name = "id", IsPrimaryKey = true, CanBeNull = false)]
+        public string KEY { get; private set; }
+        public string Id => KEY;
+
+        [Column(Name = "url", CanBeNull = false)]
+        public string url { get; private set; }
+        public string Url => url;
+
+        [Column(Name = "name", CanBeNull = true)]
+        private string name;
+        public string Name {
+            get => name;
+            set => setProp(callerName(), ref name, value, "NameToDisplay");
+        }
+        static readonly private Regex RegName = new Regex(@"(?<name>.*)(?:-[a-z0-9]+)$", RegexOptions.IgnoreCase);
+        public string NameToDisplay {
+            get {
+                if (string.IsNullOrEmpty(name)) {
+                    return $"({Url})";
+                } else {
+                    return name;
+                }
+            }
+        }
+
+        [Column(Name = "vpath", CanBeNull = true)]
+        private string vpath;
+        public string VPath {
+            get => vpath;
+            set => setProp(callerName(), ref vpath, value);
+        }
+        [Column(Name = "apath", CanBeNull = true)]
+        private string apath;
+        public string APath {
+            get => apath;
+            set => setProp(callerName(), ref apath, value);
+        }
+
+        [Column(Name = "status", CanBeNull = true)]
+        private int status;
+        public Status Status {
+            get => (Status)status;
+            set => setProp(callerName(), ref status, (int)value);
+        }
+
+        [Column(Name = "rating", CanBeNull = true)]
+        private int rating;
+        public Rating Rating {
+            get => (Rating)rating;
+            set => setProp(callerName(), ref rating, (int)value);
+        }
+
+        [Column(Name = "category", CanBeNull = true)]
+        private string category;
+        public Category Category {
+            get => Settings.Instance.Categories.Get(category);
+            set => setProp(callerName(), ref category, CategoryList.CategoryToDBLabel(value));
+        }
+
+        [Column(Name = "media", CanBeNull = true)]
+        private int media;
+        public MediaFlag Media {
+            get => (MediaFlag)media;
+            set => setProp(callerName(), ref media, (int)value);
+        }
+        [Column(Name = "date", CanBeNull = true)]
+        private long date;
+        public DateTime Date {
+            get => AsTime(date);
+            set => setProp(callerName(), ref date, value.ToFileTimeUtc());
+        }
+
+        [Column(Name = "volume", CanBeNull = true)]
+        private long volume;
+        const double VOL_RANGE = 200.0;
+        const double VOL_TOLERANCE = 0.01;
+        private long dbVolume(double v) {
+            if (0.5 - VOL_TOLERANCE < v && v < 0.5 + VOL_TOLERANCE) {
+                return 0;
+            }
+            long r = (long)Math.Round((v - 0.5) * VOL_RANGE);
+            return Math.Max(Math.Min(0, r), 100);   // 0<=r<=100
+        }
+        public double Volume {
+            get => ((double)volume) / VOL_RANGE + 0.5;
+            set => setProp(callerName(), ref volume, dbVolume(value));
+        }
+
+        [Column(Name = "desc", CanBeNull = true)]
+        private string desc;
+        public string Desc {
+            get => desc ?? "";
+            set => setProp(callerName(), ref desc, value);
+        }
+
+        [Column(Name = "duration", CanBeNull = true)]
+        private ulong? duration;
+        public ulong DurationInSec {
+            get => duration ?? 0;
+            set => setProp(callerName(), ref duration, value, "DurationText");
+        }
+
+        private string FormatDuration(ulong durationInSec) {
+            var t = TimeSpan.FromSeconds(durationInSec);
+            return string.Format("{0}:{1:00}:{2:00}", t.Hours, t.Minutes, t.Seconds);
+        }
+
+        public string DurationText => DurationInSec > 0 ? FormatDuration(DurationInSec) : "";
+
+        [Column(Name = "mark", CanBeNull = true)]
+        private int? mark;
+        public Mark Mark {
+            get => (Mark)(mark ?? 0);
+            set => setProp(callerName(), ref mark, (int)value);
+        }
+
+        public string Path => string.IsNullOrEmpty(VPath) ? APath : VPath;
+        public bool HasFile => (int)Media > 0;
+
+        private int progress;
+        public int Progress {
+            get => progress;
+            set => setProp(callerName(), ref progress, value);
+        }
+
+        public void Delete() {
+            Status = Status.BLOCKED;
+        }
+
+        public DLEntry() {
+            KEY = "";
+            url = "";
+            name = "";
+            vpath = "";
+            apath = "";
+            status = (int)Status.INITIAL;
+            rating = (int)Rating.NORMAL;
+            category = "";
+        }
+
+        public static DLEntry Create(string id, string url_) {
+            return new DLEntry() { KEY=id, url = url_, Date = DateTime.UtcNow };
+        }
+
+        private static readonly DateTime EpochDate = new DateTime(1970, 1, 1, 0, 0, 0);
+        public static DateTime AsTime(object obj) {
+            try {
+                if (obj != null && obj != DBNull.Value) {
+                    return DateTime.FromFileTimeUtc(Convert.ToInt64(obj));
+                }
+            }
+            catch (Exception e) {
+                Logger.error(e);
+            }
+            return EpochDate;
+        }
+    }
+
+    public class DLEntryOldTable : StorageTable<DLEntryOld> {
+        public DLEntryOldTable(SQLiteConnection connection) : base(connection) { }
+        public override bool Contains(string key) {
+            return Table.Where((c) => c.KEY == key).Any();
+        }
+        public override bool Contains(DLEntryOld entry) {
+            return Contains(entry.KEY);
+        }
+        public DLEntryOld Find(string key) {
+            //var f = from x in Table where x.KEY == key select x;
+            //return f.FirstOrDefault();
+
+            // return Table.Where((c) => c.KEY == key).FirstOrDefault();
+            // 驚いたことに、FirstOrDefault()だとエラーになる。Primary Key (or Unique) の一致で検索するから、
+            // 複数のエントリが見つかる可能性がないため、FirstOrDefault()は使えないようだ。
+            return Table.Where((c) => c.KEY == key).SingleOrDefault();
         }
     }
 }

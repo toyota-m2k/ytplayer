@@ -9,7 +9,7 @@ namespace ytplayer.download.downloader.impl {
         }
 
         public override string GetIDStringFromURL(Uri uri) {
-            return YoutubeDownloaderFactory.GetIDStringFromURL(uri);
+            return YoutubeDownloaderFactory.GetIDStringFromURL(uri.ToString());
         }
 
         public override string NormalizeUrlForKey(Uri uri) {
@@ -36,13 +36,35 @@ namespace ytplayer.download.downloader.impl {
         // https://www.youtube.com/watch?v=NhKEBTz2N28&list=RDNhKEBTz2N28&start_radio=1
         static Regex regexId = new Regex(@"[?&]v=(?<id>[^&=\r\n \t]+)");
 
-        public static string GetIDStringFromURL(Uri uri) {
-            var m = regexId.Match(uri.ToString());
-            return m?.Groups?["id"].Value;
+        public static (string id, string list) GetIdsStringFromURL(string url) {
+            var m = regexId.Match(url);
+            return (m?.Groups?["id"]?.Value, m?.Groups?["list"]?.Value);
+        }
+
+        public static string GetIDStringFromURL(string url) {
+            return GetIdsStringFromURL(url).id;
+        }
+
+        public static string GetListIDStringFromURL(string url) {
+            return GetIdsStringFromURL(url).list;
         }
 
         public bool IsAcceptableUrl(Uri uri) {
-            return uri.Host.Contains("youtube.com") && GetIDStringFromURL(uri) != null;
+            return uri.Host.Contains("youtube.com") && GetIDStringFromURL(uri.ToString()) != null;
+        }
+
+        public string IdFromUri(Uri uri) {
+            return GetIDStringFromURL(uri.ToString());
+        }
+
+        public string NormalizeUrl(Uri uri) {
+            var id = GetIDStringFromURL(uri.ToString());
+            return $"{uri.Scheme}://{uri.Host}{uri.LocalPath}?v={id}";
+        }
+
+        public bool IsList(Uri uri) {
+            var list = GetListIDStringFromURL(uri.ToString());
+            return !string.IsNullOrEmpty(list);
         }
     }
 }

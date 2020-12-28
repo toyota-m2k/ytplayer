@@ -17,6 +17,9 @@ namespace ytplayer.download.downloader {
 
     public interface IDownloaderFactory {
         IDownloader Create(DLEntry entry, IDownloadHost host, bool extractAudio);
+        string IdFromUri(Uri uri);
         bool IsAcceptableUrl(Uri uri);
+        string NormalizeUrl(Uri url);
+        bool IsList(Uri url);
     }
 }

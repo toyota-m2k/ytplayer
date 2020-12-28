@@ -65,7 +65,7 @@ namespace ytplayer.download {
         private IDownloader CreateDownloader(DLEntry entry) {
             var uri = new Uri(entry.Url);
             var factory = DownloaderSelector.Select(uri);
-            return factory.Create(entry, Host, false);
+            return factory?.Create(entry, Host, false);
         }
 
         public event Action<bool> BusyChanged;
@@ -89,7 +89,7 @@ namespace ytplayer.download {
         }
         
         public void Enqueue(IEnumerable<DLEntry> entries) {
-            InternalEnqueue(entries.Select((entry) => CreateDownloader(entry)));
+            InternalEnqueue(entries.Select((entry) => CreateDownloader(entry)).Where((dlr)=>dlr!=null));
         }
         
         public void EnqueueExtractAudio(bool deleteVideo, DLEntry entry) {
