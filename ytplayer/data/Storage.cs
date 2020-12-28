@@ -16,8 +16,8 @@ namespace ytplayer.data {
 
 
 
-        public class KVEntryExTable : StorageTable<KVEntry> {
-            public KVEntryExTable(SQLiteConnection connection) : base(connection) { }
+        public class KVEntryTable : StorageTable<KVEntry> {
+            public KVEntryTable(SQLiteConnection connection) : base(connection) { }
             public override bool Contains(string key) {
                 return Table.Where((c) => c.KEY == key).Any();
             }
@@ -32,7 +32,7 @@ namespace ytplayer.data {
         //public DataContext Context { get; set; }
 
         public DLEntryTable DLTable { get; }
-        public KVEntryExTable KVTable { get; }
+        public KVEntryTable KVTable { get; }
 
         public string DBPath { get; }
 
@@ -46,7 +46,7 @@ namespace ytplayer.data {
             }
 
             DLTable = new DLEntryTable(Connection);
-            KVTable = new KVEntryExTable(Connection);
+            KVTable = new KVEntryTable(Connection);
             DLTable.Context.Log = Console.Out;
 
             ConvertTable();
@@ -59,7 +59,7 @@ namespace ytplayer.data {
                     //    Logger.debug(e.Name);
                     //}
 
-                    foreach (var e in DLTable.List) {
+                    foreach (var e in DLTableOld.List) {
                         var uri = new Uri(e.Url);
                         var dlr = DownloaderSelector.Select(uri);
                         if (dlr != null) {
