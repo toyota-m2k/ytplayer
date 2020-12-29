@@ -134,6 +134,7 @@
     </ApplicationDefinition>
     <Compile Include="common\CircleProgressView.cs" />
     <Compile Include="data\StorageTable.cs" />
+    <Compile Include="ipc\PipeServer.cs" />
     <Compile Include="Sorter.cs" />
     <Compile Include="common\ColorUtil.cs" />
     <Compile Include="common\FileDialogBuilder.cs" />

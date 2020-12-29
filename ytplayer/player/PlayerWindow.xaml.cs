@@ -62,7 +62,7 @@ namespace ytplayer.player {
         }
 
         private void Window_Drop(object sender, DragEventArgs e) {
-            MainWindow.Instance?.RegisterUrl(e.Data.GetData(DataFormats.Text) as string, true);
+            MainWindow.Instance?.RegisterUrl(e.Data.GetData(DataFormats.Text) as string);
         }
     }
 }

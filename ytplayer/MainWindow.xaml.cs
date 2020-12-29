@@ -17,6 +17,7 @@ using ytplayer.dialog;
 using ytplayer.download;
 using ytplayer.download.downloader;
 using ytplayer.interop;
+using ytplayer.ipc;
 using ytplayer.player;
 
 namespace ytplayer {
@@ -158,6 +159,7 @@ namespace ytplayer {
         private DownloadManager mDownloadManager = null;
         private ClipboardMonitor mClipboardMonitor = null;
         private Storage Storage => mDownloadManager?.Storage;
+        private PipeServer mBrowserPipe = null;
 
         private static WeakReference<MainWindow> sInstance = null;
         public static MainWindow Instance {
@@ -262,6 +264,7 @@ namespace ytplayer {
             string dbg = "  ";
 #endif
             this.Title = String.Format("{0}{5} - v{1}.{2}.{3}.{4}", version.ProductName, version.FileMajorPart, version.FileMinorPart, version.FileBuildPart, version.ProductPrivatePart, dbg);
+            mBrowserPipe = new PipeServer(this);
         }
 
         private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
@@ -276,6 +279,7 @@ namespace ytplayer {
                 return;
             }
 
+            mBrowserPipe?.Dispose();
             Storage.DLTable.Update();
             mClipboardMonitor.Dispose();
             if (mPlayerWindow != null) {
@@ -623,7 +627,7 @@ namespace ytplayer {
 
         #region Register Items ( D&D / Clipboard )
 
-        public async void RegisterUrl(string url, bool silent=false) {
+        public async void RegisterUrl(string url) {
             url = url.Trim();
             if(!url.StartsWith("https://")&&!url.StartsWith("http://")) {
                 return;
