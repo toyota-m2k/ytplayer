@@ -95,7 +95,7 @@ namespace ytplayer.common {
                 }
                 double angle = 2 * Math.PI * progress;
                 var p = new Point(Math.Sin(angle) * Radius + 50, Math.Cos(angle - Math.PI) * Radius + 50);
-                Debug.WriteLine($"progress={Progress}, angle={angle}, x={p.X}, y={p.Y}");
+                //Debug.WriteLine($"progress={Progress}, angle={angle}, x={p.X}, y={p.Y}");
                 return p;
 
             }
@@ -160,7 +160,6 @@ namespace ytplayer.common {
                     });
                 }));
             });
-
 
             CreateBinding(label, TextBlock.VisibilityProperty, this, "ShowLabel", new BoolVisibilityConverter());
             CreateBinding(label, TextBlock.ForegroundProperty, this, "LabelColor");

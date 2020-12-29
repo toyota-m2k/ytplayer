@@ -518,7 +518,8 @@ namespace ytplayer {
         private void OpenInWebBrower() {
             var url = SelectedEntry?.Url;
             if (url != null) {
-                Process.Start(url);
+                // Process.Start(url);
+                Process.Start($"btytbrs:{url}");
             }
         }
 

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ytplayer.common;
 using ytplayer.data;
 
 namespace ytplayer.player {
@@ -69,6 +70,7 @@ namespace ytplayer.player {
             Speed = player.ViewModel.Speed;
             Volume = player.ViewModel.Volume;
             Volume.Subscribe((v) => {
+                //Logger.debug($"Volume = {v}");
                 PlayList.Current.Value?.Apply((o) => o.Volume = v);
             });
             ResetSpeedCommand.Subscribe(() => Speed.Value = 0.5);
