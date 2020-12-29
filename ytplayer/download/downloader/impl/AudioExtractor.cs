@@ -13,10 +13,12 @@ namespace ytplayer.download.downloader.impl {
         private IDownloadHost Host;
         private IDownloader Downloader;
         private bool DeleteVideoFile;
+        private Status OrgStatus { get; }
         public AudioExtractor(DLEntry entry, IDownloadHost host, bool deleteVideoFile) {
             DeleteVideoFile = deleteVideoFile;
             Entry = entry;
             Host = host;
+            OrgStatus = entry.Status;
             Downloader = DownloaderSelector.Select(new Uri(entry.Url)).Create(entry,host,true);
         }
 
@@ -25,15 +27,14 @@ namespace ytplayer.download.downloader.impl {
         }
 
         public void Execute() {
-            var statusOrg = Entry.Status;
             Downloader.Execute();
-            if(DeleteVideoFile && Entry.Media.HasAudio()) { 
+            if(Entry.Status==Status.COMPLETED && DeleteVideoFile && Entry.Media.HasAudio()) { 
                 if (PathUtil.safeDeleteFile(Entry.VPath)) {
                     Entry.Media = Entry.Media.MinusVideo();
                     Entry.VPath = null;
                 }
             }
-            if (statusOrg == Status.COMPLETED) {
+            if (OrgStatus == Status.COMPLETED) {
                 Entry.Status = Status.COMPLETED;
             }
         }

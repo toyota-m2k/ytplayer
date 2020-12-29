@@ -49,7 +49,7 @@ namespace ytplayer.data {
             KVTable = new KVEntryTable(Connection);
             DLTable.Context.Log = Console.Out;
 
-            ConvertTable();
+            //ConvertTable();
         }
 
         private void ConvertTable() {

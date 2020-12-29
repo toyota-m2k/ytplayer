@@ -34,9 +34,6 @@ namespace ytplayer.download.downloader {
         }
 
         public void Add(string id) {
-            if(ItemAt(id)==null) {
-                return;
-            }
             ItemList.Add(new ItemInfo(id));
         }
 
@@ -100,7 +97,6 @@ namespace ytplayer.download.downloader {
         protected IDownloadHost Host { get; }
         protected bool ExtractAudio { get; }
 
-
         protected string TargetUrlOrId => (!ExtractAudio) ? Entry.Url : GetIDStringFromURL(new Uri(Entry.Url));
         protected string OutputDir => !ExtractAudio ? Settings.Instance.EnsureVideoPath : Settings.Instance.EnsureAudioPath;
         protected string OutputExtension => !ExtractAudio ? "mp4" : "mp3";
@@ -146,6 +142,7 @@ namespace ytplayer.download.downloader {
             Environment.CurrentDirectory = OutputDir;
 
             try {
+                Results.Add(Entry.Id);
                 var process = BeginProcess();
                 if(process==null) {
                     Entry.Status = Status.CANCELLED;

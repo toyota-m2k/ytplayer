@@ -372,6 +372,7 @@ namespace ytplayer {
         private void OnDLEntryAdd(DLEntry entry) {
             Dispatcher.Invoke(() => {
                 viewModel.MainList.Value.Add(entry);
+                MainListView.ScrollIntoView(entry);
                 // ToDo: Sort ... see DxxDBViewerWindow.xaml.cs SortInfo, etc...
             });
         }
