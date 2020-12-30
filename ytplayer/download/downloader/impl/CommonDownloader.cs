@@ -85,8 +85,8 @@ namespace ytplayer.download.downloader.impl {
             return false;
         }
 
-        public string NormalizeUrl(Uri uri) {
-            return uri.ToString();
+        public string StripListIdFromUrl(Uri uri) {
+            return null;
         }
     }
 }

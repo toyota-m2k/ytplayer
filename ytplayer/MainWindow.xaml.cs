@@ -43,6 +43,7 @@ namespace ytplayer {
         DELETE_COMFIRM,
         ACCEPT_DETERMINATION,
         EXTRACT_AUDIO,
+        CLOSING_MESSAGE,
     }
 
     /**
@@ -74,6 +75,7 @@ namespace ytplayer {
         public ReactiveCommand CommandClearSearchText { get; } = new ReactiveCommand();
         public ReactiveCommand CommandExport { get; } = new ReactiveCommand();
         public ReactiveCommand CommandImport { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandBrowser { get; } = new ReactiveCommand();
 
         // Context Menu
         public ReactiveCommand OpenInWebBrowserCommand { get; } = new ReactiveCommand();
@@ -155,6 +157,7 @@ namespace ytplayer {
     public partial class MainWindow : Window, IDownloadHost {
         #region Properties / Fields
 
+        private RequestAcceptor mDownloadAcceptor = null;
         private DownloadManager mDownloadManager = null;
         private ClipboardMonitor mClipboardMonitor = null;
         private Storage Storage => mDownloadManager?.Storage;
@@ -222,11 +225,12 @@ namespace ytplayer {
             });
             viewModel.CommandExport.Subscribe(ExportUrlList);
             viewModel.CommandImport.Subscribe(ImportUrlList);
-            viewModel.ClipboardWatching.Subscribe((v) => {
-                if (v) {
-                    Process.Start("btytbrs:");
-                }
-            });
+            viewModel.CommandBrowser.Subscribe(() => Process.Start("btytbrs:"));
+            //viewModel.ClipboardWatching.Subscribe((v) => {
+            //    if (v) {
+            //        Process.Start("btytbrs:");
+            //    }
+            //});
             InitializeComponent();
         }
 
@@ -262,7 +266,34 @@ namespace ytplayer {
             string dbg = "  ";
 #endif
             this.Title = String.Format("{0}{5} - v{1}.{2}.{3}.{4}", version.ProductName, version.FileMajorPart, version.FileMinorPart, version.FileBuildPart, version.ProductPrivatePart, dbg);
+            mDownloadAcceptor = new RequestAcceptor(this);
         }
+
+        private bool CloseToBeWaited() {
+            Storage.DLTable.Update();
+
+            bool result = false;
+            if(!mDownloadManager.Disposed) {
+                mDownloadManager.Dispose();
+                result = true;
+            }
+            if(!mDownloadAcceptor.Disposed) {
+                mDownloadAcceptor.Dispose();
+                result = true;
+            }
+            return result;
+        }
+
+        private void WaitAndClose() {
+            viewModel.DialogType.Value = DialogTypeId.CLOSING_MESSAGE;
+            viewModel.DialogTitle.Value = "Bye...";
+            viewModel.DialogActivated.Value = true;
+            Task.Run(async () => {
+                await mDownloadAcceptor.WaitForClose();
+                await mDownloadManager.WaitForClose();
+            }).GetAwaiter().GetResult();
+        }
+        
 
         private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
             if (mDownloadManager.IsBusy) {
@@ -271,12 +302,12 @@ namespace ytplayer {
                     e.Cancel = true;
                     return;
                 }
-                mDownloadManager.Cancel();
-                e.Cancel = true;
-                return;
             }
 
-            Storage.DLTable.Update();
+            if (CloseToBeWaited()) {
+                WaitAndClose();
+            }
+
             mClipboardMonitor.Dispose();
             if (mPlayerWindow != null) {
                 var (cur, pos) = mPlayerWindow.CurrentPlayingInfo;
@@ -290,8 +321,6 @@ namespace ytplayer {
             }
             Settings.Instance.SortInfo.SortUpdated -= OnSortChanged;
             Instance = null;
-            mDownloadManager.Dispose();
-            mDownloadManager = null;
             mFilterEditorWindow?.Close();
 
             Settings.Instance.Ratings = viewModel.RatingFilter.ToArray();
@@ -623,7 +652,7 @@ namespace ytplayer {
 
         #region Register Items ( D&D / Clipboard )
 
-        public async void RegisterUrl(string url, bool silent=false) {
+        public void RegisterUrl(string url, bool silent=false) {
             url = url.Trim();
             if(!url.StartsWith("https://")&&!url.StartsWith("http://")) {
                 return;
@@ -639,7 +668,11 @@ namespace ytplayer {
                 return;
             }
             if(!Settings.Instance.AcceptList && dlr.IsList(uri)) {
-                return;
+                url = dlr.StripListIdFromUrl(uri);
+                if(null==url) {
+                    return;
+                }
+                uri = new Uri(url);
             }
 
             //var det = Settings.Instance.Determinations.Query(uri.Host);

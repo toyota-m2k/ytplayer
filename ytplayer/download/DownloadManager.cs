@@ -26,6 +26,8 @@ namespace ytplayer.download {
         private TaskCompletionSource<object> TerminationSource = new TaskCompletionSource<object>();
         private IDownloadHost Host;
 
+        public bool Disposed { get; private set; } = false;
+
         public DownloadManager(IDownloadHost host, Storage strage) {
             Host = host;
             Storage = strage;
@@ -39,6 +41,7 @@ namespace ytplayer.download {
                         while(Next()) { }
                     }
                 }
+                Disposed = true;
                 TerminationSource.SetResult(null);
             });
         }
@@ -53,6 +56,10 @@ namespace ytplayer.download {
             Alive = false;
             BusyChanged = null;
             await TerminationSource.Task;
+        }
+
+        public async Task WaitForClose() {
+             await TerminationSource.Task;
         }
 
         public bool IsBusy {

@@ -19,7 +19,7 @@ namespace ytplayer.download.downloader {
         IDownloader Create(DLEntry entry, IDownloadHost host, bool extractAudio);
         string IdFromUri(Uri uri);
         bool IsAcceptableUrl(Uri uri);
-        string NormalizeUrl(Uri url);
+        string StripListIdFromUrl(Uri url);
         bool IsList(Uri url);
     }
 }

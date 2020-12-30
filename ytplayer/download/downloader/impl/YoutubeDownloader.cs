@@ -28,13 +28,13 @@ namespace ytplayer.download.downloader.impl {
 
     public class YoutubeDownloaderFactory : IDownloaderFactory {
         public IDownloader Create(DLEntry entry, IDownloadHost host, bool extractAudio) {
-            return new CommonDownloader(entry, host, extractAudio);
+            return new YoutubeDownloader(entry, host, extractAudio);
         }
 
         // 対応する書式
         // https://www.youtube.com/watch?v=QkBvmv8kt4U
         // https://www.youtube.com/watch?v=NhKEBTz2N28&list=RDNhKEBTz2N28&start_radio=1
-        static Regex regexId = new Regex(@"[?&]v=(?<id>[^&=\r\n \t]+)");
+        static Regex regexId = new Regex(@"[?&]v=(?<id>[^&=\r\n \t]+)(?:[?&]list=(?<list>[^&=\r\n \t]+))?");
 
         public static (string id, string list) GetIdsStringFromURL(string url) {
             var m = regexId.Match(url);
@@ -57,7 +57,7 @@ namespace ytplayer.download.downloader.impl {
             return GetIDStringFromURL(uri.ToString());
         }
 
-        public string NormalizeUrl(Uri uri) {
+        public string StripListIdFromUrl(Uri uri) {
             var id = GetIDStringFromURL(uri.ToString());
             return $"{uri.Scheme}://{uri.Host}{uri.LocalPath}?v={id}";
         }
