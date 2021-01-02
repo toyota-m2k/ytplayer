@@ -17,6 +17,8 @@ namespace ytplayer.player {
         bool HasFile { get; }
         double Volume { get; set; }
         ulong DurationInSec { get; set; }
+        ulong TrimStart { get; set; }
+        ulong TrimEnd { get; set; }
         void Delete();
     }
 

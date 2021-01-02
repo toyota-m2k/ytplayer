@@ -102,10 +102,7 @@ namespace ytplayer.dialog {
                     // 存在しないときは新規作成
                     return true;
                 }
-                using (var s = new Storage(path, dontCreateTable: true)) {
-                    var v = s.DLTable.List.First();
-                    return true;
-                }
+                return Storage.CheckDB(path);
             } catch(Exception) {
                 return false;
             }

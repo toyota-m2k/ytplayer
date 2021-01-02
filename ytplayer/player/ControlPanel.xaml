@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ytplayer.player"
+             xmlns:common="clr-namespace:ytplayer.common"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="400">
     <UserControl.Resources>
@@ -13,9 +14,9 @@
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>  <!-- 0: Player Control Buttons -->
-            <RowDefinition Height="Auto"/>  <!-- 1: Volume/Speed -->
-            <RowDefinition Height="Auto"/>  <!-- 2: Position Sider -->
-            <RowDefinition Height="Auto"/>  <!-- 3: Counter -->
+            <RowDefinition Height="Auto"/>  <!-- 1: Position Sider -->
+            <RowDefinition Height="Auto"/>  <!-- 2: Trimming -->
+            <RowDefinition Height="Auto"/>  <!-- 3: Volume/Speed -->
             <RowDefinition Height="Auto"/>  <!-- 4: Rating/Category -->
         </Grid.RowDefinitions>
         <Grid.Resources>
@@ -95,8 +96,61 @@
 
         </StackPanel>
 
+        <!-- Trimming -->
+        <Grid Grid.Row="2" Margin="0,10,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Play From" Foreground="White" HorizontalAlignment="Left"/>
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="Play To" Foreground="White" HorizontalAlignment="Left"/>
+            <Grid Grid.Row="1" Grid.Column="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid Grid.Column="0" Background="White" Height="16" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding TrimStartText.Value}" HorizontalAlignment="Right" Margin="4,2" VerticalAlignment="Center"/>
+                </Grid>
+                <Button Grid.Column="1" Style="{StaticResource IconButtonStyle}" Command="{Binding SetTrimCommand}" CommandParameter="Start" RenderTransformOrigin="0.5,0.5" Padding="4">
+                    <Button.RenderTransform>
+                        <ScaleTransform ScaleY="-1"/>
+                    </Button.RenderTransform>
+                    <common:PathView Path="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z"/>
+                </Button>
+                <Button Grid.Column="2" Style="{StaticResource IconButtonStyle}" Command="{Binding ResetTrimCommand}" CommandParameter="Start" Padding="4">
+                    <common:PathView Path="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+                </Button>
+            </Grid>
+            <Grid Grid.Row="1" Grid.Column="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid Grid.Column="0" Background="White" Height="16" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding TrimEndText.Value}" HorizontalAlignment="Right" Margin="4,2" VerticalAlignment="Center"/>
+                </Grid>
+                <Button Grid.Column="1" Style="{StaticResource IconButtonStyle}" Command="{Binding SetTrimCommand}" CommandParameter="End" RenderTransformOrigin="0.5,0.5" Padding="4">
+                    <Button.RenderTransform>
+                        <ScaleTransform ScaleY="-1"/>
+                    </Button.RenderTransform>
+                    <common:PathView Path="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z"/>
+                </Button>
+                <Button Grid.Column="2" Style="{StaticResource IconButtonStyle}" Command="{Binding ResetTrimCommand}" CommandParameter="End" Padding="4">
+                    <common:PathView Path="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+                </Button>
+            </Grid>
+
+        </Grid>
+        
         <!-- Volume/Speed -->
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="3">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -107,16 +161,16 @@
                 <ColumnDefinition Width="1*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Row="1" Grid.Column="0" Text="Speed" Foreground="White" HorizontalAlignment="Center"/>
-            <TextBlock Grid.Row="1" Grid.Column="2" Text="Volume" Foreground="White" HorizontalAlignment="Center"/>
-            <Slider Grid.Row="0" Grid.Column="0" Minimum="0" Maximum="1" Value="{Binding Speed.Value, Mode=TwoWay}" SmallChange="0.1" LargeChange="0.1" VerticalAlignment="Center" FocusVisualStyle="{x:Null}"/>
-            <Slider Grid.Row="0" Grid.Column="2" Minimum="0" Maximum="1" Value="{Binding Volume.Value, Mode=TwoWay}" SmallChange="0.1" LargeChange="0.1" VerticalAlignment="Center"  FocusVisualStyle="{x:Null}"/>
-            <Button Grid.Row="0" Grid.Column="1" Command="{Binding ResetSpeedCommand}" Content="{StaticResource PathResetSpeed}" Style="{StaticResource IconButtonStyle}" Focusable="False"/>
-            <Button Grid.Row="0" Grid.Column="3" Command="{Binding ResetVolumeCommand}" Content="{StaticResource PathResetVolume}" Style="{StaticResource IconButtonStyle}" Focusable="False"/>
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Speed" Foreground="White" HorizontalAlignment="Left"/>
+            <TextBlock Grid.Row="0" Grid.Column="2" Text="Volume" Foreground="White" HorizontalAlignment="Left"/>
+            <Slider Grid.Row="1" Grid.Column="0" Minimum="0" Maximum="1" Value="{Binding Speed.Value, Mode=TwoWay}" SmallChange="0.1" LargeChange="0.1" VerticalAlignment="Center" FocusVisualStyle="{x:Null}"/>
+            <Slider Grid.Row="1" Grid.Column="2" Minimum="0" Maximum="1" Value="{Binding Volume.Value, Mode=TwoWay}" SmallChange="0.1" LargeChange="0.1" VerticalAlignment="Center"  FocusVisualStyle="{x:Null}"/>
+            <Button Grid.Row="1" Grid.Column="1" Command="{Binding ResetSpeedCommand}" Content="{StaticResource PathResetSpeed}" Style="{StaticResource IconButtonStyle}" Focusable="False"/>
+            <Button Grid.Row="1" Grid.Column="3" Command="{Binding ResetVolumeCommand}" Content="{StaticResource PathResetVolume}" Style="{StaticResource IconButtonStyle}" Focusable="False"/>
         </Grid>
         
         <!-- Rating / Category -->
-        <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Center" Orientation="Horizontal">
+        <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Center" Orientation="Horizontal">
             <RadioButton 
                 Focusable="False"
                 IsChecked="{Binding PlayList.Current.Value.Rating, 

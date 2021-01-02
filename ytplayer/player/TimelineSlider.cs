@@ -20,6 +20,10 @@ namespace ytplayer.player {
         private bool mSliderSeekingFromPlayer;
         public ReactiveProperty<double> Position { get; } = new ReactiveProperty<double>();
 
+        public PlayRange RangeLimit { get; set; } = new PlayRange(0,0);
+
+        public event Action ReachRangeEnd;
+
         public TimelineSlider() {
             mPlayingSubscriber = null;
             mDurationSubscriber = null;
@@ -30,6 +34,9 @@ namespace ytplayer.player {
                 mSliderSeekingFromPlayer = true;
                 this.Value = pos;
                 mSliderSeekingFromPlayer = false;
+                if(RangeLimit.End>0 && pos >= RangeLimit.End) {
+                    ReachRangeEnd?.Invoke();
+                }
             };
             Loaded += OnLoaded;
         }
@@ -45,6 +52,9 @@ namespace ytplayer.player {
             });
             mDurationSubscriber = player.ViewModel.Duration.Subscribe((duration) => {
                 this.Maximum = duration;
+                if(RangeLimit.Start>0) {
+                    Player.SeekPosition = RangeLimit.Start;
+                }
             });
         }
 
@@ -66,6 +76,7 @@ namespace ytplayer.player {
         private void OnUnloaded(object sender, RoutedEventArgs e) {
             Unloaded -= OnUnloaded;
             mTimer.Stop();
+            ReachRangeEnd = null;
             mPlayingSubscriber?.Dispose();
             mDurationSubscriber?.Dispose();
         }

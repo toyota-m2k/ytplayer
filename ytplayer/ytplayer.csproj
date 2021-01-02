@@ -133,7 +133,9 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="common\CircleProgressView.cs" />
+    <Compile Include="common\NumericTextBox.cs" />
     <Compile Include="data\StorageTable.cs" />
+    <Compile Include="player\PlayRange.cs" />
     <Compile Include="RequestAcceptor.cs" />
     <Compile Include="Sorter.cs" />
     <Compile Include="common\ColorUtil.cs" />

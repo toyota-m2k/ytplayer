@@ -38,6 +38,14 @@ namespace ytplayer.player {
         public ReactiveCommand ResetSpeedCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ResetVolumeCommand { get; } = new ReactiveCommand();
 
+        // Trimming
+        public ReactiveProperty<double> TrimStart { get; } = new ReactiveProperty<double>();
+        public ReactiveProperty<double> TrimEnd { get; } = new ReactiveProperty<double>();
+        public ReadOnlyReactiveProperty<string> TrimStartText { get; }
+        public ReadOnlyReactiveProperty<string> TrimEndText { get; }
+        public ReactiveCommand SetTrimCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand ResetTrimCommand { get; } = new ReactiveCommand();
+
         private string FormatDuration(double duration) {
             var t = TimeSpan.FromMilliseconds(duration);
             return string.Format("{0}:{1:00}:{2:00}", t.Hours, t.Minutes, t.Seconds);
@@ -54,6 +62,10 @@ namespace ytplayer.player {
             IsReady = dummyBool.ToReadOnlyReactiveProperty();
             Speed = dummyDouble;
             Volume = dummyDouble;
+            TrimStart = dummyDouble;
+            TrimEnd = dummyDouble;
+            TrimStartText = dummyString.ToReadOnlyReactiveProperty();
+            TrimEndText = dummyString.ToReadOnlyReactiveProperty();
         }
 
         public ControlPanelViewModel(IPlayer player, TimelineSlider slider) {
@@ -75,6 +87,9 @@ namespace ytplayer.player {
             });
             ResetSpeedCommand.Subscribe(() => Speed.Value = 0.5);
             ResetVolumeCommand.Subscribe(() => Volume.Value = 0.5);
+
+            TrimStartText = TrimStart.Select((v) => FormatDuration(v)).ToReadOnlyReactiveProperty();
+            TrimEndText = TrimEnd.Select((v) => FormatDuration(v)).ToReadOnlyReactiveProperty();
         }
     }
 
@@ -103,6 +118,7 @@ namespace ytplayer.player {
         public void Initialize(IPlayer player) {
             mPlayer = new WeakReference<IPlayer>(player);
             TimelineSlider.Initialize(player);
+            TimelineSlider.ReachRangeEnd += OnReachRangeEnd;
             ViewModel = new ControlPanelViewModel(player, TimelineSlider);
             ViewModel.PlayCommand.Subscribe(Play);
             ViewModel.PauseCommand.Subscribe(Pause);
@@ -117,15 +133,65 @@ namespace ytplayer.player {
             });
             ViewModel.FitMode.Value = player.Stretch == Stretch.UniformToFill;
             ViewModel.FitMode.Subscribe(FitView);
+            ViewModel.SetTrimCommand.Subscribe(SetTrim);
+            ViewModel.ResetTrimCommand.Subscribe(ResetTrim);
+        }
+
+        private void SetTrim(object obj) {
+            var pos = Player.SeekPosition;
+            switch (obj as string) {
+                case "Start":
+                    TimelineSlider.RangeLimit.Start = Convert.ToUInt64(pos);
+                    PlayList.Current.Value.TrimStart = TimelineSlider.RangeLimit.Start;
+                    ViewModel.TrimStart.Value = TimelineSlider.RangeLimit.Start;
+                    break;
+                case "End":
+                    TimelineSlider.RangeLimit.End = Convert.ToUInt64(pos);
+                    PlayList.Current.Value.TrimEnd = TimelineSlider.RangeLimit.End;
+                    ViewModel.TrimEnd.Value = TimelineSlider.RangeLimit.End;
+                    break;
+                default:
+                    return;
+            }
+        }
+
+        private void ResetTrim(object obj) {
+            switch (obj as string) {
+                case "Start":
+                    TimelineSlider.RangeLimit.Start = 0;
+                    PlayList.Current.Value.TrimStart = 0;
+                    ViewModel.TrimStart.Value = 0;
+                    break;
+                case "End":
+                    TimelineSlider.RangeLimit.End = 0;
+                    PlayList.Current.Value.TrimEnd = 0;
+                    ViewModel.TrimEnd.Value = 0;
+                    break;
+                default:
+                    return;
+            }
         }
 
         public void Terminate() {
+            TimelineSlider.ReachRangeEnd -= OnReachRangeEnd;
             ViewModel = null;
+           
+        }
+
+        private void OnReachRangeEnd() {
+            if (ViewModel.PlayList.HasNext.Value) {
+                ViewModel.GoForwardCommand.Execute();
+            } else {
+                ViewModel.PauseCommand.Execute();
+            }
         }
 
         private void OnCurrentChanged(IPlayable item) {
             if (item != null) {
                 ViewModel.Volume.Value = item.Volume;
+                ViewModel.TrimStart.Value = item.TrimStart;
+                ViewModel.TrimEnd.Value = item.TrimEnd;
+                TimelineSlider.RangeLimit = new PlayRange(item.TrimStart, item.TrimEnd);
             }
             Player.SetSource(item?.Path, true);
         }
