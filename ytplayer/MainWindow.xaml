@@ -347,6 +347,7 @@
                                     <MenuItem Header="Delete &amp; Block" Command="{Binding DeleteAndBlockCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                                     <MenuItem Header="Reset &amp; Download" Command="{Binding ResetAndDownloadCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                                     <MenuItem Header="Extract Audio" Command="{Binding ExtractAudioCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <MenuItem Header="Description" Command="{Binding EditDescriptionCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                                 </ContextMenu>
                             </Setter.Value>
                         </Setter>
@@ -581,6 +582,19 @@
                           Margin="10">
                         <StackPanel Orientation="Vertical">
                             <CheckBox Content="Delete Video File(s)" IsChecked="{Binding ExtractAudoDialog.DeleteVideo.Value}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <Button Content="OK" Command="{Binding CommandOk}" Width="100" Margin="0,0,10,0"/>
+                                <Button Content="Cancel" Width="100" Command="{Binding CommandCancel}" Margin="0,0,10,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                    <!-- Description -->
+                    <Grid Visibility="{Binding DialogType.Value, Converter={StaticResource EnumVisibilityConverter}, 
+                          ConverterParameter=EDIT_DESCRIPTION}"
+                          Margin="10">
+                        <StackPanel Orientation="Vertical">
+                            <TextBlock Text="Description"/>
+                            <TextBox Text="{Binding DescriptionDialog.Description.Value}" Width="250"/>
                             <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                                 <Button Content="OK" Command="{Binding CommandOk}" Width="100" Margin="0,0,10,0"/>
                                 <Button Content="Cancel" Width="100" Command="{Binding CommandCancel}" Margin="0,0,10,0"/>

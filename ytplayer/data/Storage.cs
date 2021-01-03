@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Data.Linq;
 using System.Data.SQLite;
 using System.Linq;
-using ytplayer.common;
-using ytplayer.download.downloader;
 
 namespace ytplayer.data {
     //public interface IEntry {

@@ -43,6 +43,7 @@ namespace ytplayer {
         DELETE_COMFIRM,
         ACCEPT_DETERMINATION,
         EXTRACT_AUDIO,
+        EDIT_DESCRIPTION,
         CLOSING_MESSAGE,
     }
 
@@ -82,6 +83,7 @@ namespace ytplayer {
         public ReactiveCommand DeleteAndBlockCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ResetAndDownloadCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ExtractAudioCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand EditDescriptionCommand { get; } = new ReactiveCommand();
 
         // Dialog
         private TaskCompletionSource<bool> DialogTask { get; set; } = null;
@@ -129,6 +131,15 @@ namespace ytplayer {
         public ExtractAudoDialogViewModel ExtractAudoDialog { get; } = new ExtractAudoDialogViewModel();
         public Task<bool> ShowExtractAudioDialog() {
             return ShowDialog(DialogTypeId.EXTRACT_AUDIO, "Extract Audio");
+        }
+
+        // Description Dialog
+        public class DescriptionDialogViewModel : MicViewModelBase {
+            public ReactiveProperty<string> Description { get; } = new ReactiveProperty<string>();
+        }
+        public DescriptionDialogViewModel DescriptionDialog { get; } = new DescriptionDialogViewModel();
+        public Task<bool> ShowDescriptionDialog() {
+            return ShowDialog(DialogTypeId.EDIT_DESCRIPTION, "Description");
         }
 
         /**
@@ -215,6 +226,7 @@ namespace ytplayer {
             viewModel.ExtractAudioCommand.Subscribe(ExtractAudio);
             viewModel.ResetAndDownloadCommand.Subscribe(ResetAndDownload);
             viewModel.DeleteAndBlockCommand.Subscribe(DeleteAndBlock);
+            viewModel.EditDescriptionCommand.Subscribe(EditDescription);
 
             viewModel.ShowFilterEditor.Subscribe((v) => {
                 if (v) {
@@ -311,12 +323,12 @@ namespace ytplayer {
             mClipboardMonitor.Dispose();
             if (mPlayerWindow != null) {
                 var (cur, pos) = mPlayerWindow.CurrentPlayingInfo;
-                Settings.Instance.LastPlayingUrl = cur.Url;
+                Settings.Instance.LastPlayingUrl = cur.KEY;
                 Settings.Instance.LastPlayingPos = pos;
                 mPlayerWindow.Close();
                 mPlayerWindow = null;
             } else {
-                Settings.Instance.LastPlayingUrl = (MainListView.SelectedItem as DLEntry)?.Url;
+                Settings.Instance.LastPlayingUrl = (MainListView.SelectedItem as DLEntry)?.KEY;
                 Settings.Instance.LastPlayingPos = 0;
             }
             Settings.Instance.SortInfo.SortUpdated -= OnSortChanged;
@@ -551,6 +563,22 @@ namespace ytplayer {
                 Process.Start($"btytbrs:{url}");
             }
         }
+
+        private void EditDescription() {
+            ProcessSelectedEntries(async (entries) => {
+                var org = entries.First().Desc;
+                if (!string.IsNullOrEmpty(org)) {
+                    viewModel.DescriptionDialog.Description.Value = entries.First().Desc;
+                }
+                if (await viewModel.ShowDescriptionDialog()) {
+                    foreach (var e in entries) {
+                        e.Desc = viewModel.DescriptionDialog.Description.Value ?? "";
+                    }
+                    Storage.DLTable.Update();
+                }
+            });
+        }
+
 
         #endregion
 
@@ -826,7 +854,7 @@ namespace ytplayer {
         }
         public static IEnumerable<DLEntry> FilterByName(this IEnumerable<DLEntry> s, string search) {
             search = search?.Trim();
-            return string.IsNullOrEmpty(search) ? s : s.Where((e) => e.Name?.ContainsIgnoreCase(search) ?? false);
+            return string.IsNullOrEmpty(search) ? s : s.Where((e) => (e.Name?.ContainsIgnoreCase(search) ?? false) || (e.Desc?.ContainsIgnoreCase(search)??false));
         }
         public static IOrderedEnumerable<DLEntry> Sort(this IEnumerable<DLEntry> s) {
             return Settings.Instance.SortInfo.Sort(s);

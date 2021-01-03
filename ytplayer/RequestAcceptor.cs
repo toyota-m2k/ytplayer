@@ -1,6 +1,5 @@
 ﻿using common;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,12 +23,17 @@ namespace ytplayer {
             completionSource = new TaskCompletionSource<object>();
             var local = Environment.ExpandEnvironmentVariables(Environment.GetEnvironmentVariable("LOCALAPPDATA"));
             var uwpDir = Path.Combine(local, @"Packages\831bfe09-f728-4dba-964b-2678993c50e3_bax8kcjcv11ke\LocalState");
-            var uwpFile = "request.txt";
-            RequestFile = Path.Combine(uwpDir, uwpFile);
-            if(!PathUtil.isFile(RequestFile)) {
-                File.Create(RequestFile).Dispose();
+            if (PathUtil.isDirectory(uwpDir)) {
+                var uwpFile = "request.txt";
+                RequestFile = Path.Combine(uwpDir, uwpFile);
+                if (!PathUtil.isFile(RequestFile)) {
+                    File.Create(RequestFile).Dispose();
+                }
+                Loop();
+            } else {
+                // ytbrowserがインストールされていない
+                completionSource.TrySetResult(null);
             }
-            Loop();
         }
 
         private void Loop() {

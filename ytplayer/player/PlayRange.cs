@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Threading;
-
-namespace ytplayer.player {
+﻿namespace ytplayer.player {
     public class PlayRange {
         private ulong mStart = 0;
         private ulong mEnd = 0;

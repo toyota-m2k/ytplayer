@@ -6,7 +6,6 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Windows.Controls;
 using System.Windows.Media;
-using ytplayer.common;
 using ytplayer.data;
 
 namespace ytplayer.player {

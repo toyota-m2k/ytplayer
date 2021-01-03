@@ -196,5 +196,13 @@ namespace ytplayer.player {
                 ViewModel.Fullscreen.Value = true;
             }
         }
+
+        private void OnPlayerClicked(object sender, MouseButtonEventArgs e) {
+            if(ViewModel.IsPlaying.Value) {
+                Pause();
+            } else {
+                Play();
+            }
+        }
     }
 }
