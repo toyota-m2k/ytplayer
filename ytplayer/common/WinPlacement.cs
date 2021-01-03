@@ -173,7 +173,7 @@ namespace common {
         #endregion
 
 
-        private static WINDOWPLACEMENT GetWindowPlacement(Window w)
+        public static WINDOWPLACEMENT GetWindowPlacement(Window w)
         {
             WINDOWPLACEMENT wp = new WINDOWPLACEMENT();
             IntPtr hwnd = new WindowInteropHelper(w).Handle;

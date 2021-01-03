@@ -21,6 +21,7 @@
                       MediaEnded="OnMediaEnded" 
                       MediaFailed="OnMediaFailed"
                       MouseLeftButtonDown="OnPlayerClicked"    
+                      MouseMove="OnMouseMove"
                       Volume="{Binding Volume.Value}"
                       />
         <Grid Background="{StaticResource ControlPanelBG}" 

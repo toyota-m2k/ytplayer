@@ -64,6 +64,7 @@ namespace ytplayer.player {
         }
         IPlayerViewModel IPlayer.ViewModel => ViewModel;
         private bool starting = false;
+        private CursorManager CursorManager;
 
         public Stretch Stretch {
             get => MediaPlayer.Stretch;
@@ -78,6 +79,7 @@ namespace ytplayer.player {
 
         public void Initialize() {
             ControlPanel.Initialize(this);
+            CursorManager = new CursorManager(Window.GetWindow(this));
             ViewModel.Speed.Subscribe((speed) => {
                 double sr = (speed >= 0.5) ? 1 + (speed - 0.5) * 2 /* 1 ～ 2 */ : 0.2 + 0.8 * (speed * 2)/*0.2 ～ 1*/;
                 MediaPlayer.SpeedRatio = sr;
@@ -146,6 +148,9 @@ namespace ytplayer.player {
                     ReservePosition = 0;
                 }
             }
+            if(!ViewModel.ShowPanel.Value && !ViewModel.ShowSizePanel.Value) {
+                CursorManager.Enabled = true;
+            }
         }
 
         private void OnMediaEnded(object sender, RoutedEventArgs e) {
@@ -159,7 +164,7 @@ namespace ytplayer.player {
             ViewModel.Ended.OnNext(false);
         }
 
-        private void ShowPanel(FrameworkElement panel, bool show) {
+        private bool ShowPanel(FrameworkElement panel, bool show) {
             switch (panel?.Tag as string) {
                 case "ControlPanel":
                     ViewModel.ShowPanel.Value = show;
@@ -168,16 +173,26 @@ namespace ytplayer.player {
                     ViewModel.ShowSizePanel.Value = show;
                     break;
                 default:
-                    break;
+                    return false;
             }
+            CursorManager.Enabled = !show;
+            return true;
         }
 
         private void OnMouseEnter(object sender, MouseEventArgs e) {
-            ShowPanel(sender as FrameworkElement, true);
+            if(!ShowPanel(sender as FrameworkElement, true)) {
+                CursorManager.Update(e.GetPosition(this));
+            }
+        }
+
+        private void OnMouseMove(object sender, MouseEventArgs e) {
+            CursorManager.Update(e.GetPosition(this));
         }
 
         private void OnMouseLeave(object sender, MouseEventArgs e) {
-            ShowPanel(sender as FrameworkElement, false);
+            if (!ShowPanel(sender as FrameworkElement, false)) {
+                CursorManager.Reset();
+            }
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
@@ -204,5 +219,6 @@ namespace ytplayer.player {
                 Play();
             }
         }
+
     }
 }
