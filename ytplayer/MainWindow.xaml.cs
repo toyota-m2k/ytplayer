@@ -433,7 +433,9 @@ namespace ytplayer {
         }
 
         private void OnSearchBoxLostFocus(object sender, RoutedEventArgs e) {
-            Settings.Instance.SearchHistories.Put(viewModel.SearchText.Value);
+            if (viewModel != null) {
+                Settings.Instance.SearchHistories.Put(viewModel.SearchText.Value);
+            }
         }
 
         private void OnDLEntryRatingClicked(object sender, RoutedEventArgs e) {
