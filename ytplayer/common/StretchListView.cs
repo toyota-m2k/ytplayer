@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -21,18 +22,23 @@ namespace ytplayer.common {
             set => SetValue(StretchColumnMinWidthProperty, value);
         }
 
-        private void OnLoaded(object sender, RoutedEventArgs e) {
+        private async void OnLoaded(object sender, RoutedEventArgs e) {
             this.Loaded -= OnLoaded;
-            UpdateColumnWidth();
+            await Task.Delay(500);
+            //this.Measure(new Size(ActualWidth, ActualHeight));
+            UpdateColumnWidth(ActualWidth);
         }
+
         private void OnUnloaded(object sender, RoutedEventArgs e) {
             this.SizeChanged -= OnSizeChanged;
             this.Unloaded -= OnUnloaded;
         }
         private void OnSizeChanged(object sender, SizeChangedEventArgs e) {
-            UpdateColumnWidth();
+            if (e.WidthChanged) {
+                UpdateColumnWidth(e.NewSize.Width);
+            }
         }
-        private void UpdateColumnWidth() {
+        private void UpdateColumnWidth(double width) {
             var gridView = View as GridView;
             if (gridView == null) return;
 
@@ -41,11 +47,11 @@ namespace ytplayer.common {
                 sci = gridView.Columns.Count - 1;
             }
 
-            if (this.ActualWidth == Double.NaN) {
-                return;
-                //this.Measure(new Size(Double.PositiveInfinity, Double.PositiveInfinity));
-            }
-            double remainingSpace = this.ActualWidth - 30;
+            //if (this.ActualWidth == Double.NaN) {
+            //    return;
+            //    //this.Measure(new Size(Double.PositiveInfinity, Double.PositiveInfinity));
+            //}
+            double remainingSpace = width - 30;
             for (int i = 0; i < gridView.Columns.Count; i++) {
                 if (i != sci) {
                     remainingSpace -= (this.View as GridView).Columns[i].ActualWidth;

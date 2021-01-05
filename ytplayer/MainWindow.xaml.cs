@@ -127,6 +127,7 @@ namespace ytplayer {
         // Extract Audio Dialog
         public class ExtractAudoDialogViewModel : MicViewModelBase {
             public ReactiveProperty<bool> DeleteVideo { get; } = new ReactiveProperty<bool>();
+            public ReactiveProperty<bool> DownloadAudio { get; } = new ReactiveProperty<bool>();
         }
         public ExtractAudoDialogViewModel ExtractAudoDialog { get; } = new ExtractAudoDialogViewModel();
         public Task<bool> ShowExtractAudioDialog() {
@@ -533,7 +534,7 @@ namespace ytplayer {
                         }
                         if (delAudio && PathUtil.safeDeleteFile(e.APath)) {
                             e.APath = null;
-                            e.Media = e.Media.MinusVideo();
+                            e.Media = e.Media.MinusAudio();
                         }
                         if (block) {
                             e.Delete();
@@ -553,7 +554,7 @@ namespace ytplayer {
         private void ExtractAudio(object obj) {
             ProcessSelectedEntries(async (entries) => {
                 if (await viewModel.ShowExtractAudioDialog()) {
-                    mDownloadManager.EnqueueExtractAudio(viewModel.ExtractAudoDialog.DeleteVideo.Value, entries);
+                    mDownloadManager.EnqueueExtractAudio(viewModel.ExtractAudoDialog.DeleteVideo.Value, viewModel.ExtractAudoDialog.DownloadAudio.Value, entries);
                 }
             });
         }

@@ -581,6 +581,7 @@
                           ConverterParameter=EXTRACT_AUDIO}"
                           Margin="10">
                         <StackPanel Orientation="Vertical">
+                            <CheckBox Content="Download Audio File(s)" IsChecked="{Binding ExtractAudoDialog.DownloadAudio.Value}"/>
                             <CheckBox Content="Delete Video File(s)" IsChecked="{Binding ExtractAudoDialog.DeleteVideo.Value}"/>
                             <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                                 <Button Content="OK" Command="{Binding CommandOk}" Width="100" Margin="0,0,10,0"/>

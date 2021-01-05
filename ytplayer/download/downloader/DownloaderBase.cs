@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using ytplayer.common;
 using ytplayer.data;
@@ -102,7 +103,7 @@ namespace ytplayer.download.downloader {
         protected string OutputExtension => !ExtractAudio ? "mp4" : "mp3";
 
         private Process DownloadProcess { get; set; } = null;
-        private bool Alive { get; set; } = true;
+        public bool Alive { get; private set; } = true;
 
         protected DownloaderBase(DLEntry entry, IDownloadHost host, bool extractAudio) {
             Entry = entry;
@@ -111,7 +112,7 @@ namespace ytplayer.download.downloader {
             Progress = 0;
         }
 
-        protected ProcessStartInfo Prepare() {
+        protected virtual ProcessStartInfo Prepare() {
             return new ProcessStartInfo() {
                 FileName = "youtube-dl",
                 Arguments = $"{BasicArguments} {SpecialArguments} {Entry.Url}",
@@ -132,7 +133,29 @@ namespace ytplayer.download.downloader {
             }
         }
 
-        public void Execute() {
+        protected virtual bool ProcessStandardOutput(StreamReader standardOutput) {
+            while (Alive) {
+                var response = standardOutput.ReadLine();
+                if (!ProcessResponse(response)) {
+                    return true;
+                }
+            }
+            Entry.Status = Status.CANCELLED;
+            Host.ErrorOutput("Cancelled");
+            return false;
+        }
+
+        protected virtual bool ProcessStandardError(StreamReader standardError) {
+            var error = standardError.ReadToEnd();
+            if (!string.IsNullOrEmpty(error)) {
+                Host.ErrorOutput(error);
+                Entry.Status = Status.FAILED;
+                return false;
+            }
+            return true;
+        }
+
+        public virtual void Execute() {
             if (Entry.Status == Status.CANCELLED) {
                 return;
             }
@@ -148,24 +171,13 @@ namespace ytplayer.download.downloader {
                     Entry.Status = Status.CANCELLED;
                     return;
                 }
-                while (Alive) {
-                    var response = process.StandardOutput.ReadLine();
-                    if (!ProcessResponse(response)) {
-                        break;
-                    }
+                if(!ProcessStandardOutput(process.StandardOutput)) {
+                    return;
                 }
-                var error = process.StandardError.ReadToEnd();
-                if (!string.IsNullOrEmpty(error)) {
-                    Host.ErrorOutput(error);
-                    Entry.Status = Status.FAILED;
+                if(!ProcessStandardError(process.StandardError)) {
                     return;
                 }
 
-                if (Results.Count == 0) {
-                    Host.ErrorOutput("no data");
-                    Entry.Status = Status.FAILED;
-                    return;
-                }
                 bool result = ValidateAndGetResult(Results[0], Entry);
                 Host.Completed(Entry, result, ExtractAudio);
 
