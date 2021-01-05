@@ -19,6 +19,7 @@ namespace ytplayer.data {
             Context = new DataContext(connection);
             Table = Context.GetTable<T>();
         }
+
         public abstract bool Contains(string key);
         public abstract bool Contains(T entry);
 

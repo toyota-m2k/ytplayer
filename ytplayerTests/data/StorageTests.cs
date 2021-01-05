@@ -38,13 +38,13 @@ namespace ytplayer.data.Tests {
             System.IO.File.Delete("test.db");
             storage = new Storage("test.db");
             var dl = storage.DLTable;
-            var entry = DLEntry.Create("1");
+            var entry = DLEntry.Create("1", "1");
             dl.Add(entry);
             var list = dl.List;
             Assert.AreEqual(1, list.Count());
-            dl.Add(DLEntry.Create("2"));
-            dl.Add(DLEntry.Create("3"));
-            dl.Add(DLEntry.Create("4"));
+            dl.Add(DLEntry.Create("2", "2"));
+            dl.Add(DLEntry.Create("3", "3"));
+            dl.Add(DLEntry.Create("4", "4"));
             var e = list.Single((v) => v.Url == "1");
             Assert.AreEqual(entry.Url, e.Url);
             e.Rating = Rating.GOOD;
@@ -69,32 +69,32 @@ namespace ytplayer.data.Tests {
         public void TMapStrageTest() {
             storage?.Dispose();
             storage = new Storage(":memory:");
-            var table = storage.Context.GetTable<KVEntry>();
-            table.InsertOnSubmit(new KVEntry("a", 123));
-            storage.Context.SubmitChanges();
-            table.InsertOnSubmit(new KVEntry("b", "xyz"));
-            storage.Context.SubmitChanges();
-            table.InsertOnSubmit(new KVEntry("c", 999 ));
-            storage.Context.SubmitChanges();
-            table.InsertOnSubmit(new KVEntry("d", 888));
-            storage.Context.SubmitChanges();
-            Assert.AreEqual(4, table.Count());
+            var table = storage.KVTable;
+            table.Add(new KVEntry("a", 123));
+            table.Update();
+            table.Add(new KVEntry("b", "xyz"));
+            table.Update();
+            table.Add(new KVEntry("c", 999 ));
+            table.Update();
+            table.Add(new KVEntry("d", 888));
+            table.Update();
+            Assert.AreEqual(4, table.Table.Count());
 
             KVEntry entry;
-            entry = table.Single((e) => e.KEY == "b");
+            entry = table.Table.Single((e) => e.KEY == "b");
             //Assert.AreEqual(2, entry.id);
             Assert.AreEqual(0, entry.iValue);
             Assert.AreEqual("xyz", entry.sValue);
-            entry = table.Single((e) => e.KEY == "c");
+            entry = table.Table.Single((e) => e.KEY == "c");
             Assert.AreEqual(999, entry.iValue);
             Assert.IsNull(entry.sValue);
 
-            entry = table.Single((e) => e.KEY == "d");
+            entry = table.Table.Single((e) => e.KEY == "d");
             Assert.AreEqual(888, entry.iValue);
             Assert.IsNull(entry.sValue);
 
             entry.iValue = 2000;
-            storage.Context.SubmitChanges();
+            table.Update();
             Assert.IsTrue(true);
         }
     }
