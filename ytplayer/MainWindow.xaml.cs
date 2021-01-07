@@ -18,6 +18,7 @@ using ytplayer.download;
 using ytplayer.download.downloader;
 using ytplayer.interop;
 using ytplayer.player;
+using ytplayer.server;
 
 namespace ytplayer {
     /**
@@ -247,6 +248,8 @@ namespace ytplayer {
             InitializeComponent();
         }
 
+        YtServer mServer = null;
+
         protected override void OnSourceInitialized(EventArgs e) {
             base.OnSourceInitialized(e);
             Settings.Instance.Placement.ApplyPlacementTo(this);
@@ -280,6 +283,9 @@ namespace ytplayer {
 #endif
             this.Title = String.Format("{0}{5} - v{1}.{2}.{3}.{4}", version.ProductName, version.FileMajorPart, version.FileMinorPart, version.FileBuildPart, version.ProductPrivatePart, dbg);
             mDownloadAcceptor = new RequestAcceptor(this);
+
+            mServer = new YtServer(Storage);
+            mServer.Start();
         }
 
         private bool CloseToBeWaited() {
@@ -340,6 +346,9 @@ namespace ytplayer {
             Settings.Instance.Placement.GetPlacementFrom(this);
             Settings.Instance.Serialize();
             viewModel = null;
+
+            mServer.Stop();
+            mServer = null;
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) {
@@ -848,7 +857,7 @@ namespace ytplayer {
         #endregion
     }
 
-    static class FilterExt {
+    public static class FilterExt {
         public static IEnumerable<DLEntry> FilterByRating(this IEnumerable<DLEntry> s, RatingFilter rf) {
             return rf.Filter(s);
         }

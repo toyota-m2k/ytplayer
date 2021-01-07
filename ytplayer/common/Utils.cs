@@ -14,6 +14,10 @@ namespace common
             return w.TryGetTarget(out T o) ? o : null;
         }
 
+        public static V GetValue<K,V>(this Dictionary<K,V> dic, K key, V def=default) {
+            return dic.TryGetValue(key, out var v) ? v : def;
+        }
+
         public static bool IsNullOrEmpty<T>(IEnumerable<T> v) {
             return !(v?.Any() ?? false);
         }
