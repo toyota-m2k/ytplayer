@@ -27,6 +27,7 @@ namespace SimpleHttpServer
         #endregion
 
         private static readonly ILog log = LogManager.GetLogger(typeof(HttpServer));
+        private bool Alive = true;
 
         #region Public Methods
         public HttpServer(int port, List<Route> routes)
@@ -62,16 +63,16 @@ namespace SimpleHttpServer
             {
                 this.Listener = new TcpListener(IPAddress.Any, this.Port);
                 this.Listener.Start();
-                while (true)
+                while (Alive)
                 {
                     try
                     {
                         TcpClient s = await this.Listener.AcceptTcpClientAsync();
                         this.Processor.HandleClient(s);
                     }
-                    catch(Exception)
+                    catch(Exception e)
                     {
-                        break;
+                        log.Error(e);
                     }
                 }
                 Listener.Stop();
@@ -80,6 +81,7 @@ namespace SimpleHttpServer
 
         public void Stop()
         {
+            Alive = false;
             Listener.Stop();
         }
         #endregion

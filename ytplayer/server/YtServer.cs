@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using ytplayer.common;
 using ytplayer.data;
 using ytplayer.server.lib;
 
@@ -73,6 +74,7 @@ namespace ytplayer.server {
                             if(null==storage) {
                                 return HttpBuilder.ServiceUnavailable();
                             }
+                            Logger.debug("YtServer: List");
                             var sb = new StringBuilder();
                             sb.Append("{\"cmd\":\"list\", \"list\":[");
                             sb.Append(string.Join(",",

@@ -10,6 +10,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace SimpleHttpServer {
     public class HttpProcessor {
@@ -33,22 +34,24 @@ namespace SimpleHttpServer {
 
         #region Public Methods
         public void HandleClient(TcpClient tcpClient) {
-            using (Stream inputStream = GetInputStream(tcpClient))
-            using (Stream outputStream = GetOutputStream(tcpClient)) {
-                HttpRequest request = GetRequest(inputStream, outputStream);
+            Task.Run(() => {
+                using (Stream inputStream = GetInputStream(tcpClient))
+                using (Stream outputStream = GetOutputStream(tcpClient)) {
+                    HttpRequest request = GetRequest(inputStream, outputStream);
 
-                // route and handle the request...
-                IHttpResponse response = RouteRequest(inputStream, outputStream, request) ?? HttpBuilder.InternalServerError();
+                    // route and handle the request...
+                    IHttpResponse response = RouteRequest(inputStream, outputStream, request) ?? HttpBuilder.InternalServerError();
 
-                Console.WriteLine("{0} {1}", response.ToString(), request.Url);
-                try {
-                    response.WriteResponse(outputStream);
-                    outputStream.Flush();
+                    Console.WriteLine("{0} {1}", response.ToString(), request.Url);
+                    try {
+                        response.WriteResponse(outputStream);
+                        outputStream.Flush();
+                    }
+                    catch (Exception e) {
+                        log.Error(e);
+                    }
                 }
-                catch (Exception e) {
-                    log.Error(e);
-                }
-            }
+            });
         }
 
         // this formats the HTTP response...
