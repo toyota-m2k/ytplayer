@@ -10,7 +10,7 @@ namespace ytplayer.server.lib {
     public static class QueryParser {
         //private static Regex RegexQueryFragment = new Regex(@"(?:[?&](?<fragment>\w+(?:=\w+)?))+");
         //private static Regex RegexQueryNV = new Regex(@"(?<name>\w+)(?:=(?<value>\w+))?");
-        private static Regex RegexQuery = new Regex(@"(?:[?&](?<name>\w+)(?:=(?<value>\w+))?)");
+        private static Regex RegexQuery = new Regex(@"(?:[?&](?<name>\w+)(?:=(?<value>[^&=\r\n \t]+))?)");
 
         public static Dictionary<string,string> Parse(string uriString) {
             var r = new Dictionary<string, string>();
