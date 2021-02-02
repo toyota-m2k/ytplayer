@@ -167,7 +167,7 @@ namespace ytplayer {
     /**
      * MainWindowクラス
      */
-    public partial class MainWindow : Window, IDownloadHost {
+    public partial class MainWindow : Window, IDownloadHost, IYtListSource {
         #region Properties / Fields
 
         private RequestAcceptor mDownloadAcceptor = null;
@@ -284,7 +284,7 @@ namespace ytplayer {
             this.Title = String.Format("{0}{5} - v{1}.{2}.{3}.{4}", version.ProductName, version.FileMajorPart, version.FileMinorPart, version.FileBuildPart, version.ProductPrivatePart, dbg);
             mDownloadAcceptor = new RequestAcceptor(this);
 
-            mServer = new YtServer(Storage);
+            mServer = new YtServer(this);
             mServer.Start();
         }
 
@@ -520,7 +520,10 @@ namespace ytplayer {
         #region Items Selection / Context Menu
 
         private DLEntry SelectedEntry => MainListView.SelectedItem as DLEntry;
-        private IEnumerable<DLEntry> SelectedEntries => MainListView.SelectedItems.ToEnumerable<DLEntry>();
+        
+        public IEnumerable<DLEntry> SelectedEntries => MainListView.SelectedItems.ToEnumerable<DLEntry>();
+        public IEnumerable<DLEntry> ListedEntries => MainListView.Items.ToEnumerable<DLEntry>();
+        public IEnumerable<DLEntry> AllEntries => Storage.DLTable.List;
 
         private void ProcessSelectedEntries(Action<IEnumerable<DLEntry>> action) {
             var entries = SelectedEntries;
@@ -692,25 +695,31 @@ namespace ytplayer {
 
         #region Register Items ( D&D / Clipboard )
 
-        public void RegisterUrl(string url, bool silent=false) {
+        bool IYtListSource.RegisterUrl(string url) {
+            return Dispatcher.Invoke(() => {
+                return RegisterUrl(url, false);
+            });
+        }
+
+        public bool RegisterUrl(string url, bool silent=false) {
             url = url.Trim();
             if(!url.StartsWith("https://")&&!url.StartsWith("http://")) {
-                return;
+                return false;
             }
             url = url.Split(Utils.Array("\r", "\n", " ", "\t"), StringSplitOptions.RemoveEmptyEntries)?.FirstOrDefault();
             if(string.IsNullOrEmpty(url)) {
-                return;
+                return false;
             }
 
             var uri = new Uri(url);
             var dlr = DownloaderSelector.Select(uri);
             if (dlr == null) {
-                return;
+                return false;
             }
             if(!Settings.Instance.AcceptList && dlr.IsList(uri)) {
                 url = dlr.StripListIdFromUrl(uri);
                 if(null==url) {
-                    return;
+                    return false;
                 }
                 uri = new Uri(url);
             }
@@ -736,6 +745,7 @@ namespace ytplayer {
                     mDownloadManager.Enqueue(target);
                 }
             }
+            return true;
         }
 
         private void Window_PreviewDragOver(object sender, DragEventArgs e) {

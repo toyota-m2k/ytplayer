@@ -12,12 +12,19 @@ using ytplayer.data;
 using ytplayer.server.lib;
 
 namespace ytplayer.server {
+    public interface IYtListSource {
+        IEnumerable<DLEntry> AllEntries { get; }
+        IEnumerable<DLEntry> ListedEntries { get; }
+        IEnumerable<DLEntry> SelectedEntries { get; }
+        bool RegisterUrl(string url);
+    }
+
     public class YtServer {
         private int mPort;
         private HttpServer mServer;
         //private Regex mRegex = new Regex(@"/wfplayer/cmd/(?<cmd>[a-zA-Z]+)(/(?<param>\w*))?");
-        private WeakReference<Storage> mStorage;
-        private Storage Storage => mStorage.GetValue();
+        private WeakReference<IYtListSource> mStorage;
+        private IYtListSource Source => mStorage.GetValue();
 
         public bool IsListening { get; private set; } = false;
 
@@ -25,9 +32,9 @@ namespace ytplayer.server {
         //    return new YtServer(port);
         //}
 
-        public YtServer(Storage s, int port = 3500) {
+        public YtServer(IYtListSource s, int port = 3500) {
             mPort = port;
-            mStorage = new WeakReference<Storage>(s);
+            mStorage = new WeakReference<IYtListSource>(s);
             InitRoutes();
         }
 
@@ -55,6 +62,24 @@ namespace ytplayer.server {
 
         public Regex RegRange = new Regex(@"bytes=(?<start>\d+)(?:-(?<end>\d+))?");
 
+        enum SourceType {
+            DB = 0,
+            Listed = 1,
+            Selected = 2,
+        }
+
+        public IEnumerable<DLEntry> SourceOf(int type) {
+            switch(type) {
+                case (int)SourceType.DB:
+                default:
+                    return Source?.AllEntries;
+                case (int)SourceType.Listed:
+                    return Source?.ListedEntries;
+                case (int)SourceType.Selected:
+                    return Source?.SelectedEntries;
+            }
+        }
+
         private void InitRoutes() {
             if (null == Routes) {
                 Routes = new List<Route>
@@ -66,25 +91,26 @@ namespace ytplayer.server {
                         Callable = (HttpRequest request) => {
                             var p = QueryParser.Parse(request.Url);
                             var category = p.GetValue("c");
-                            var rating = Convert.ToInt32(p.GetValue("r")??"0");
-                            var mark = Convert.ToInt32(p.GetValue("m")??"0");
-                            var search = p.GetValue("s");
+                            var rating = Convert.ToInt32(p.GetValue("r")??"3");
+                            var marks = (p.GetValue("m")??"0").Split('.').Select((v)=>Convert.ToInt32(v)).ToList();
+                            var sourceType = Convert.ToInt32(p.GetValue("s")??"0");
+                            var search = p.GetValue("t");
 
-                            var storage = Storage;
-                            if(null==storage) {
+                            var source = SourceOf(sourceType);
+                            if(null==source) {
                                 return HttpBuilder.ServiceUnavailable();
                             }
                             Logger.debug("YtServer: List");
                             var sb = new StringBuilder();
                             sb.Append("{\"cmd\":\"list\", \"list\":[");
                             sb.Append(string.Join(",",
-                                storage.DLTable.List
-                                    .Where((c) => string.IsNullOrEmpty(category) || c.Category.Label == category)
-                                    .Where((c) => (int)c.Rating > rating)
-                                    .Where((c) => mark==0 || (int)c.Mark == mark)
+                                source
+                                    .Where((c) => c.Status==Status.COMPLETED && ((int)c.Media & (int)MediaFlag.VIDEO) == (int)MediaFlag.VIDEO)
+                                    .Where((c) => string.IsNullOrEmpty(category) || category=="All" || c.Category.Label == category)
+                                    .Where((c) => (int)c.Rating >= rating)
+                                    .Where((c) => (marks.Count==1&&marks[0]==0) || marks.IndexOf((int)c.Mark)>=0)
                                     .Where((e) => string.IsNullOrEmpty(search) || (e.Name?.ContainsIgnoreCase(search) ?? false)|| (e.Desc?.ContainsIgnoreCase(search) ?? false))
-                                    .Where((c) => ((int)c.Media & (int)MediaFlag.VIDEO) == (int)MediaFlag.VIDEO)
-                                    .Select((v) => $"{{\"id\":\"{v.KEY}\",\"name\":\"{v.Name}\"}}")));
+                                    .Select((v) => $"{{\"id\":\"{v.KEY}\",\"name\":\"{v.Name}\",\"start\":\"{v.TrimStart}\",\"end\":\"{v.TrimEnd}\"}}")));
                             sb.Append("]}");
                             return new TextHttpResponse(sb.ToString(), "application/json");
                          }
@@ -94,9 +120,13 @@ namespace ytplayer.server {
                         UrlRegex = @"/ytplayer/video?\w+",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
-                            var id = QueryParser.Parse(request.Url)["id"];
-                            var entry = Storage.DLTable.List.Where((e)=>e.KEY==id).Single();
+                            var source = Source?.AllEntries;
+                            if(null==source) {
+                                return HttpBuilder.ServiceUnavailable();
+                            }
 
+                            var id = QueryParser.Parse(request.Url)["id"];
+                            var entry = source.Where((e)=>e.KEY==id).Single();
                             var range = request.Headers.GetValue("Range");
                             if(null==range) {
                                 return new StreamingHttpResponse(entry.VPath,"video/mp4", 0, 0);
@@ -110,6 +140,38 @@ namespace ytplayer.server {
                             }
                         }
                     },
+
+                    new Route {
+                        Name = "ytPlayer Categories",
+                        UrlRegex = @"/ytplayer/category",
+                        Method = "GET",
+                        Callable = (HttpRequest request) => {
+                            Logger.debug("YtServer: Category");
+                            var list = Settings.Instance.Categories.SerializableList;
+                            var sb = new StringBuilder();
+                            sb.Append("{\"cmd\":\"category\", \"categories\":[");
+                            sb.Append(string.Join(",",
+                                list.Select((v)=>$"{{\"label\":\"{v.Label}\",\"color\"=\"{v.Color}\",\"sort\"=\"{v.SortIndex}\"}}")));
+                            sb.Append("]}");
+                            return new TextHttpResponse(sb.ToString(), "application/json");
+                        }
+                    },
+
+                    new Route {
+                        Name = "ytPlayer Request Download",
+                        UrlRegex = @"/ytplayer/register",
+                        Method = "GET",
+                        Callable = (HttpRequest request) => {
+                            var url = QueryParser.Parse(request.Url)["url"];
+                            bool accepted = false;
+                            if(!string.IsNullOrEmpty(url)) {
+                                accepted = Source?.RegisterUrl(url) ?? false;
+                            }
+                            string result = accepted ? "accepted" : "rejected";
+                            return new TextHttpResponse($"{{\"cmd\":\"register\",\"result\":\"{result}\"}}", "application/json");
+                        }
+                    },
+
                     new Route {
                         Name = "ytPlayer TestPage",
                         UrlRegex = @"/ytplayer/test",

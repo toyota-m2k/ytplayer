@@ -34,7 +34,8 @@ namespace ytplayer.download.downloader.impl {
         // 対応する書式
         // https://www.youtube.com/watch?v=QkBvmv8kt4U
         // https://www.youtube.com/watch?v=NhKEBTz2N28&list=RDNhKEBTz2N28&start_radio=1
-        static Regex regexId = new Regex(@"[?&]v=(?<id>[^&=\r\n \t]+)(?:[?&]list=(?<list>[^&=\r\n \t]+))?");
+        // https://youtu.be/UF9PWHDJ-AE
+        static Regex regexId = new Regex(@"(?:[?&]v=|youtu.be/)(?<id>[^&=\r\n \t]+)(?:[?&]list=(?<list>[^&=\r\n \t]+))?");
 
         public static (string id, string list) GetIdsStringFromURL(string url) {
             var m = regexId.Match(url);
@@ -50,7 +51,7 @@ namespace ytplayer.download.downloader.impl {
         }
 
         public bool IsAcceptableUrl(Uri uri) {
-            return uri.Host.Contains("youtube.com") && GetIDStringFromURL(uri.ToString()) != null;
+            return (uri.Host.Contains("youtube.com")||uri.Host.Contains("youtu.be")) && GetIDStringFromURL(uri.ToString()) != null;
         }
 
         public string IdFromUri(Uri uri) {
