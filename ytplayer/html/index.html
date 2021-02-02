@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width = device-width, initial-scale = 1.0">
+        <meta http-equiv="X-UA-Compatible" content = "ie=edge">
+        <title>BooTube Web</title>
+        <!--
+        <link rel="stylesheet" href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css">
+        -->
+        <link rel="stylesheet" href="https://unpkg.com/material-components-web@latest/dist/material-components-web.css">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat:300,400,500">    
+        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">    
+        
+<!--         <style>
+            :root {
+              --mdc-theme-primary: #0e4ead;
+              —mdc-theme-secondary: #0060e6;
+            }
+        </style>
+         -->
+    </head>
+    <body class="mdc-typography">
+        <header class=" mdc-top-app-bar mdc-top-app-bar--dense">
+            <div class="mdc-top-app-bar__row">
+                <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-start">
+                    <button class="mdc-icon-button material-icons mdc-top-app-bar__navigation-icon--unbounded" onClick={onMenu()}>menu</button>
+                    <span class="mdc-top-app-bar__title">San Francisco, CA</span>
+                </section>
+                <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-end">
+                    <button class="mdc-icon-button material-icons mdc-top-app-bar__action-item--unbounded" aria-label="Download">file_download</button>
+                    <button class="mdc-icon-button material-icons mdc-top-app-bar__action-item--unbounded" aria-label="Print this page">print</button>
+                    <button class="mdc-icon-button material-icons mdc-top-app-bar__action-item--unbounded" aria-label="Bookmark this page" >bookmark</button>
+                </section>
+            </div>
+        </header>
+
+        <aside class="  mdc-drawer mdc-drawer--modal">
+            <div class="mdc-drawer__content">
+                <nav class="mdc-list">
+                    <a class="mdc-list-item mdc-list-item--activated" href="#" aria-current="page" tabindex="0">
+                        <span class="mdc-list-item__ripple"></span>
+                        <i class="material-icons mdc-list-item__graphic" aria-hidden="true">inbox</i>
+                        <span class="mdc-list-item__text">Inbox</span>
+                    </a>
+                    <a class="mdc-list-item" href="#">
+                        <span class="mdc-list-item__ripple"></span>
+                        <i class="material-icons mdc-list-item__graphic" aria-hidden="true">send</i>
+                        <span class="mdc-list-item__text">Outgoing</span>
+                    </a>
+                    <a class="mdc-list-item" href="#">
+                        <span class="mdc-list-item__ripple"></span>
+                        <i class="material-icons mdc-list-item__graphic" aria-hidden="true">drafts</i>
+                        <span class="mdc-list-item__text">Drafts</span>
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <div class="mdc-drawer-scrim"></div>
+        <div>Main Content</div>
+        <h2 class="mdc-typography--display2">Hello, Material Components!</h2>
+        <div>
+            <button class="mdc-button mdc-button--raised" onclick={onMenu()}>
+                <span class="mdc-button__label">Contained Button</span>
+            </button>
+        </div>
+
+        <!--        
+        <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
+        -->
+        <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.js"></script>
+        <script src="https://unpkg.com/vue@next"></script>
+        <script>
+            mdc.autoInit()
+            const drawer = mdc.drawer.MDCDrawer.attachTo(document.querySelector('.mdc-drawer'));
+            const topAppBar = mdc.topAppBar.MDCTopAppBar.attachTo(document.querySelector('.mdc-top-app-bar'));
+            const listEl = document.querySelector('.mdc-drawer .mdc-list');
+            const mainContentEl = document.querySelector('.main-content');
+
+            listEl.addEventListener('click', (event) => {
+              drawer.open = false;
+            });
+            
+//            topAppBar.listen('MDCTopAppBar:nav', () => {
+//              drawer.open = !drawer.open;
+//            });            
+
+//            document.body.addEventListener('MDCDrawer:closed', () => {
+//              mainContentEl.querySelector('input, button').focus();
+//            });            
+            function onMenu() {
+                drawer.open = !drawer.open;
+            }
+        </script>
+    </body></html>

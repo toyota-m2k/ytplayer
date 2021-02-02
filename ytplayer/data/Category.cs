@@ -37,12 +37,19 @@ namespace ytplayer.data {
         private static uint Color2Int(Color c) {
             return Color2Int(c.A, c.R, c.G, c.B);
         }
+        //private static string Color2String(Color c) {
+        //    return String.Format("#{0:2x}{0:2x}{0:2x}{0:2x}", c.A, c.R, c.G, c.B);
+        //}
 
         public uint IntColor {
             get => color;
             set => setProp(callerName(), ref color, value, "Brush", "Color");
         }
 
+        //public string StringColor {
+        //    get => Color2String(Color);
+        //}
+                
         public int SortIndex { get; set; } = 0;
 
         [System.Xml.Serialization.XmlIgnore]
