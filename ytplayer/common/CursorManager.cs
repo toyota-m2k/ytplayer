@@ -14,7 +14,7 @@ namespace ytplayer.common {
         private long mCheck = 0;
         private DispatcherTimer mTimer = null;
         private WeakReference<Window> mWin;
-        private bool mEnabled = false;
+        //private bool mEnabled = false;
 
         public CursorManager(Window owner) {
             mWin = new WeakReference<Window>(owner);
@@ -30,16 +30,14 @@ namespace ytplayer.common {
             }
         }
 
-        public bool Enabled {
-            get => mEnabled;
-            set {
-                if (value != mEnabled) {
-                    mEnabled = value;
-                    if (value) {
-                        //Update();
-                    } else {
-                        Reset();
-                    }
+        private bool Enabled = false;
+        public void Enable(bool enable) {
+            if (enable!= Enabled) {
+                Enabled = enable;
+                if (enable) {
+                    //Update();
+                } else {
+                    Reset();
                 }
             }
         }

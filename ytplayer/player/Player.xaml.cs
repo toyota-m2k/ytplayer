@@ -149,7 +149,7 @@ namespace ytplayer.player {
                 }
             }
             if(!ViewModel.ShowPanel.Value && !ViewModel.ShowSizePanel.Value) {
-                CursorManager.Enabled = true;
+                CursorManager?.Enable(true);
             }
         }
 
@@ -175,7 +175,7 @@ namespace ytplayer.player {
                 default:
                     return false;
             }
-            CursorManager.Enabled = !show;
+            CursorManager?.Enable(!show);
             return true;
         }
 
