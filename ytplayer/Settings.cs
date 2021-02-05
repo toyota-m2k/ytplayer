@@ -13,6 +13,10 @@ namespace ytplayer {
         public string FFMpegPath { get; set; } = "";
         public string VideoPath { get; set; } = "";
         public string AudioPath { get; set; } = "";
+        public bool EnableServer { get; set; } = false;
+        public int ServerPort { get; set; } = 3500;
+        public string SyncPeer { get; set; } = "";
+
         public DeterminationList Determinations { get; set; } = new DeterminationList();
         public CategoryList Categories { get; set; } = new CategoryList();
         public SearchHistory SearchHistories { get; set; } = new SearchHistory();
@@ -115,7 +119,7 @@ namespace ytplayer {
 
         private static Settings Deserialize() {
             System.IO.StreamReader sr = null;
-            Object obj = null;
+            object obj = null;
 
             try {
                 //XmlSerializerオブジェクトを作成

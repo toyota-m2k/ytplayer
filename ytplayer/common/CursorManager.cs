@@ -1,20 +1,19 @@
 ﻿using common;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 
 namespace ytplayer.common {
+    /**
+     * 動画再生時にマウスカーソルを非表示にするための管理クラス
+     */
     public class CursorManager {
         private static long WAIT_TIME = 2000;   //3ms
         private Point mPosition;
         private long mCheck = 0;
         private DispatcherTimer mTimer = null;
         private WeakReference<Window> mWin;
-        private bool mEnabled = false;
+        private bool Enabled = false;
 
         public CursorManager(Window owner) {
             mWin = new WeakReference<Window>(owner);
@@ -30,16 +29,17 @@ namespace ytplayer.common {
             }
         }
 
-        public bool Enabled {
-            get => mEnabled;
-            set {
-                if (value != mEnabled) {
-                    mEnabled = value;
-                    if (value) {
-                        //Update();
-                    } else {
-                        Reset();
-                    }
+        /**
+         * 当初プロパティにしていたが、プレーヤーを開いたり閉じたりしているとNPEが出たのでメソッドに変えた。
+         * セッターメソッドだと ?.オペレータを使えるので、こういうときはプロパティより使いやすいのだ。
+         */
+        public void Enable(bool enable) {
+            if (enable!= Enabled) {
+                Enabled = enable;
+                if (enable) {
+                    //Update();
+                } else {
+                    Reset();
                 }
             }
         }

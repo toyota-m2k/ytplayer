@@ -3,6 +3,8 @@ using SimpleHttpServer;
 using SimpleHttpServer.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Json;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -85,6 +87,40 @@ namespace ytplayer.server {
                 Routes = new List<Route>
                 {
                     new Route {
+                        Name = "ytplayer sync",
+                        UrlRegex = @"/ytplayer/sync",
+                        Method="GET",
+                        Callable = (HttpRequest request) => {
+                            var /*IEnumerable<JsonObject>*/ list =
+                            Source?.AllEntries
+                                .Where(c=>c.Status==Status.COMPLETED && c.Media.HasVideo() && (int)c.Rating>=(int)Rating.NORMAL)
+                                .Select( c=> {
+                                        return new JsonObject(new Dictionary<string,JsonValue>() {
+                                            {"Id", c.Id },
+                                            {"Url", c.Url },
+                                            {"Name", c.Name },
+                                            {"Filename", Path.GetFileName(c.Path) },
+                                            {"Status", (int)c.Status },
+                                            {"Rating", (int)c.Rating },
+                                            {"Mark", (int)c.Mark },
+                                            {"Category", c.Category.Label },
+                                            {"Media", (int)c.Media },
+                                            {"Date", c.Date.ToFileTimeUtc() },
+                                            {"Volume", c.Volume },
+                                            {"Desc", c.Desc },
+                                            {"Duration", c.DurationInSec },
+                                            {"TrimStart", c.TrimStart},
+                                            {"TrimEnd", c.TrimEnd}
+                                        });
+                                    });
+                            var json = new JsonObject(new Dictionary<string, JsonValue>() {
+                                {"cmd", "sync"},
+                                {"list", new JsonArray(list) }
+                            });
+                            return new TextHttpResponse(json.ToString(), "application/json");
+                        }
+                    },
+                    new Route {
                         Name = "ytPlayer list",
                         UrlRegex = @"/ytplayer/list(?:\?.*)?",
                         Method = "GET",
@@ -105,7 +141,7 @@ namespace ytplayer.server {
                             sb.Append("{\"cmd\":\"list\", \"list\":[");
                             sb.Append(string.Join(",",
                                 source
-                                    .Where((c) => c.Status==Status.COMPLETED && ((int)c.Media & (int)MediaFlag.VIDEO) == (int)MediaFlag.VIDEO)
+                                    .Where((c) => c.Status==Status.COMPLETED && c.Media.HasVideo())
                                     .Where((c) => string.IsNullOrEmpty(category) || category=="All" || c.Category.Label == category)
                                     .Where((c) => (int)c.Rating >= rating)
                                     .Where((c) => (marks.Count==1&&marks[0]==0) || marks.IndexOf((int)c.Mark)>=0)
