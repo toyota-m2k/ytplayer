@@ -45,6 +45,7 @@ namespace ytplayer {
         ACCEPT_DETERMINATION,
         EXTRACT_AUDIO,
         EDIT_DESCRIPTION,
+        SYNC_FROM,
         CLOSING_MESSAGE,
     }
 
@@ -77,6 +78,7 @@ namespace ytplayer {
         public ReactiveCommand CommandClearSearchText { get; } = new ReactiveCommand();
         public ReactiveCommand CommandExport { get; } = new ReactiveCommand();
         public ReactiveCommand CommandImport { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandSync { get; } = new ReactiveCommand();
         public ReactiveCommand CommandBrowser { get; } = new ReactiveCommand();
 
         // Context Menu
@@ -143,6 +145,23 @@ namespace ytplayer {
         public Task<bool> ShowDescriptionDialog() {
             return ShowDialog(DialogTypeId.EDIT_DESCRIPTION, "Description");
         }
+
+        public class SyncDialogViewModel:MicViewModelBase {
+            public ReactiveProperty<string> HostAddress { get; } = new ReactiveProperty<string>();
+        }
+        public SyncDialogViewModel SyncDialog { get; } = new SyncDialogViewModel();
+        public async Task<bool> ShowSyncDialog() {
+            if (string.IsNullOrEmpty(SyncDialog.HostAddress.Value)) {
+                SyncDialog.HostAddress.Value = Settings.Instance.SyncPeer;
+            }
+
+            if(await ShowDialog(DialogTypeId.SYNC_FROM, "Synchronization")) {
+                Settings.Instance.SyncPeer = SyncDialog.HostAddress.Value;
+                return true;
+            }
+            return false;
+        }
+
 
         /**
          * ビューモデルの構築
@@ -239,6 +258,7 @@ namespace ytplayer {
             });
             viewModel.CommandExport.Subscribe(ExportUrlList);
             viewModel.CommandImport.Subscribe(ImportUrlList);
+            viewModel.CommandSync.Subscribe(SyncFrom);
             viewModel.CommandBrowser.Subscribe(() => Process.Start("btytbrs:"));
             //viewModel.ClipboardWatching.Subscribe((v) => {
             //    if (v) {
@@ -284,8 +304,21 @@ namespace ytplayer {
             this.Title = String.Format("{0}{5} - v{1}.{2}.{3}.{4}", version.ProductName, version.FileMajorPart, version.FileMinorPart, version.FileBuildPart, version.ProductPrivatePart, dbg);
             mDownloadAcceptor = new RequestAcceptor(this);
 
-            mServer = new YtServer(this);
-            mServer.Start();
+            StartServer();
+        }
+
+        private void StartServer() {
+            if (Settings.Instance.EnableServer && mServer==null) {
+                mServer = new YtServer(this, Settings.Instance.ServerPort);
+                mServer.Start();
+            } else {
+                StopServer();
+            }
+        }
+
+        private void StopServer() {
+            mServer?.Stop();
+            mServer = null;
         }
 
         private bool CloseToBeWaited() {
@@ -327,6 +360,8 @@ namespace ytplayer {
                 WaitAndClose();
             }
 
+            StopServer();
+
             mClipboardMonitor.Dispose();
             if (mPlayerWindow != null) {
                 var (cur, pos) = mPlayerWindow.CurrentPlayingInfo;
@@ -346,9 +381,6 @@ namespace ytplayer {
             Settings.Instance.Placement.GetPlacementFrom(this);
             Settings.Instance.Serialize();
             viewModel = null;
-
-            mServer.Stop();
-            mServer = null;
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) {
@@ -366,11 +398,13 @@ namespace ytplayer {
             dlg.Owner = this;
             dlg.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             dlg.ShowDialog();
+            bool ret = false;
             if (dlg.Result!=null && dlg.Result.Ok && dlg.Result.NewStorage != null) {
                 SetStorage(dlg.Result.NewStorage);
-                return true;
+                ret = true;
             }
-            return false;
+            StartServer();
+            return ret;
         }
 
         private void InitStorage(bool forceCreate = false) {
@@ -512,6 +546,11 @@ namespace ytplayer {
                     if (line == null) break;
                     RegisterUrl(line);
                 }
+            }
+        }
+        private async void SyncFrom(object obj) {
+            if (await viewModel.ShowSyncDialog()) {
+                await SyncManager.SyncFrom(viewModel.SyncDialog.HostAddress.Value, Storage);
             }
         }
 

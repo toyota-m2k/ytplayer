@@ -20,6 +20,9 @@ namespace ytplayer.dialog {
         public ReactivePropertySlim<string> FFMpegPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> VideoPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> AudioPath { get; } = new ReactivePropertySlim<string>();
+        public ReactivePropertySlim<bool> EnableServer { get; } = new ReactivePropertySlim<bool>();
+        public ReactivePropertySlim<int> ServerPort { get; } = new ReactivePropertySlim<int>();
+
         public ReactivePropertySlim<string> ErrorMessage { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<bool> Cancellable { get; } = new ReactivePropertySlim<bool>(true);
         public ReadOnlyReactivePropertySlim<bool> CanUpdateYTD { get; }
@@ -46,6 +49,8 @@ namespace ytplayer.dialog {
             FFMpegPath.Value = src.FFMpegPath;
             VideoPath.Value = src.VideoPath;
             AudioPath.Value = src.AudioPath;
+            EnableServer.Value = src.EnableServer;
+            ServerPort.Value = src.ServerPort;
 
             CanUpdateYTD = YoutubeDLPath.Select((v) => PathUtil.isFile(System.IO.Path.Combine(v, "youtube-dl.exe"))).ToReadOnlyReactivePropertySlim();
 
@@ -150,6 +155,8 @@ namespace ytplayer.dialog {
                 }
             }
 
+            Console.WriteLine($"Current: {Owner.CurrentStorage?.DBPath}");
+            Console.WriteLine($"New    : {DBPath.Value}");
             if (Owner.CurrentStorage == null || !PathUtil.isEqualDirectoryName(Owner.CurrentStorage.DBPath, DBPath.Value)) {
                 // 現在と異なるDBファイルが指定された・・・開いてみる。
                 NewStorage = TryOpenStorage(DBPath.Value);
@@ -167,6 +174,8 @@ namespace ytplayer.dialog {
             dst.FFMpegPath = FFMpegPath.Value;
             dst.VideoPath = VideoPath.Value;
             dst.AudioPath = AudioPath.Value;
+            dst.EnableServer = EnableServer.Value;
+            dst.ServerPort = ServerPort.Value;
             dst.Serialize();
             dst.ApplyEnvironment();
         }
@@ -203,6 +212,7 @@ namespace ytplayer.dialog {
         public Storage CurrentStorage { get; }
 
         public SettingDialog(Storage currentStorage) {
+            CurrentStorage = currentStorage;
             Result = null;
             viewModel = new SettingsViewModel(this);
             viewModel.Cancellable.Value = currentStorage!=null;

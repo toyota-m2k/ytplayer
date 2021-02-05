@@ -11,11 +11,25 @@ namespace ytplayer.data {
     public class SyncManager {
         public static Guid guid = Guid.NewGuid();
 
+        class DLEntryComparator : IEqualityComparer<DLEntry> {
+            public bool Equals(DLEntry x, DLEntry y) {
+                return x.KEY == y.KEY;
+            }
+
+            public int GetHashCode(DLEntry obj) {
+                return obj.KEY.GetHashCode();
+            }
+        }
+
         public static async Task SyncFrom(string host, Storage storage) {
+            if(!host.Contains(":")) {
+                host += ":3500";
+            }
+
             using (var client = new HttpClient()) {
                 IEnumerable<DLEntry> list;
                 try {
-                    var res = await client.GetStringAsync($"http://{host}:3500/ytplayer/sync");
+                    var res = await client.GetStringAsync($"http://{host}/ytplayer/sync");
                     var json = JsonObject.Parse(res);
                     list = (json["list"] as JsonArray)?.Select(v => {
                         var c = v as JsonObject;
@@ -26,21 +40,22 @@ namespace ytplayer.data {
                             x.Mark = (Mark)(int)c["Mark"];
                             x.Category = Settings.Instance.Categories.Get(c["Category"]);
                             x.Media = MediaFlag.VIDEO;
-                            x.Date = c["Date"];
+                            x.Date = DateTime.FromFileTimeUtc(c["Date"]);
                             x.Volume = c["Volume"];
                             x.Desc = c["Desc"];
                             x.DurationInSec = c["Duration"];
                             x.TrimStart = c["TrimStart"];
                             x.TrimEnd = c["TrimEnd"];
-                            x.VPath = System.IO.Path.Combine(Settings.Instance.VideoPath, c["FileName"]);
+                            x.VPath = System.IO.Path.Combine(Settings.Instance.VideoPath, c["Filename"]);
                         });
-                    }).Where(v => !storage.DLTable.Contains(v.KEY));
+                    }).Except(storage.DLTable.List, new DLEntryComparator()); // Where(v => !storage.DLTable.Contains(v.KEY));
+
                     foreach (var c in list) {
                         try {
                             Debug.WriteLine($"Sync:id={c.KEY}, name={c.Name}");
                             Debug.WriteLine($"Sync:  saving:{c.VPath}");
 
-                            using (var inStream = await client.GetStreamAsync($"http://{host}:3500/ytplayer/video?id={c.KEY}")) {
+                            using (var inStream = await client.GetStreamAsync($"http://{host}/ytplayer/video?id={c.KEY}")) {
                                 //using (var outStream = new FileStream(c.VPath, FileMode.Create)) {
                                 //    await inStream.CopyToAsync(outStream);
                                 //    await outStream.FlushAsync();

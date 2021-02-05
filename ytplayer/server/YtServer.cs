@@ -105,7 +105,7 @@ namespace ytplayer.server {
                                             {"Mark", (int)c.Mark },
                                             {"Category", c.Category.Label },
                                             {"Media", (int)c.Media },
-                                            {"Date", c.Date },
+                                            {"Date", c.Date.ToFileTimeUtc() },
                                             {"Volume", c.Volume },
                                             {"Desc", c.Desc },
                                             {"Duration", c.DurationInSec },
