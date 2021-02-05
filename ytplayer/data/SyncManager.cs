@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Json;
 using System.Linq;
 using System.Net.Http;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 namespace ytplayer.data {
     public class SyncManager {
         public static Guid guid = Guid.NewGuid();
+        public static bool busy = false;
 
         class DLEntryComparator : IEqualityComparer<DLEntry> {
             public bool Equals(DLEntry x, DLEntry y) {
@@ -22,6 +24,11 @@ namespace ytplayer.data {
         }
 
         public static async Task SyncFrom(string host, Storage storage) {
+            if(busy) {
+                return;
+            }
+            busy = true;
+
             if(!host.Contains(":")) {
                 host += ":3500";
             }
@@ -55,12 +62,11 @@ namespace ytplayer.data {
                             Debug.WriteLine($"Sync:id={c.KEY}, name={c.Name}");
                             Debug.WriteLine($"Sync:  saving:{c.VPath}");
 
-                            using (var inStream = await client.GetStreamAsync($"http://{host}/ytplayer/video?id={c.KEY}")) {
-                                //using (var outStream = new FileStream(c.VPath, FileMode.Create)) {
-                                //    await inStream.CopyToAsync(outStream);
-                                //    await outStream.FlushAsync();
-                                //    storage.DLTable.Add(c);
-                                //}
+                            using (var inStream = await client.GetStreamAsync($"http://{host}/ytplayer/video?id={c.KEY}"))
+                            using (var outStream = new FileStream(c.VPath, FileMode.Create)) {
+                                await inStream.CopyToAsync(outStream);
+                                await outStream.FlushAsync();
+                                storage.DLTable.Add(c);
                             }
                         }
                         catch (Exception e) {
@@ -70,6 +76,9 @@ namespace ytplayer.data {
                 }
                 catch (Exception e) {
                     Debug.WriteLine("Sync: GetList error.\n" + e.ToString());
+                }
+                finally {
+                    busy = false;
                 }
             }
         }
