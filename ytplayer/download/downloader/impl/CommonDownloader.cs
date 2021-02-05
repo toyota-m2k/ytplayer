@@ -7,12 +7,21 @@ namespace ytplayer.download.downloader.impl {
         public CommonDownloader(DLEntry entry, IDownloadHost host, bool extractAudio) : base(entry,host,extractAudio) {
 
         }
-
+        static Regex regName = new Regex(@"(?<name>.*)(?:-.{11})");
         protected override string GetSavedFilePath(DownloadResults.ItemInfo info) {
             string dir = OutputDir;
             string ext = OutputExtension;
             var f = System.IO.Directory.GetFiles(dir, $"*-{info.Id}.{ext}", System.IO.SearchOption.TopDirectoryOnly);
-            return (null != f && f.Length > 0) ? f[0] : null;
+            var path = (null != f && f.Length > 0) ? f[0] : null;
+            if(!string.IsNullOrEmpty(path)) {
+                var fname = System.IO.Path.GetFileNameWithoutExtension(path);
+                var m = regName.Match(fname);
+                var name = m?.Groups?["name"].Value;
+                if(name!=null) {
+                    info.Name = name;
+                }
+            }
+            return path;
         }
 
         const string PtnVideoName = @"\[(?:(?:download)|(?:ffmpeg))\]\s+Destination:\s+(?<name>.*)-(?<id>.{11})\.mp4(?!\w)";
