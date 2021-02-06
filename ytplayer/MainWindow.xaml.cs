@@ -421,12 +421,10 @@ namespace ytplayer {
                     }
                 }
             } else {
-                try {
-                    var storage = new Storage(Settings.Instance.EnsureDBPath);
+                var storage = Storage.OpenDB(Settings.Instance.EnsureDBPath);
+                if(storage!=null) { 
                     SetStorage(storage);
-                }
-                catch (Exception e) {
-                    Logger.error(e);
+                } else { 
                     InitStorage(true);
                 }
             }

@@ -91,40 +91,41 @@ namespace ytplayer.dialog {
                 .defaultFilename(YtpDef.DEFAULT_DBNAME)
                 .GetFilePath(Owner);
             if (null != r) {
-                if(!CheckDB(r)) {
+                if (!CheckDB(r)) {
                     // ytplayer用のDBファイルではない
                     MessageBox.Show(Owner, "このファイルはいけません。", "DBファイル", MessageBoxButton.OK);
                     return;
                 }
-
                 path.Value = r;
             }
         }
 
         private bool CheckDB(string path) {
             try {
-                if(!PathUtil.isExists(path)) {
-                    // 存在しないときは新規作成
+                if (!PathUtil.isExists(path)) {
+                    // 存在しないときは新規作成可能なのでTrue
                     return true;
                 }
                 return Storage.CheckDB(path);
-            } catch(Exception) {
+            }
+            catch (Exception) {
                 return false;
             }
         }
 
         private Storage TryOpenStorage(string path) {
-            try {
-                if(!CheckDB(path)) {
-                    return null;
-                }
-                return new Storage(path);
-            }
-            catch (Exception e) {
-                // 開けなかったらNG
-                Logger.error(e);
-                return null;
-            }
+            return Storage.OpenOrCreateDB(path);
+            //try {
+            //    if(!CheckDB(path)) {
+            //        return null;
+            //    }
+            //    return new Storage(path);
+            //}
+            //catch (Exception e) {
+            //    // 開けなかったらNG
+            //    Logger.error(e);
+            //    return null;
+            //}
         }
 
         private string Validate() {

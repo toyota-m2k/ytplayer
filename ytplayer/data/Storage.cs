@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data.SQLite;
 using System.Linq;
+using ytplayer.common;
 
 namespace ytplayer.data {
     //public interface IEntry {
@@ -34,8 +35,8 @@ namespace ytplayer.data {
 
         public string DBPath { get; }
 
-        public Storage(string path) : this(path, false) {
-        }
+        //public Storage(string path) : this(path, false) {
+        //}
 
         private Storage(string path, bool dontCreateTable) {
             DBPath = path;
@@ -58,10 +59,52 @@ namespace ytplayer.data {
                 using (var s = new Storage(path, dontCreateTable: true)) {
                     return s.getAppName() == APP_NAME;
                 }
-            } catch (Exception) {
+            }
+            catch (Exception) {
                 return false;
             }
         }
+
+        public static Storage OpenDB(string path) {
+            Storage storage = null;
+            try {
+                storage = new Storage(path, dontCreateTable: true);
+                if (storage.getAppName() == APP_NAME) {
+                    return storage;
+                }
+                storage.Dispose();
+                return null;
+            }
+            catch (Exception) {
+                storage?.Dispose();
+                return null;
+            }
+        }
+
+
+        public static Storage OpenOrCreateDB(string path) {
+            Storage storage = null;
+            try {
+                if (!PathUtil.isExists(path)) {
+                    // 存在しないときは新規作成
+                    return new Storage(path, false);
+                }
+                // 存在するときは開く
+                storage = new Storage(path, dontCreateTable: true);
+                if (storage.getAppName() == APP_NAME) {
+                    return storage;
+                }
+                Logger.warn($"invalid db:{path}");
+                storage.Dispose();
+                return null;
+            } catch(Exception e) {
+                Logger.error(e);
+                storage?.Dispose();
+                return null;
+            }
+
+        }
+
 
 
         //private void ConvertTable() {
