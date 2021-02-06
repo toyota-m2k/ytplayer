@@ -9,9 +9,11 @@ using ytplayer.download.downloader;
 using ytplayer.download.downloader.impl;
 
 namespace ytplayer.download {
-    public interface IDownloadHost {
+    public interface IReportOutput {
         bool StandardOutput(string msg);
         bool ErrorOutput(string msg);
+    }
+    public interface IDownloadHost : IReportOutput {
         void Completed(DLEntry target, bool succeeded, bool extractAudio);
         void FoundSubItem(DLEntry foundEntry);
     }

@@ -550,7 +550,7 @@ namespace ytplayer {
         }
         private async void SyncFrom(object obj) {
             if (await viewModel.ShowSyncDialog()) {
-                await SyncManager.SyncFrom(viewModel.SyncDialog.HostAddress.Value, Storage);
+                await SyncManager.SyncFrom(viewModel.SyncDialog.HostAddress.Value, Storage, this);
             }
         }
 
@@ -870,11 +870,11 @@ namespace ytplayer {
             return true;
         }
 
-        bool IDownloadHost.StandardOutput(string msg) {
+        bool IReportOutput.StandardOutput(string msg) {
             return Output(msg, error: false);
         }
 
-        bool IDownloadHost.ErrorOutput(string msg) {
+        bool IReportOutput.ErrorOutput(string msg) {
             return Output(msg, error: true);
         }
 

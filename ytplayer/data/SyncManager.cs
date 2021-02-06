@@ -7,6 +7,8 @@ using System.Json;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using ytplayer.common;
+using ytplayer.download;
 
 namespace ytplayer.data {
     public class SyncManager {
@@ -23,7 +25,7 @@ namespace ytplayer.data {
             }
         }
 
-        public static async Task SyncFrom(string host, Storage storage) {
+        public static async Task SyncFrom(string host, Storage storage, IReportOutput output) {
             if(busy) {
                 return;
             }
@@ -36,6 +38,7 @@ namespace ytplayer.data {
             using (var client = new HttpClient()) {
                 IEnumerable<DLEntry> list;
                 try {
+                    output.StandardOutput("Start synchronizing...");
                     var res = await client.GetStringAsync($"http://{host}/ytplayer/sync");
                     var json = JsonObject.Parse(res);
                     list = (json["list"] as JsonArray)?.Select(v => {
@@ -61,21 +64,26 @@ namespace ytplayer.data {
                         try {
                             Debug.WriteLine($"Sync:id={c.KEY}, name={c.Name}");
                             Debug.WriteLine($"Sync:  saving:{c.VPath}");
-
-                            using (var inStream = await client.GetStreamAsync($"http://{host}/ytplayer/video?id={c.KEY}"))
-                            using (var outStream = new FileStream(c.VPath, FileMode.Create)) {
-                                await inStream.CopyToAsync(outStream);
-                                await outStream.FlushAsync();
-                                storage.DLTable.Add(c);
+                            output.StandardOutput($"synchronizing :{c.KEY} - {c.Name}");
+                            if (!PathUtil.isFile(c.VPath)) {
+                                using (var inStream = await client.GetStreamAsync($"http://{host}/ytplayer/video?id={c.KEY}"))
+                                using (var outStream = new FileStream(c.VPath, FileMode.Create)) {
+                                    await inStream.CopyToAsync(outStream);
+                                    await outStream.FlushAsync();
+                                }
                             }
+                            storage.DLTable.Add(c);
                         }
                         catch (Exception e) {
                             Debug.WriteLine("Sync: SaveFile error.\n" + e.ToString());
+                            output.ErrorOutput($"{e.Message}");
                         }
                     }
+                    output.StandardOutput("Complete synchronizing...");
                 }
                 catch (Exception e) {
                     Debug.WriteLine("Sync: GetList error.\n" + e.ToString());
+                    output.ErrorOutput($"Sync Error: {e.Message}");
                 }
                 finally {
                     busy = false;
