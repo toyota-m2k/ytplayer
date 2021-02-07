@@ -562,6 +562,14 @@ namespace ytplayer {
         public IEnumerable<DLEntry> ListedEntries => MainListView.Items.ToEnumerable<DLEntry>();
         public IEnumerable<DLEntry> AllEntries => Storage.DLTable.List;
 
+        IEnumerable<DLEntry> IYtListSource.SelectedEntries {
+            get {
+                return Dispatcher.Invoke(() => {
+                    return this.SelectedEntries;
+                });
+            }
+        }
+
         private void ProcessSelectedEntries(Action<IEnumerable<DLEntry>> action) {
             var entries = SelectedEntries;
             if (Utils.IsNullOrEmpty(entries)) {

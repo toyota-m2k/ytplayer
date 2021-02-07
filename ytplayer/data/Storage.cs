@@ -10,6 +10,7 @@ namespace ytplayer.data {
 
     public class Storage : IDisposable {
         private const string APP_NAME = "YTPlayer";
+        private const int DB_VERSION = 3;
 
         private SQLiteConnection Connection { get; set; }
 
@@ -297,11 +298,15 @@ namespace ytplayer.data {
             //    executeSql(@"ALTER TABLE t_download ADD COLUMN mark INTEGER DEFAULT '0'");
             //    setVersion(2);
             //}
-            if(getVersion()==2) {
+            var ver = getVersion();
+            if(ver>DB_VERSION) {
+                throw new InvalidProgramException($"DB version mismatch (required={DB_VERSION}, found={ver}).");
+            }
+            if(ver< DB_VERSION) {
                 //executeSql(@"ALTER TABLE t_download_ex ADD COLUMN trim_start INTEGER DEFAULT '0' after mark");
                 //executeSql(@"ALTER TABLE t_download_ex ADD COLUMN trim_end INTEGER DEFAULT '0' after trim_start");
                 setAppName();
-                setVersion(3);
+                setVersion(DB_VERSION);
             }
 
         }
