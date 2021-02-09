@@ -82,7 +82,7 @@ namespace SimpleHttpServer
         public void Stop()
         {
             Alive = false;
-            Listener.Stop();
+            Listener?.Stop();
         }
         #endregion
 

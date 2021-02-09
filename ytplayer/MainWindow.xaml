@@ -112,6 +112,7 @@
                             <MenuItem Header="Export" Command="{Binding CommandExport}"/>
                             <MenuItem Header="Import" Command="{Binding CommandImport}"/>
                             <MenuItem Header="Sync" Command="{Binding CommandSync}"/>
+                            <MenuItem Header="Move Files" Command="{Binding CommandMoveItems}"/>
                         </ContextMenu>
                     </common:MenuButton.DropDownMenu>
                 </common:MenuButton>
@@ -556,7 +557,7 @@
                             <CheckBox Content="Block item(s)." IsChecked="{Binding DeleteItemDialog.BlockItem.Value}" Margin="5,5,0,0"/>
                             <CheckBox Content="Delete video file(s)." IsChecked="{Binding DeleteItemDialog.DeleteVideoFile.Value}" Margin="5,5,0,0"/>
                             <CheckBox Content="Delete audio file(s)." IsChecked="{Binding DeleteItemDialog.DeleteAudioFile.Value}" Margin="5,5,0,0"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0" HorizontalAlignment="Center">
                                 <Button Content="OK" Command="{Binding CommandOk}" Width="100" Margin="0,0,10,0"/>
                                 <Button Content="Cancel" Width="100" Command="{Binding CommandCancel}" Margin="0,0,10,0"/>
                             </StackPanel>
@@ -571,7 +572,7 @@
                             <Border BorderThickness="1" BorderBrush="LightGray" Margin="0,5">
                                 <TextBlock Text="{Binding DeterminationDialog.Host.Value}" Margin="2"/>
                             </Border>
-                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0" HorizontalAlignment="Center">
                                 <Button Content="Accept" Command="{Binding CommandOk}" Width="100" Margin="0,0,10,0"/>
                                 <Button Content="Reject" Width="100" Command="{Binding CommandCancel}" Margin="0"/>
                             </StackPanel>
@@ -584,7 +585,7 @@
                         <StackPanel Orientation="Vertical">
                             <CheckBox Content="Download Audio File(s)" IsChecked="{Binding ExtractAudoDialog.DownloadAudio.Value}"/>
                             <CheckBox Content="Delete Video File(s)" IsChecked="{Binding ExtractAudoDialog.DeleteVideo.Value}"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0" HorizontalAlignment="Center">
                                 <Button Content="OK" Command="{Binding CommandOk}" Width="100" Margin="0,0,10,0"/>
                                 <Button Content="Cancel" Width="100" Command="{Binding CommandCancel}" Margin="0,0,10,0"/>
                             </StackPanel>
@@ -597,12 +598,13 @@
                         <StackPanel Orientation="Vertical">
                             <TextBlock Text="Description"/>
                             <TextBox Text="{Binding DescriptionDialog.Description.Value}" Width="250"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0" HorizontalAlignment="Center">
                                 <Button Content="OK" Command="{Binding CommandOk}" Width="100" Margin="0,0,10,0"/>
                                 <Button Content="Cancel" Width="100" Command="{Binding CommandCancel}" Margin="0,0,10,0"/>
                             </StackPanel>
                         </StackPanel>
                     </Grid>
+                    
                     <!-- 同期 -->
                     <Grid Visibility="{Binding DialogType.Value, Converter={StaticResource EnumVisibilityConverter}, 
                           ConverterParameter=SYNC_FROM}"
@@ -610,12 +612,58 @@
                         <StackPanel Orientation="Vertical">
                             <TextBlock Text="Synchronize from"/>
                             <TextBox Text="{Binding SyncDialog.HostAddress.Value}" Width="250"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0" HorizontalAlignment="Center">
                                 <Button Content="OK" Command="{Binding CommandOk}" Width="100" Margin="0,0,10,0"/>
                                 <Button Content="Cancel" Width="100" Command="{Binding CommandCancel}" Margin="0,0,10,0"/>
                             </StackPanel>
                         </StackPanel>
                     </Grid>
+
+                    <!-- Move Item -->
+                    <Grid Visibility="{Binding DialogType.Value, Converter={StaticResource EnumVisibilityConverter}, 
+                          ConverterParameter=MOVE_ITEMS}"
+                          Margin="10">
+                        <StackPanel Orientation="Vertical">
+                            <TextBlock Text="Moving Video/Audio Files" MinWidth="250"/>
+                            <CheckBox Content="Video Files" IsChecked="{Binding MoveItemsDialog.Video.Value, Mode=TwoWay}" Margin="0,10,0,0"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                <TextBlock Text="move to "/>
+                                <TextBox Text="{Binding MoveItemsDialog.VideoTo.Value, Mode=TwoWay}" IsEnabled="{Binding MoveItemsDialog.Video.Value}" MinWidth="250"/>
+                                <Button Content="..." Command="{Binding MoveItemsDialog.SelectVideoPath}" IsEnabled="{Binding MoveItemsDialog.Video.Value}" MinWidth="30"/>
+                            </StackPanel>
+                            <CheckBox Content="Audio Files" IsChecked="{Binding MoveItemsDialog.Audio.Value, Mode=TwoWay}" Margin="0,10,0,0"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                <TextBlock Text="move to "/>
+                                <TextBox Text="{Binding MoveItemsDialog.AudioTo.Value, Mode=TwoWay}" IsEnabled="{Binding MoveItemsDialog.Audio.Value}" MinWidth="250"/>
+                                <Button Content="..." Command="{Binding MoveItemsDialog.SelectAudioPath}" IsEnabled="{Binding MoveItemsDialog.Audio.Value}" MinWidth="30"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0" HorizontalAlignment="Center">
+                                <Button Content="OK" Command="{Binding CommandOk}" Width="100" Margin="0,0,10,0"/>
+                                <Button Content="Cancel" Width="100" Command="{Binding CommandCancel}" Margin="0,0,10,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- プログレスダイアログ -->
+                    <Grid Visibility="{Binding DialogType.Value, Converter={StaticResource EnumVisibilityConverter}, 
+                          ConverterParameter=PROGRESS}"
+                          Margin="10">
+                        <StackPanel Orientation="Vertical">
+                            <TextBlock Text="{Binding Progress.Message.Value}" MinWidth="250"/>
+                            <ProgressBar MinWidth="250" HorizontalAlignment="Stretch" Minimum="0" 
+                                         Maximum="{Binding Progress.Total.Value}" 
+                                         Value="{Binding Progress.Current.Value}"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding Progress.Current.Value}"/>
+                                <TextBlock Text=" / "/>
+                                <TextBlock Text="{Binding Progress.Total.Value}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0" HorizontalAlignment="Center">
+                                <Button Content="Cancel" Width="100" Command="{Binding Progress.OnCancel}" Margin="0,0,0,0" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+
                     <!-- 終了確認メッセージ -->
                     <Grid Visibility="{Binding DialogType.Value, Converter={StaticResource EnumVisibilityConverter}, 
                           ConverterParameter=CLOSING_MESSAGE}"
