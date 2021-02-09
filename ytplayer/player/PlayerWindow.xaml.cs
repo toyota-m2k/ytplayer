@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows;
 
 namespace ytplayer.player {
@@ -13,6 +14,7 @@ namespace ytplayer.player {
         }
 
         public event Action<IPlayable> PlayItemChanged;
+        public event Action<PlayerWindow> PlayWindowClosing;
         public event Action<PlayerWindow> PlayWindowClosed;
 
         public IPlayList PlayList => Player.ControlPanel.PlayList;
@@ -29,10 +31,10 @@ namespace ytplayer.player {
             }
         }
 
-        public void ResumePlay(IEnumerable<IPlayable> list, IPlayable entry, double pos) {
+        public void ResumePlay(IEnumerable<IPlayable> list, IPlayable entry/*, double pos*/) {
             if (entry != null) {
                 PlayList.SetList(list, entry);
-                Player.ReserveSeekPosition(pos);
+                //Player.ReserveSeekPosition(pos);
             }
         }
 
@@ -48,13 +50,17 @@ namespace ytplayer.player {
             });
         }
 
+        protected override void OnClosing(CancelEventArgs e) {
+            base.OnClosing(e);
+            PlayWindowClosing?.Invoke(this);
+        }
+
         protected override void OnClosed(EventArgs e) {
             base.OnClosed(e);
             PlayWindowClosed?.Invoke(this);
             PlayWindowClosed = null;
             PlayItemChanged = null;
             Player.Terminate();
-
         }
 
         private void Window_PreviewDragOver(object sender, DragEventArgs e) {

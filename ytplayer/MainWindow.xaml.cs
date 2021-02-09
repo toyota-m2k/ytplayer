@@ -418,10 +418,10 @@ namespace ytplayer {
                 if (entry != null) {
                     MainListView.SelectedItem = entry;
                     MainListView.ScrollIntoView(entry);
-                    var pos = Settings.Instance.LastPlayingPos;
-                    if (pos > 0) {
+                    if (Settings.Instance.RestartOnLoaded) {
+                        var pos = Settings.Instance.LastPlayingPos;
                         var win = GetPlayer();
-                        win.ResumePlay(viewModel.MainList.Value, entry, pos);
+                        win.ResumePlay(viewModel.MainList.Value, entry/*, pos*/);
                     }
                 }
             }
@@ -495,14 +495,15 @@ namespace ytplayer {
 
             mClipboardMonitor.Dispose();
             if (mPlayerWindow != null) {
-                var (cur, pos) = mPlayerWindow.CurrentPlayingInfo;
-                Settings.Instance.LastPlayingUrl = cur.KEY;
-                Settings.Instance.LastPlayingPos = pos;
+                Settings.Instance.RestartOnLoaded = true;
                 mPlayerWindow.Close();
                 mPlayerWindow = null;
             } else {
-                Settings.Instance.LastPlayingUrl = (MainListView.SelectedItem as DLEntry)?.KEY;
-                Settings.Instance.LastPlayingPos = 0;
+                Settings.Instance.RestartOnLoaded = false;
+                if (Settings.Instance.LastPlayingUrl != (MainListView.SelectedItem as DLEntry)?.KEY) {
+                    Settings.Instance.LastPlayingUrl = (MainListView.SelectedItem as DLEntry)?.KEY;
+                    Settings.Instance.LastPlayingPos = 0;
+                }
             }
             Settings.Instance.SortInfo.SortUpdated -= OnSortChanged;
             Instance = null;
@@ -840,15 +841,23 @@ namespace ytplayer {
             if (mPlayerWindow == null) {
                 mPlayerWindow = new PlayerWindow();
                 mPlayerWindow.PlayItemChanged += OnPlayItemChanged;
+                mPlayerWindow.PlayWindowClosing += OnPlayerWindowClosing;
                 mPlayerWindow.PlayWindowClosed += OnPlayerWindowClosed;
                 mPlayerWindow.Show();
             }
             return mPlayerWindow;
         }
 
+        private void OnPlayerWindowClosing(PlayerWindow obj) {
+            var (cur, pos) = obj.CurrentPlayingInfo;
+            Settings.Instance.LastPlayingUrl = cur.KEY;
+            Settings.Instance.LastPlayingPos = pos;
+        }
+
         private void OnPlayerWindowClosed(PlayerWindow obj) {
             if (obj == mPlayerWindow) {
                 mPlayerWindow.PlayItemChanged -= OnPlayItemChanged;
+                mPlayerWindow.PlayWindowClosing -= OnPlayerWindowClosing;
                 mPlayerWindow.PlayWindowClosed -= OnPlayerWindowClosed;
                 mPlayerWindow = null;
             }

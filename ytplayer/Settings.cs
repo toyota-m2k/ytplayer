@@ -21,8 +21,9 @@ namespace ytplayer {
         public CategoryList Categories { get; set; } = new CategoryList();
         public SearchHistory SearchHistories { get; set; } = new SearchHistory();
         public bool[] Ratings { get; set; }
-        public string LastPlayingUrl { get; set; }
-        public double LastPlayingPos { get; set; }
+        public string LastPlayingUrl { get; set; } = null;
+        public double LastPlayingPos { get; set; } = 0;
+        public bool RestartOnLoaded { get; set; } = false;
         public Sorter SortInfo { get; set; } = new Sorter();
         public bool AcceptList { get; set; } = false;
 

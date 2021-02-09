@@ -47,6 +47,7 @@ namespace ytplayer.player {
         void Play();
         void Pause();
         void Stop();
+        void ReserveSeekPosition(double pos);
         double SeekPosition { get; set; }
         Stretch Stretch { get; set; }
     }
