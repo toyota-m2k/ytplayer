@@ -11,6 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using ytplayer.common;
 using ytplayer.data;
 using ytplayer.dialog;
@@ -19,6 +20,7 @@ using ytplayer.download.downloader;
 using ytplayer.interop;
 using ytplayer.player;
 using ytplayer.server;
+using static ytplayer.data.SyncManager;
 
 namespace ytplayer {
     /**
@@ -46,6 +48,8 @@ namespace ytplayer {
         EXTRACT_AUDIO,
         EDIT_DESCRIPTION,
         SYNC_FROM,
+        MOVE_ITEMS,
+        PROGRESS,
         CLOSING_MESSAGE,
     }
 
@@ -79,6 +83,7 @@ namespace ytplayer {
         public ReactiveCommand CommandExport { get; } = new ReactiveCommand();
         public ReactiveCommand CommandImport { get; } = new ReactiveCommand();
         public ReactiveCommand CommandSync { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandMoveItems { get; } = new ReactiveCommand();
         public ReactiveCommand CommandBrowser { get; } = new ReactiveCommand();
 
         // Context Menu
@@ -89,6 +94,12 @@ namespace ytplayer {
         public ReactiveCommand EditDescriptionCommand { get; } = new ReactiveCommand();
 
         // Dialog
+        public abstract class DialogViewModel: MicViewModelBase {
+            public virtual bool CheckBeforeOk() { return true; }
+            public abstract DialogTypeId Type { get; }
+        }
+
+        private DialogViewModel DialogCurrentViewModel { get; set; } = null;
         private TaskCompletionSource<bool> DialogTask { get; set; } = null;
         public ReactivePropertySlim<bool> DialogActivated { get; } = new ReactivePropertySlim<bool>(false);
         public ReactivePropertySlim<string> DialogTitle { get; } = new ReactivePropertySlim<string>();
@@ -96,57 +107,65 @@ namespace ytplayer {
         public ReactiveCommand CommandCancel { get; } = new ReactiveCommand();
         public ReactiveCommand CommandOk { get; } = new ReactiveCommand();
 
-        public Task<bool> ShowDialog(DialogTypeId type, string title) {
+
+
+        public Task<bool> ShowDialog(DialogViewModel model, string title) {
+            DialogCurrentViewModel = model;
             BusyWithModal = true;
             DialogTask = new TaskCompletionSource<bool>();
-            DialogType.Value = type;
+            DialogType.Value = model.Type;
             DialogTitle.Value = title;
             DialogActivated.Value = true;
             return DialogTask.Task;
         }
 
         // Delete Item Dialog
-        public class DeleteItemDialogViewModel : MicViewModelBase {
+        public class DeleteItemDialogViewModel : DialogViewModel {
+            public override DialogTypeId Type => DialogTypeId.DELETE_COMFIRM;
             public ReactivePropertySlim<bool> BlockItem { get; } = new ReactivePropertySlim<bool>(false);
             public ReactivePropertySlim<bool> DeleteVideoFile { get; } = new ReactivePropertySlim<bool>(false);
             public ReactivePropertySlim<bool> DeleteAudioFile { get; } = new ReactivePropertySlim<bool>(false);
         }
         public DeleteItemDialogViewModel DeleteItemDialog { get; } = new DeleteItemDialogViewModel();
         public Task<bool> ShowDeleteItemDialog() {
-            return ShowDialog(DialogTypeId.DELETE_COMFIRM, "Delete Items");
+            return ShowDialog(DeleteItemDialog, "Delete Items");
         }
 
         // Accept/Reject Determination Dialog
-        public class DeterminationDialogViewModel : MicViewModelBase {
+        public class DeterminationDialogViewModel : DialogViewModel {
+            public override DialogTypeId Type => DialogTypeId.ACCEPT_DETERMINATION;
             public ReactivePropertySlim<string> Host { get; } = new ReactivePropertySlim<string>();
             public ReactiveCommand CommandOk { get; } = new ReactiveCommand();
         }
         public DeterminationDialogViewModel DeterminationDialog { get; } = new DeterminationDialogViewModel();
         public Task<bool> ShowDeterminationDialog(string host) {
             DeterminationDialog.Host.Value = host;
-            return ShowDialog(DialogTypeId.ACCEPT_DETERMINATION, "Accept or Reject");
+            return ShowDialog(DeterminationDialog, "Accept or Reject");
         }
 
         // Extract Audio Dialog
-        public class ExtractAudoDialogViewModel : MicViewModelBase {
+        public class ExtractAudoDialogViewModel : DialogViewModel {
+            public override DialogTypeId Type => DialogTypeId.EXTRACT_AUDIO;
             public ReactiveProperty<bool> DeleteVideo { get; } = new ReactiveProperty<bool>();
             public ReactiveProperty<bool> DownloadAudio { get; } = new ReactiveProperty<bool>();
         }
         public ExtractAudoDialogViewModel ExtractAudoDialog { get; } = new ExtractAudoDialogViewModel();
         public Task<bool> ShowExtractAudioDialog() {
-            return ShowDialog(DialogTypeId.EXTRACT_AUDIO, "Extract Audio");
+            return ShowDialog(ExtractAudoDialog, "Extract Audio");
         }
 
         // Description Dialog
-        public class DescriptionDialogViewModel : MicViewModelBase {
+        public class DescriptionDialogViewModel : DialogViewModel {
+            public override DialogTypeId Type => DialogTypeId.EDIT_DESCRIPTION;
             public ReactiveProperty<string> Description { get; } = new ReactiveProperty<string>();
         }
         public DescriptionDialogViewModel DescriptionDialog { get; } = new DescriptionDialogViewModel();
         public Task<bool> ShowDescriptionDialog() {
-            return ShowDialog(DialogTypeId.EDIT_DESCRIPTION, "Description");
+            return ShowDialog(DescriptionDialog, "Description");
         }
 
-        public class SyncDialogViewModel:MicViewModelBase {
+        public class SyncDialogViewModel : DialogViewModel {
+            public override DialogTypeId Type => DialogTypeId.SYNC_FROM;
             public ReactiveProperty<string> HostAddress { get; } = new ReactiveProperty<string>();
         }
         public SyncDialogViewModel SyncDialog { get; } = new SyncDialogViewModel();
@@ -155,11 +174,118 @@ namespace ytplayer {
                 SyncDialog.HostAddress.Value = Settings.Instance.SyncPeer;
             }
 
-            if(await ShowDialog(DialogTypeId.SYNC_FROM, "Synchronization")) {
+            if (await ShowDialog(SyncDialog, "Synchronization")) {
                 Settings.Instance.SyncPeer = SyncDialog.HostAddress.Value;
                 return true;
             }
             return false;
+        }
+
+        public class MoveItemsViewModel : DialogViewModel {
+            public override DialogTypeId Type => DialogTypeId.MOVE_ITEMS;
+            public ReactiveProperty<bool> Video { get; } = new ReactiveProperty<bool>();
+            public ReactiveProperty<bool> Audio { get; } = new ReactiveProperty<bool>();
+            public ReactiveProperty<string> VideoTo { get; } = new ReactiveProperty<string>();
+            public ReactiveProperty<string> AudioTo { get; } = new ReactiveProperty<string>();
+            public ReactiveCommand SelectVideoPath { get; } = new ReactiveCommand();
+            public ReactiveCommand SelectAudioPath { get; } = new ReactiveCommand();
+
+            public void SelectFolder(string title, ReactiveProperty<string> initialPath, Window owner) {
+                var r = FolderDialogBuilder.Create()
+                    .title(title)
+                    .initialDirectory(initialPath.Value)
+                    .GetFilePath(owner);
+                if(r!=null) {
+                    initialPath.Value = r;
+                }
+            }
+
+            public override bool CheckBeforeOk() {
+                if(Video.Value) {
+                    if(!PathUtil.isDirectory(VideoTo.Value)) {
+                        return false;
+                    }
+                }
+                if(Audio.Value) {
+                    if(!PathUtil.isDirectory(AudioTo.Value)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        public MoveItemsViewModel MoveItemsDialog { get; } = new MoveItemsViewModel();
+        public async Task<bool> ShowMoveItemsDialog(Window owner) {
+            using (MoveItemsDialog.SelectVideoPath.Subscribe(() => MoveItemsDialog.SelectFolder("Select Video Folder", MoveItemsDialog.VideoTo, owner)))
+            using (MoveItemsDialog.SelectAudioPath.Subscribe(() => MoveItemsDialog.SelectFolder("Select Audio Folder", MoveItemsDialog.AudioTo, owner))) {
+                return await ShowDialog(MoveItemsDialog, "Move Files");
+            }
+        }
+
+        public class ProgressViewModel : MicViewModelBase, ISyncProgress {
+            public ReactiveProperty<string> Message { get; } = new ReactiveProperty<string>();
+            public ReactiveProperty<int> Total { get; } = new ReactiveProperty<int>();
+            public ReactiveProperty<int> Current { get; } = new ReactiveProperty<int>();
+            public ReactiveCommand OnCancel { get; } = new ReactiveCommand();
+
+            private WeakReference<DispatcherObject> mOwner = null;
+            public DispatcherObject Owner {
+                get => mOwner?.GetValue();
+                set { mOwner = new WeakReference<DispatcherObject>(value); }
+            }
+
+            public bool IsCancelled { get; set; }
+
+            public void OnMessage(string msg) {
+                Owner?.Dispatcher?.Invoke(() => {
+                    Message.Value = msg;
+                });
+            }
+
+            public void OnProgress(int current, int total) {
+                Owner?.Dispatcher?.Invoke(() => {
+                    Total.Value = total;
+                    Current.Value = current;
+                });
+            }
+
+            public ProgressViewModel() {
+                OnCancel.Subscribe(() => {
+                    IsCancelled = true;
+                });
+            }
+
+        }
+        public ProgressViewModel Progress { get; } = new ProgressViewModel();
+        public void ShowProgress(string title, DispatcherObject owner) {
+            Progress.IsCancelled = false;
+            Progress.Owner = owner;
+            BusyWithModal = true;
+            DialogType.Value = DialogTypeId.PROGRESS;
+            DialogTitle.Value = title;
+            DialogActivated.Value = true;
+        }
+        public void HideProgress() {
+            DialogActivated.Value = false;
+            DialogTask = null;
+            BusyWithModal = false;
+        }
+
+        private class ProgressDisposer : IDisposable {
+            private MainViewModel viewModel;
+            public ProgressDisposer(MainViewModel viewModel, string title, DispatcherObject owner) {
+                this.viewModel = viewModel;
+                viewModel.ShowProgress(title, owner);
+            }
+
+            public void Dispose() {
+                viewModel?.HideProgress();
+                viewModel = null;
+            }
+        }
+
+        public IDisposable ActivateProgress(string title, DispatcherObject owner) {
+            return new ProgressDisposer(this, title, owner);
         }
 
 
@@ -168,16 +294,20 @@ namespace ytplayer {
          */
         public MainViewModel() {
             CommandCancel.Subscribe(() => {
+                DialogCurrentViewModel = null;
                 DialogTask.TrySetResult(false);
                 DialogActivated.Value = false;
                 DialogTask = null;
                 BusyWithModal = false;
             });
             CommandOk.Subscribe(() => {
-                DialogTask.TrySetResult(true);
-                DialogActivated.Value = false;
-                DialogTask = null;
-                BusyWithModal = false;
+                if (DialogCurrentViewModel?.CheckBeforeOk() ?? true) {
+                    DialogCurrentViewModel = null;
+                    DialogTask.TrySetResult(true);
+                    DialogActivated.Value = false;
+                    DialogTask = null;
+                    BusyWithModal = false;
+                }
             });
             CommandClearSearchText.Subscribe(() => SearchText.Value = "");
         }
@@ -259,6 +389,7 @@ namespace ytplayer {
             viewModel.CommandExport.Subscribe(ExportUrlList);
             viewModel.CommandImport.Subscribe(ImportUrlList);
             viewModel.CommandSync.Subscribe(SyncFrom);
+            viewModel.CommandMoveItems.Subscribe(MoveItems);
             viewModel.CommandBrowser.Subscribe(() => Process.Start("btytbrs:"));
             //viewModel.ClipboardWatching.Subscribe((v) => {
             //    if (v) {
@@ -546,11 +677,23 @@ namespace ytplayer {
                 }
             }
         }
-        private async void SyncFrom(object obj) {
+        private async void SyncFrom() {
             if (await viewModel.ShowSyncDialog()) {
-                await SyncManager.SyncFrom(viewModel.SyncDialog.HostAddress.Value, Storage, this);
+                using (viewModel.ActivateProgress("Synchronizing Data", this)) {
+                    await SyncManager.SyncFrom(viewModel.SyncDialog.HostAddress.Value, Storage, this, viewModel.Progress);
+                }
             }
         }
+        private async void MoveItems() {
+            if (await viewModel.ShowMoveItemsDialog(GetWindow(this))) {
+                using (viewModel.ActivateProgress("Moving Data", this)) {
+                    var model = viewModel.MoveItemsDialog;
+                    await SyncManager.MoveData(model.Video.Value ? model.VideoTo.Value : null, model.Audio.Value ? model.AudioTo.Value : null, null, Storage, this, viewModel.Progress, true);
+                }
+            }
+        }
+
+
 
         #endregion
 
