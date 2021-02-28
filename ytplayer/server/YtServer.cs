@@ -121,6 +121,15 @@ namespace ytplayer.server {
                         }
                     },
                     new Route {
+                        /**
+                         * リスト要求
+                         * list?c=(category)
+                         *      &r=(rating)
+                         *      &m=(mark(.mark)*)
+                         *      &s=(0:all|1:listed|2:selected)
+                         *      &t=(free word)
+                         *      &d=(last downloaded time)
+                         */
                         Name = "ytPlayer list",
                         UrlRegex = @"/ytplayer/list(?:\?.*)?",
                         Method = "GET",
@@ -131,14 +140,24 @@ namespace ytplayer.server {
                             var marks = (p.GetValue("m")??"0").Split('.').Select((v)=>Convert.ToInt32(v)).ToList();
                             var sourceType = Convert.ToInt32(p.GetValue("s")??"0");
                             var search = p.GetValue("t");
+                            var date = Convert.ToInt64(p.GetValue("d")??"0");
 
+                            var sb = new StringBuilder();
+                            if(date>Storage.LastUpdated) {
+                                sb.Append("{");
+                                sb.Append($"\"cmd\":\"list\", \"date\":\"{date}\", \"list\":[]");
+                                sb.Append("}");
+                                return new TextHttpResponse(sb.ToString(), "application/json");
+                            }
+
+                            var current = DateTime.UtcNow.ToFileTimeUtc();
                             var source = SourceOf(sourceType);
                             if(null==source) {
                                 return HttpBuilder.ServiceUnavailable();
                             }
                             Logger.debug("YtServer: List");
-                            var sb = new StringBuilder();
-                            sb.Append("{\"cmd\":\"list\", \"list\":[");
+                            sb.Append("{");
+                            sb.Append($"\"cmd\":\"list\", \"date\":\"{current}\", \"list\":[");
                             sb.Append(string.Join(",",
                                 source
                                     .Where((c) => c.Status==Status.COMPLETED && c.Media.HasVideo())
@@ -146,10 +165,25 @@ namespace ytplayer.server {
                                     .Where((c) => (int)c.Rating >= rating)
                                     .Where((c) => (marks.Count==1&&marks[0]==0) || marks.IndexOf((int)c.Mark)>=0)
                                     .Where((e) => string.IsNullOrEmpty(search) || (e.Name?.ContainsIgnoreCase(search) ?? false)|| (e.Desc?.ContainsIgnoreCase(search) ?? false))
+                                    .Where((e) => e.LongDate>date)
                                     .Select((v) => $"{{\"id\":\"{v.KEY}\",\"name\":\"{v.Name}\",\"start\":\"{v.TrimStart}\",\"end\":\"{v.TrimEnd}\"}}")));
                             sb.Append("]}");
                             return new TextHttpResponse(sb.ToString(), "application/json");
                          }
+                    },
+                    new Route {
+                        Name = "ytPlayer check update",
+                        UrlRegex = @"/ytplayer/check?\w+",
+                        Method = "GET",
+                        Callable = (HttpRequest request) => {
+                            var date = Convert.ToInt64(QueryParser.Parse(request.Url).GetValue("date"));
+                            var sb = new StringBuilder();
+                            var f = (date>Storage.LastUpdated) ? 1 : 0;
+                            sb.Append("{");
+                            sb.Append($"\"cmd\":\"check\", \"update\":\"{f}\"");
+                            sb.Append("}");
+                            return new TextHttpResponse(sb.ToString(), "application/json");
+                        }
                     },
                     new Route {
                         Name = "ytPlayer video",

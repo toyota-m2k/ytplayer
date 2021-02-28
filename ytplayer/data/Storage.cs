@@ -14,7 +14,7 @@ namespace ytplayer.data {
 
         private SQLiteConnection Connection { get; set; }
 
-
+        public static long LastUpdated { get; set; } = 0;
 
         public class KVEntryTable : StorageTable<KVEntry> {
             public KVEntryTable(SQLiteConnection connection) : base(connection) { }
