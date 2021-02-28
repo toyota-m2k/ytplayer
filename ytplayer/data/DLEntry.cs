@@ -235,6 +235,7 @@ namespace ytplayer.data {
             // 複数のエントリが見つかる可能性がないため、FirstOrDefault()は使えないようだ。
             return Table.Where((c) => c.KEY == key).SingleOrDefault();
         }
+        public long LastUpdated { get; }
     }
 
 
@@ -282,7 +283,12 @@ namespace ytplayer.data {
         private int status;
         public Status Status {
             get => (Status)status;
-            set => setProp(callerName(), ref status, (int)value);
+            set {
+                setProp(callerName(), ref status, (int)value);
+                if (value == Status.COMPLETED) {
+                    Storage.LastUpdated = DateTime.UtcNow.ToFileTimeUtc();
+                }
+            }
         }
 
         [Column(Name = "rating", CanBeNull = true)]
@@ -311,6 +317,7 @@ namespace ytplayer.data {
             get => AsTime(date);
             set => setProp(callerName(), ref date, value.ToFileTimeUtc());
         }
+        public long LongDate => date;
 
         [Column(Name = "volume", CanBeNull = true)]
         private long volume;
