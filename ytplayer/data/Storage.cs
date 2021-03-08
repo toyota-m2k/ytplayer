@@ -86,8 +86,8 @@ namespace ytplayer.data {
         public static Storage OpenOrCreateDB(string path) {
             Storage storage = null;
             try {
-                if (!PathUtil.isExists(path)) {
-                    // 存在しないときは新規作成
+                if (path==":memory" || !PathUtil.isExists(path)) {
+                    // onMemoryDBまたは、存在しないときは新規作成
                     return new Storage(path, false);
                 }
                 // 存在するときは開く

@@ -36,7 +36,7 @@ namespace ytplayer.data.Tests {
         public void MainTableTest() {
             storage?.Dispose();
             System.IO.File.Delete("test.db");
-            storage = new Storage("test.db");
+            storage = Storage.OpenOrCreateDB("test.db");
             var dl = storage.DLTable;
             var entry = DLEntry.Create("1", "1");
             dl.Add(entry);
@@ -52,7 +52,7 @@ namespace ytplayer.data.Tests {
             e.Desc = "hoge";
             dl.Update();
             storage.Dispose();
-            storage = new Storage("test.db");
+            storage = Storage.OpenOrCreateDB("test.db");
             dl = storage.DLTable;
             list = dl.List;
             Assert.AreEqual(4, list.Count());
@@ -68,7 +68,7 @@ namespace ytplayer.data.Tests {
         [TestMethod()]
         public void TMapStrageTest() {
             storage?.Dispose();
-            storage = new Storage(":memory:");
+            storage = Storage.OpenOrCreateDB(":memory");
             var table = storage.KVTable;
             table.Add(new KVEntry("a", 123));
             table.Update();
@@ -82,7 +82,7 @@ namespace ytplayer.data.Tests {
 
             KVEntry entry;
             entry = table.Table.Single((e) => e.KEY == "b");
-            //Assert.AreEqual(2, entry.id);
+            //Assert.AreEqual(2, entry.id); 
             Assert.AreEqual(0, entry.iValue);
             Assert.AreEqual("xyz", entry.sValue);
             entry = table.Table.Single((e) => e.KEY == "c");
