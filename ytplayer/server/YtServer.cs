@@ -146,34 +146,37 @@ namespace ytplayer.server {
                             var sourceType = Convert.ToInt32(p.GetValue("s")??"0");
                             var search = p.GetValue("t");
                             var date = Convert.ToInt64(p.GetValue("d")??"0");
-
-                            var sb = new StringBuilder();
-                            if(date>Storage.LastUpdated) {
-                                sb.Append("{");
-                                sb.Append($"\"cmd\":\"list\", \"date\":\"{date}\", \"list\":[]");
-                                sb.Append("}");
-                                return new TextHttpResponse(sb.ToString(), "application/json");
-                            }
-
                             var current = DateTime.UtcNow.ToFileTimeUtc();
                             var source = SourceOf(sourceType);
                             if(null==source) {
                                 return HttpBuilder.ServiceUnavailable();
                             }
-                            Logger.debug("YtServer: List");
-                            sb.Append("{");
-                            sb.Append($"\"cmd\":\"list\", \"date\":\"{current}\", \"list\":[");
-                            sb.Append(string.Join(",",
-                                source
+
+                            var list = new JsonArray();
+                            if(date==0 || date<Storage.LastUpdated) {
+                                list.AddRange(
+                                    source
                                     .Where((c) => c.Status==Status.COMPLETED && c.Media.HasVideo())
                                     .Where((c) => string.IsNullOrEmpty(category) || category=="All" || c.Category.Label == category)
                                     .Where((c) => (int)c.Rating >= rating)
                                     .Where((c) => (marks.Count==1&&marks[0]==0) || marks.IndexOf((int)c.Mark)>=0)
                                     .Where((e) => string.IsNullOrEmpty(search) || (e.Name?.ContainsIgnoreCase(search) ?? false)|| (e.Desc?.ContainsIgnoreCase(search) ?? false))
                                     .Where((e) => e.LongDate>date)
-                                    .Select((v) => $"{{\"id\":\"{v.KEY}\",\"name\":\"{v.Name}\",\"start\":\"{v.TrimStart}\",\"end\":\"{v.TrimEnd}\",\"volume\":\"{v.Volume}\"}}")));
-                            sb.Append("]}");
-                            return new TextHttpResponse(sb.ToString(), "application/json");
+                                    .Select((v) => new JsonObject(new Dictionary<string,JsonValue>() {
+                                        {"id", v.KEY },
+                                        {"name", v.Name },
+                                        {"start", $"{v.TrimStart}"},
+                                        {"end", $"{v.TrimEnd}" },
+                                        {"volume",$"{v.Volume}" }
+                                    })));
+                            }
+
+                            var json = new JsonObject(new Dictionary<string, JsonValue>() {
+                                {"cmd", "list"},
+                                {"date", $"{current}" },
+                                {"list",  list}
+                            });
+                            return new TextHttpResponse(json.ToString(), "application/json");
                          }
                     },
                     new Route {
@@ -184,10 +187,11 @@ namespace ytplayer.server {
                             var date = Convert.ToInt64(QueryParser.Parse(request.Url).GetValue("date"));
                             var sb = new StringBuilder();
                             var f = (date>Storage.LastUpdated) ? 1 : 0;
-                            sb.Append("{");
-                            sb.Append($"\"cmd\":\"check\", \"update\":\"{f}\"");
-                            sb.Append("}");
-                            return new TextHttpResponse(sb.ToString(), "application/json");
+                            var json = new JsonObject(new Dictionary<string, JsonValue>() {
+                                {"cmd", "check"},
+                                {"update", $"{f}" }
+                            });
+                            return new TextHttpResponse(json.ToString(), "application/json");
                         }
                     },
                     new Route {
@@ -223,12 +227,15 @@ namespace ytplayer.server {
                         Callable = (HttpRequest request) => {
                             Logger.debug("YtServer: Category");
                             var list = Settings.Instance.Categories.SerializableList;
-                            var sb = new StringBuilder();
-                            sb.Append("{\"cmd\":\"category\", \"categories\":[");
-                            sb.Append(string.Join(",",
-                                list.Select((v)=>$"{{\"label\":\"{v.Label}\",\"color\"=\"{v.Color}\",\"sort\"=\"{v.SortIndex}\"}}")));
-                            sb.Append("]}");
-                            return new TextHttpResponse(sb.ToString(), "application/json");
+                            var json = new JsonObject(new Dictionary<string, JsonValue>() {
+                                {"cmd", "category"},
+                                {"categories", new JsonArray(
+                                    list.Select((v)=> new JsonObject(new Dictionary<string,JsonValue>(){
+                                        {"label",v.Label},
+                                        {"color", $"{v.Color}"},
+                                        {"sort", $"{v.SortIndex}"}})).ToArray())},
+                            });
+                            return new TextHttpResponse(json.ToString(), "application/json");
                         }
                     },
 
@@ -243,7 +250,11 @@ namespace ytplayer.server {
                                 accepted = Source?.RegisterUrl(url) ?? false;
                             }
                             string result = accepted ? "accepted" : "rejected";
-                            return new TextHttpResponse($"{{\"cmd\":\"register\",\"result\":\"{result}\"}}", "application/json");
+                            var json = new JsonObject(new Dictionary<string,JsonValue>(){
+                                {"cmd", "register" },
+                                {"result", $"{result}" },
+                            });
+                            return new TextHttpResponse(json.ToString(), "application/json");
                         }
                     },
 
