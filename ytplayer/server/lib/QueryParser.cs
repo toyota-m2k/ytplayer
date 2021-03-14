@@ -24,7 +24,7 @@ namespace ytplayer.server.lib {
                         if(value.Success) {
                             r[name.Value] = value.Value ?? "";
                         } else {
-                            r[name.Value] = "";
+                            r[name.Value] = "true";
                         }
                     }
                 }

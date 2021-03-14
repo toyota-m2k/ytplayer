@@ -88,6 +88,7 @@ namespace ytplayer {
 
         // Context Menu
         public ReactiveCommand OpenInWebBrowserCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand PlayInWebBrowserCommand { get; } = new ReactiveCommand();
         public ReactiveCommand DeleteAndBlockCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ResetAndDownloadCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ExtractAudioCommand { get; } = new ReactiveCommand();
@@ -374,6 +375,7 @@ namespace ytplayer {
             });
 
             viewModel.OpenInWebBrowserCommand.Subscribe(OpenInWebBrower);
+            viewModel.PlayInWebBrowserCommand.Subscribe(PlayInWebBrower);
             viewModel.ExtractAudioCommand.Subscribe(ExtractAudio);
             viewModel.ResetAndDownloadCommand.Subscribe(ResetAndDownload);
             viewModel.DeleteAndBlockCommand.Subscribe(DeleteAndBlock);
@@ -714,6 +716,58 @@ namespace ytplayer {
             }
         }
 
+        DLEntry IYtListSource.CurrentEntry {
+            get {
+                return Dispatcher.Invoke(() => {
+                    return SelectedEntry;
+                });
+            }
+        }
+        DLEntry IYtListSource.GetPrevEntry(string current, bool moveCursor) {
+            return Dispatcher.Invoke(() => {
+                var entry = ((IYtListSource)this).GetEntry(current);
+                if (entry == null) return null;
+                int idx = viewModel.MainList.Value.IndexOf(entry);
+                if (idx > 0) {
+                    idx--;
+                    entry = viewModel.MainList.Value[idx];
+                    if (entry != null && moveCursor) {
+                        MainListView.SelectedItem = entry;
+                    }
+                    return entry;
+                }
+                return null;
+            });
+        }
+        DLEntry IYtListSource.GetNextEntry(string current, bool moveCursor) {
+            return Dispatcher.Invoke(() => {
+                var entry = ((IYtListSource)this).GetEntry(current);
+                if (entry == null) return null;
+                int idx = viewModel.MainList.Value.IndexOf(entry);
+                if (idx >= 0 && idx + 1 < viewModel.MainList.Value.Count) {
+                    idx++;
+                    entry = viewModel.MainList.Value[idx];
+                    if (entry != null && moveCursor) {
+                        MainListView.SelectedItem = entry;
+                    }
+                    return entry;
+                }
+                return null;
+            });
+        }
+        DLEntry IYtListSource.GetEntry(string id) {
+            return Dispatcher.Invoke(() => {
+                try {
+                    var r = viewModel.MainList.Value.Where((entry) => entry.Id == id).SingleOrDefault();
+                    return r;
+                } catch(Exception e) {
+                    Logger.error(e);
+                    return null;
+                }
+            });
+        }
+
+
         private void ProcessSelectedEntries(Action<IEnumerable<DLEntry>> action) {
             var entries = SelectedEntries;
             if (Utils.IsNullOrEmpty(entries)) {
@@ -765,6 +819,12 @@ namespace ytplayer {
             if (url != null) {
                 // Process.Start(url);
                 Process.Start($"btytbrs:{url}");
+            }
+        }
+        private void PlayInWebBrower() {
+            var id = SelectedEntry?.Id;
+            if (id != null) {
+                Process.Start($"http://localhost:{Settings.Instance.ServerPort}/ytplayer/video?id={id}");
             }
         }
 

@@ -19,6 +19,11 @@ namespace ytplayer.server {
         IEnumerable<DLEntry> ListedEntries { get; }
         IEnumerable<DLEntry> SelectedEntries { get; }
         bool RegisterUrl(string url);
+
+        DLEntry CurrentEntry { get; }
+        DLEntry GetPrevEntry(string current, bool moveCursor);
+        DLEntry GetNextEntry(string current, bool moveCursor);
+        DLEntry GetEntry(string id);        
     }
 
     public class YtServer {
@@ -166,14 +171,14 @@ namespace ytplayer.server {
                                     .Where((c) => (marks.Count==1&&marks[0]==0) || marks.IndexOf((int)c.Mark)>=0)
                                     .Where((e) => string.IsNullOrEmpty(search) || (e.Name?.ContainsIgnoreCase(search) ?? false)|| (e.Desc?.ContainsIgnoreCase(search) ?? false))
                                     .Where((e) => e.LongDate>date)
-                                    .Select((v) => $"{{\"id\":\"{v.KEY}\",\"name\":\"{v.Name}\",\"start\":\"{v.TrimStart}\",\"end\":\"{v.TrimEnd}\"}}")));
+                                    .Select((v) => $"{{\"id\":\"{v.KEY}\",\"name\":\"{v.Name}\",\"start\":\"{v.TrimStart}\",\"end\":\"{v.TrimEnd}\",\"volume\":\"{v.Volume}\"}}")));
                             sb.Append("]}");
                             return new TextHttpResponse(sb.ToString(), "application/json");
                          }
                     },
                     new Route {
                         Name = "ytPlayer check update",
-                        UrlRegex = @"/ytplayer/check?\w+",
+                        UrlRegex = @"/ytplayer/check(?:\?\w+)?",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
                             var date = Convert.ToInt64(QueryParser.Parse(request.Url).GetValue("date"));
@@ -187,7 +192,7 @@ namespace ytplayer.server {
                     },
                     new Route {
                         Name = "ytPlayer video",
-                        UrlRegex = @"/ytplayer/video?\w+",
+                        UrlRegex = @"/ytplayer/video\?\w+",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
                             var source = Source?.AllEntries;
@@ -239,6 +244,50 @@ namespace ytplayer.server {
                             }
                             string result = accepted ? "accepted" : "rejected";
                             return new TextHttpResponse($"{{\"cmd\":\"register\",\"result\":\"{result}\"}}", "application/json");
+                        }
+                    },
+
+                    new Route {
+                        Name = "ytPlayer sequential operation.",
+                        UrlRegex = @"/ytplayer/seq(?:\?w+)?",
+                        Method = "GET",
+                        Callable = (HttpRequest request) => {
+                            var p = QueryParser.Parse(request.Url);
+                            var item = p.GetValue("item") ?? "current";
+                            var org = p.GetValue("org");
+                            var move = Convert.ToBoolean(p.GetValue("move")??"true");
+                            DLEntry entry = null;
+                            switch(item.ToLower()) {
+                                default:
+                                case "current":
+                                    entry = Source.CurrentEntry;
+                                    break;
+                                case "next":
+                                    if(string.IsNullOrEmpty(org)) {
+                                        org = Source.CurrentEntry?.Id;
+                                    }
+                                    if(!string.IsNullOrEmpty(org)) {
+                                        entry = Source.GetNextEntry(org,move);
+                                    }
+                                    break;
+                                case "prev":
+                                    if(string.IsNullOrEmpty(org)) {
+                                        org = Source.CurrentEntry?.Id;
+                                    }
+                                    if(!string.IsNullOrEmpty(org)) {
+                                        entry = Source.GetPrevEntry(org,move);
+                                    }
+                                    break;
+                            }
+                            var json = new JsonObject(new Dictionary<string, JsonValue>() {
+                                {"cmd", "seq"},
+                                {"id", entry?.Id ?? null },
+                                {"title", entry?.NameToDisplay ?? null},
+                                {"start", entry?.TrimStart ?? null },
+                                {"end", entry?.TrimEnd?? null },
+                                {"volume", entry?.Volume?? null },
+                            });
+                            return new TextHttpResponse(json.ToString(), "application/json");
                         }
                     },
 
