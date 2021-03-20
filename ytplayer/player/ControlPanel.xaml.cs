@@ -186,20 +186,22 @@ namespace ytplayer.player {
         }
 
         private void OnCurrentChanged(IPlayable item) {
+            Player.Stop();
+
+            double start = 0;
             if (item != null) {
                 ViewModel.Volume.Value = item.Volume;
                 ViewModel.TrimStart.Value = item.TrimStart;
                 ViewModel.TrimEnd.Value = item.TrimEnd;
                 TimelineSlider.RangeLimit = new PlayRange(item.TrimStart, item.TrimEnd);
-            }
-            Player.SetSource(item?.Path, true);
-            if(item!=null && item.KEY==Settings.Instance.LastPlayingUrl) {
-                var pos = Settings.Instance.LastPlayingPos;
-                if(pos>0) {
-                    Player.ReserveSeekPosition(pos);
+                if (item.KEY == Settings.Instance.LastPlayingUrl && Settings.Instance.LastPlayingPos > 0) {
+                    start = Settings.Instance.LastPlayingPos;
                     Settings.Instance.LastPlayingPos = 0;
+                } else {
+                    start = item.TrimStart;
                 }
             }
+            Player.SetSource(item?.Path, start, true);
         }
 
         public void Play() {

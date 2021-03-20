@@ -15,6 +15,7 @@ namespace ytplayer.player {
         IReadOnlyReactiveProperty<double> Duration { get; }
         IReadOnlyReactiveProperty<bool> IsReady { get; }
         IReadOnlyReactiveProperty<bool> IsPlaying { get; }
+        IReadOnlyReactiveProperty<bool> IsReadyAndPlaying { get; }
         IReactiveProperty<double> Speed { get; }
         IReactiveProperty<double> Volume { get; }
         Subject<bool> Ended { get; }
@@ -24,12 +25,14 @@ namespace ytplayer.player {
         IReadOnlyReactiveProperty<double> IPlayerViewModel.Duration => Duration;
         IReadOnlyReactiveProperty<bool> IPlayerViewModel.IsReady => IsReady;
         IReadOnlyReactiveProperty<bool> IPlayerViewModel.IsPlaying => IsPlaying;
+        IReadOnlyReactiveProperty<bool> IPlayerViewModel.IsReadyAndPlaying => IsReadyAndPlaying;
         IReactiveProperty<double> IPlayerViewModel.Speed => Speed;
         IReactiveProperty<double> IPlayerViewModel.Volume => Volume;
 
         public ReactiveProperty<double> Duration { get; } = new ReactiveProperty<double>(100);
         public ReactiveProperty<bool> IsReady { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> IsPlaying { get; } = new ReactiveProperty<bool>(false);
+        public ReadOnlyReactiveProperty<bool> IsReadyAndPlaying { get; }
         public ReactiveProperty<bool> ShowPanel { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> ShowSizePanel { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<double> Speed { get; } = new ReactiveProperty<double>(0.5);
@@ -39,15 +42,18 @@ namespace ytplayer.player {
         public ReactiveProperty<bool> Fullscreen { get; } = new ReactiveProperty<bool>(false);
         public ReactiveCommand MaximizeCommand { get; } = new ReactiveCommand();
 
+        public PlayerViewModel() {
+            IsReadyAndPlaying = IsReady.CombineLatest(IsPlaying, (r, p) => r && p).ToReadOnlyReactiveProperty();
+        }
     }
 
     public interface IPlayer {
         IPlayerViewModel ViewModel { get; }
-        void SetSource(string path, bool start=true);
+        void SetSource(string path, double startFrom, bool start=true);
         void Play();
         void Pause();
         void Stop();
-        void ReserveSeekPosition(double pos);
+        //void ReserveSeekPosition(double pos);
         double SeekPosition { get; set; }
         Stretch Stretch { get; set; }
     }
@@ -92,11 +98,12 @@ namespace ytplayer.player {
             ViewModel = null;
         }
 
-        public void SetSource(string path, bool start=true) {
+        public void SetSource(string path, double startFrom, bool start=true) {
             starting = start;
             ViewModel.IsReady.Value = false;
             ViewModel.IsPlaying.Value = false;
             ViewModel.Speed.Value = 0.5;
+            ReservePosition = startFrom;
             MediaPlayer.Source = string.IsNullOrEmpty(path) ? null : new Uri(path);
             if(path!=null) {
                 Debug.Assert(PathUtil.isFile(path));
@@ -131,22 +138,24 @@ namespace ytplayer.player {
         }
 
         private double ReservePosition = 0;
-        public void ReserveSeekPosition(double pos) {
-            if(ViewModel.IsReady.Value) {
-                MediaPlayer.Position = TimeSpan.FromMilliseconds(pos);
-            } else {
-                ReservePosition = pos;
-            }
-        }
+        //public void ReserveSeekPosition(double pos) {
+        //    if(ViewModel.IsReady.Value) {
+        //        MediaPlayer.Position = TimeSpan.FromMilliseconds(pos);
+        //    } else {
+        //        ReservePosition = pos;
+        //    }
+        //}
 
         private void OnMediaOpened(object sender, RoutedEventArgs e) {
             ViewModel.IsReady.Value = true;
             ViewModel.Duration.Value = MediaPlayer.NaturalDuration.TimeSpan.TotalMilliseconds;
             if(starting) {
                 Play();
+                double pos = 0;
                 if(ReservePosition>0 && ReservePosition<ViewModel.Duration.Value) {
-                    MediaPlayer.Position = TimeSpan.FromMilliseconds(ReservePosition);
+                    pos = ReservePosition;
                 }
+                MediaPlayer.Position = TimeSpan.FromMilliseconds(pos);
                 ReservePosition = 0;
             }
             if (!ViewModel.ShowPanel.Value && !ViewModel.ShowSizePanel.Value) {
@@ -155,7 +164,6 @@ namespace ytplayer.player {
         }
 
         private void OnMediaEnded(object sender, RoutedEventArgs e) {
-            SeekPosition = 0;
             ViewModel.IsPlaying.Value = false;
             ViewModel.Ended.OnNext(true);
         }

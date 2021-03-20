@@ -24,8 +24,9 @@ namespace ytplayer.player {
                 var entry = PlayList.Current.Value;
                 double position = 0;
                 var player = Player as IPlayer;
-                if(player.ViewModel.IsPlaying.Value) {
-                    position = player.SeekPosition;
+                if(player.ViewModel.IsReady.Value) {
+                    position = player.
+                        SeekPosition;
                 }
                 return (entry, position);
             }

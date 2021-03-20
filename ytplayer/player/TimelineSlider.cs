@@ -42,7 +42,7 @@ namespace ytplayer.player {
 
         public void Initialize(IPlayer player) {
             Player = player;
-            mPlayingSubscriber = player.ViewModel.IsPlaying.Subscribe((playing) => {
+            mPlayingSubscriber = player.ViewModel.IsReadyAndPlaying.Subscribe((playing) => {
                 if (playing) {
                     mTimer.Start();
                 } else {
@@ -51,9 +51,9 @@ namespace ytplayer.player {
             });
             mDurationSubscriber = player.ViewModel.Duration.Subscribe((duration) => {
                 this.Maximum = duration;
-                if(RangeLimit.Start>0) {
-                    Player.SeekPosition = RangeLimit.Start;
-                }
+                //if(RangeLimit.Start>0) {
+                //    Player.SeekPosition = RangeLimit.Start;
+                //}
             });
         }
 
