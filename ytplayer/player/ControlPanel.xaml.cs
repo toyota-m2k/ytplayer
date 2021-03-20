@@ -196,10 +196,11 @@ namespace ytplayer.player {
                 TimelineSlider.RangeLimit = new PlayRange(item.TrimStart, item.TrimEnd);
                 if (item.KEY == Settings.Instance.LastPlayingUrl && Settings.Instance.LastPlayingPos > 0) {
                     start = Settings.Instance.LastPlayingPos;
-                    Settings.Instance.LastPlayingPos = 0;
                 } else {
                     start = item.TrimStart;
                 }
+                Settings.Instance.LastPlayingUrl = null;
+                Settings.Instance.LastPlayingPos = 0;
             }
             Player.SetSource(item?.Path, start, true);
         }
