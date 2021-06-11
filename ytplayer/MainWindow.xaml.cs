@@ -94,6 +94,7 @@ namespace ytplayer {
         public ReactiveCommand ResetAndDownloadCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ExtractAudioCommand { get; } = new ReactiveCommand();
         public ReactiveCommand EditDescriptionCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand CopyVideoPathCommand { get; } = new ReactiveCommand();
 
         // Dialog
         public abstract class DialogViewModel: ViewModelBase {
@@ -381,6 +382,7 @@ namespace ytplayer {
             viewModel.ResetAndDownloadCommand.Subscribe(ResetAndDownload);
             viewModel.DeleteAndBlockCommand.Subscribe(DeleteAndBlock);
             viewModel.EditDescriptionCommand.Subscribe(EditDescription);
+            viewModel.CopyVideoPathCommand.Subscribe(CopyVideoPath);
 
             viewModel.ShowFilterEditor.Subscribe((v) => {
                 if (v) {
@@ -842,6 +844,13 @@ namespace ytplayer {
                     Storage.DLTable.Update();
                 }
             });
+        }
+
+        private void CopyVideoPath() {
+            var path = SelectedEntry?.VPath;
+            if (path != null) {
+                Clipboard.SetDataObject(path);
+            }
         }
 
 
