@@ -103,7 +103,7 @@ namespace ytplayer.dialog {
         private bool CheckDB(string path) {
             try {
                 if (!PathUtil.isExists(path)) {
-                    // 存在しないときは新規作成可能なのでTrue
+                    // ファイルが存在しないときは新規作成可能なのでTrue
                     return true;
                 }
                 return Storage.CheckDB(path);
@@ -113,8 +113,7 @@ namespace ytplayer.dialog {
             }
         }
 
-        private Storage TryOpenStorage(string path) {
-            return Storage.OpenOrCreateDB(path);
+        //private Storage TryOpenStorage(string path) {
             //try {
             //    if(!CheckDB(path)) {
             //        return null;
@@ -126,7 +125,7 @@ namespace ytplayer.dialog {
             //    Logger.error(e);
             //    return null;
             //}
-        }
+        //}
 
         private string Validate() {
             DBPath.Value = Settings.ComplementDBPath(DBPath.Value);
@@ -160,7 +159,7 @@ namespace ytplayer.dialog {
             Console.WriteLine($"New    : {DBPath.Value}");
             if (Owner.CurrentStorage == null || !PathUtil.isEqualDirectoryName(Owner.CurrentStorage.DBPath, DBPath.Value)) {
                 // 現在と異なるDBファイルが指定された・・・開いてみる。
-                NewStorage = TryOpenStorage(DBPath.Value);
+                NewStorage = Storage.OpenDB(DBPath.Value);
                 if(null==NewStorage) {
                     return $"cannot create db.";
                 }

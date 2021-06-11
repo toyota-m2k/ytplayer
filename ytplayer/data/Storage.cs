@@ -11,7 +11,7 @@ namespace ytplayer.data {
 
     public class Storage : IDisposable {
         private const string APP_NAME = "YTPlayer";
-        private const int DB_VERSION = 3;
+        private const int DB_VERSION = 4;
 
         private SQLiteConnection Connection { get; set; }
 
@@ -40,26 +40,39 @@ namespace ytplayer.data {
         //public Storage(string path) : this(path, false) {
         //}
 
-        private Storage(string path, bool dontCreateTable) {
+        private Storage(string path) {
+            bool creation = false;
+            if (path == ":memory" || !PathUtil.isExists(path)) {
+                // onMemoryDBまたは、存在しないときは新規作成
+                creation = true;
+            }
             DBPath = path;
             var builder = new SQLiteConnectionStringBuilder() { DataSource = path };
             Connection = new SQLiteConnection(builder.ConnectionString);
             Connection.Open();
-            if (!dontCreateTable) {
-                InitTables();
+
+            if(!creation) {
+                // 新規作成でなければ内容をチェック
+                var appName = getAppName();
+                if(appName!=APP_NAME) {
+                    throw new FormatException($"DB file is not for {APP_NAME}");
+                }
+                var version = getVersion();
+                if(version> DB_VERSION) {
+                    throw new FormatException($"Newer DB version. ({version})");
+                }
             }
+            InitTables();
 
             DLTable = new DLEntryTable(Connection);
             KVTable = new KVEntryTable(Connection);
             DLTable.Context.Log = Console.Out;
-
-            //ConvertTable();
         }
 
         public static bool CheckDB(string path) {
             try {
-                using (var s = new Storage(path, dontCreateTable: true)) {
-                    return s.getAppName() == APP_NAME;
+                using (new Storage(path)) {
+                    return true;
                 }
             }
             catch (Exception) {
@@ -68,44 +81,52 @@ namespace ytplayer.data {
         }
 
         public static Storage OpenDB(string path) {
-            Storage storage = null;
             try {
-                storage = new Storage(path, dontCreateTable: true);
-                if (storage.getAppName() == APP_NAME) {
-                    return storage;
-                }
-                storage.Dispose();
-                return null;
-            }
-            catch (Exception) {
-                storage?.Dispose();
-                return null;
-            }
-        }
-
-
-        public static Storage OpenOrCreateDB(string path) {
-            Storage storage = null;
-            try {
-                if (path==":memory" || !PathUtil.isExists(path)) {
-                    // onMemoryDBまたは、存在しないときは新規作成
-                    return new Storage(path, false);
-                }
-                // 存在するときは開く
-                storage = new Storage(path, dontCreateTable: true);
-                if (storage.getAppName() == APP_NAME) {
-                    return storage;
-                }
-                Logger.warn($"invalid db:{path}");
-                storage.Dispose();
-                return null;
+                return new Storage(path);
             } catch(Exception e) {
-                Logger.error(e);
-                storage?.Dispose();
                 return null;
             }
-
         }
+
+        //public static Storage OpenDB(string path) {
+        //    Storage storage = null;
+        //    try {
+        //        storage = new Storage(path, dontCreateTable: true);
+        //        if (storage.getAppName() == APP_NAME) {
+        //            return storage;
+        //        }
+        //        storage.Dispose();
+        //        return null;
+        //    }
+        //    catch (Exception) {
+        //        storage?.Dispose();
+        //        return null;
+        //    }
+        //}
+
+
+        //public static Storage OpenOrCreateDB(string path) {
+        //    Storage storage = null;
+        //    try {
+        //        if (path==":memory" || !PathUtil.isExists(path)) {
+        //            // onMemoryDBまたは、存在しないときは新規作成
+        //            return new Storage(path, dontCreateTable:false);
+        //        }
+        //        // 存在するときは開く
+        //        storage = new Storage(path, dontCreateTable: true);
+        //        if (storage.getAppName() == APP_NAME) {
+        //            return storage;
+        //        }
+        //        Logger.warn($"invalid db:{path}");
+        //        storage.Dispose();
+        //        return null;
+        //    } catch(Exception e) {
+        //        Logger.error(e);
+        //        storage?.Dispose();
+        //        return null;
+        //    }
+
+        //}
 
 
 
@@ -288,6 +309,13 @@ namespace ytplayer.data {
                     name TEXT NOT NULL PRIMARY KEY,
                     ivalue INTEGER DEFAULT '0',
                     svalue TEXT
+                )",
+                @"CREATE TABLE IF NOT EXISTS t_chapter (
+	                id	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                    owner TEXT NOT NULL,
+                    position  INTEGER NOT NULL,
+                    skip INTEGER NOT NULL DEFAULT 0,
+                    FOREIGN KEY(owner) REFERENCES t_download_ex(id)
                 )"
             );
 
@@ -300,13 +328,12 @@ namespace ytplayer.data {
             //    setVersion(2);
             //}
             var ver = getVersion();
-            if(ver>DB_VERSION) {
-                throw new InvalidProgramException($"DB version mismatch (required={DB_VERSION}, found={ver}).");
-            }
-            if(ver< DB_VERSION) {
+            if(ver<3) {
                 //executeSql(@"ALTER TABLE t_download_ex ADD COLUMN trim_start INTEGER DEFAULT '0' after mark");
                 //executeSql(@"ALTER TABLE t_download_ex ADD COLUMN trim_end INTEGER DEFAULT '0' after trim_start");
                 setAppName();
+            }
+            if(ver<DB_VERSION) {
                 setVersion(DB_VERSION);
             }
 
