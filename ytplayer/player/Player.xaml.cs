@@ -1,4 +1,5 @@
-﻿using common;
+﻿using io.github.toyota32k.toolkit.utils;
+using io.github.toyota32k.toolkit.view;
 using Reactive.Bindings;
 using System;
 using System.Diagnostics;
@@ -21,7 +22,7 @@ namespace ytplayer.player {
         Subject<bool> Ended { get; }
     }
 
-    public class PlayerViewModel : MicViewModelBase, IPlayerViewModel {
+    public class PlayerViewModel : ViewModelBase, IPlayerViewModel {
         IReadOnlyReactiveProperty<double> IPlayerViewModel.Duration => Duration;
         IReadOnlyReactiveProperty<bool> IPlayerViewModel.IsReady => IsReady;
         IReadOnlyReactiveProperty<bool> IPlayerViewModel.IsPlaying => IsPlaying;

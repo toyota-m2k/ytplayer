@@ -1,4 +1,5 @@
-﻿using common;
+﻿using io.github.toyota32k.toolkit.utils;
+using io.github.toyota32k.toolkit.view;
 using Reactive.Bindings;
 using System;
 using System.Collections.ObjectModel;
@@ -10,7 +11,7 @@ using ytplayer.data;
 
 namespace ytplayer.player {
 
-    public class ControlPanelViewModel : MicViewModelBase {
+    public class ControlPanelViewModel : ViewModelBase {
         public PlayList PlayList { get; } = new PlayList();
 
         public ReadOnlyReactiveProperty<string> DurationText { get; }

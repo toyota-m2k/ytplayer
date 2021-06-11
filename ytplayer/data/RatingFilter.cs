@@ -1,15 +1,11 @@
-﻿using common;
+﻿using io.github.toyota32k.toolkit.view;
 using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ytplayer.data {
-    public class RatingFilter : MicViewModelBase {
+    public class RatingFilter : ViewModelBase {
         public ReactiveProperty<bool> Normal { get; } = new ReactiveProperty<bool>(true);
         public ReactiveProperty<bool> Good { get; } = new ReactiveProperty<bool>(true);
         public ReactiveProperty<bool> Excellent { get; } = new ReactiveProperty<bool>(true);

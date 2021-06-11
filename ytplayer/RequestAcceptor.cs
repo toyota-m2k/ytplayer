@@ -1,9 +1,8 @@
-﻿using common;
+﻿using io.github.toyota32k.toolkit.utils;
 using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using ytplayer.common;
 
 namespace ytplayer {
     public class RequestAcceptor : IDisposable {

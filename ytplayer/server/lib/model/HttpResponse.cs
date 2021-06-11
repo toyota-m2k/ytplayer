@@ -1,6 +1,6 @@
 ﻿// Copyright (C) 2016 by Barend Erasmus and donated to the public domain
 
-using common;
+using io.github.toyota32k.toolkit.utils;
 using System;
 using System.Collections.Generic;
 using System.IO;

@@ -1,10 +1,10 @@
-﻿using common;
+﻿using io.github.toyota32k.toolkit.utils;
+using io.github.toyota32k.toolkit.view;
 using System;
 using System.Data.Linq.Mapping;
 using System.Data.SQLite;
 using System.Linq;
 using System.Text.RegularExpressions;
-using ytplayer.common;
 using ytplayer.player;
 
 namespace ytplayer.data {
@@ -240,7 +240,7 @@ namespace ytplayer.data {
 
 
     [Table(Name = "t_download_ex")]
-    public class DLEntry : MicPropertyChangeNotifier, IPlayable {
+    public class DLEntry : PropertyChangeNotifier, IPlayable {
         [Column(Name = "id", IsPrimaryKey = true, CanBeNull = false)]
         public string KEY { get; private set; }
         public string Id => KEY;
