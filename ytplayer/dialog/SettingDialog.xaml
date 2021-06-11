@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:lc="clr-namespace:ytplayer.common"
+        xmlns:common="clr-namespace:io.github.toyota32k.toolkit.view;assembly=io.github.toyota32k.wpfLittleToolkit"
         xmlns:local="clr-namespace:ytplayer.dialog"
         mc:Ignorable="d"
         Title="Settings" 
@@ -73,7 +73,7 @@
             </Grid.ColumnDefinitions>
             <CheckBox Content="Enable server" Grid.Column="0" IsChecked="{Binding EnableServer.Value, Mode=TwoWay}"/>
             <TextBlock Text="Port" Margin="10,0" Grid.Column="1"/>
-            <lc:NumericTextBox Text="{Binding ServerPort.Value}" Grid.Column="2" MinWidth="40"/>
+            <common:NumericTextBox Text="{Binding ServerPort.Value}" Grid.Column="2" MinWidth="40"/>
         </Grid>
 
         <TextBlock Grid.Row="13" Grid.Column="0" Grid.ColumnSpan="5" Margin="0,0,0,0" Text="{Binding ErrorMessage.Value}" Height="30" VerticalAlignment="Top"/>

@@ -1,11 +1,11 @@
-﻿using System;
+﻿using io.github.toyota32k.toolkit.view;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using common;
 using System.Windows.Media;
 
 namespace ytplayer.data {
-    public class Category : MicPropertyChangeNotifier {
+    public class Category : PropertyChangeNotifier {
         private string label = null;
         private string svgPath = null;
         private uint color = Color2Int(Colors.Blue);

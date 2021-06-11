@@ -1,24 +1,13 @@
-﻿using common;
+﻿using io.github.toyota32k.toolkit.view;
 using Reactive.Bindings;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using ytplayer.common;
 using ytplayer.data;
 
 namespace ytplayer.dialog {
-    public class CategoryRatingDialogViewModel : MicViewModelBase {
+    public class CategoryRatingDialogViewModel : ViewModelBase {
         public ObservableCollection<Category> Categories => new ObservableCollection<Category>(Settings.Instance.Categories.SelectList);
 
         public ReactiveCommand CommandDreadful  { get; } = new ReactiveCommand();

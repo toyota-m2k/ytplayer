@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         xmlns:local="clr-namespace:ytplayer"
-        xmlns:common="clr-namespace:ytplayer.common"
+        xmlns:common="clr-namespace:io.github.toyota32k.toolkit.view;assembly=io.github.toyota32k.wpfLittleToolkit"
         mc:Ignorable="d"
         AllowDrop="True"
         Drop="Window_Drop"

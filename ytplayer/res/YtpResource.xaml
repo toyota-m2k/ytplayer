@@ -1,7 +1,7 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:ytplayer"
-                    xmlns:common="clr-namespace:common"
+                    xmlns:common="clr-namespace:io.github.toyota32k.toolkit.view;assembly=io.github.toyota32k.wpfLittleToolkit"
                     >
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="IconButton.xaml"/>

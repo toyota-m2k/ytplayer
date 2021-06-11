@@ -1,4 +1,5 @@
-﻿using common;
+﻿using io.github.toyota32k.toolkit.utils;
+using io.github.toyota32k.toolkit.view;
 using Reactive.Bindings;
 using System;
 using System.ComponentModel;
@@ -6,14 +7,13 @@ using System.Linq;
 using System.Net.Http;
 using System.Reactive.Linq;
 using System.Windows;
-using ytplayer.common;
 using ytplayer.data;
 
 namespace ytplayer.dialog {
     /**
      * 設定画面のビューモデル
      */
-    public class SettingsViewModel : MicViewModelBase<SettingDialog> {
+    public class SettingsViewModel : ViewModelBase<SettingDialog> {
         public ReactivePropertySlim<string> DBPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<bool> UseWSL { get; } = new ReactivePropertySlim<bool>(false);
         public ReactivePropertySlim<string> YoutubeDLPath { get; } = new ReactivePropertySlim<string>();

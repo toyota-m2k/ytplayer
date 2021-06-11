@@ -1,11 +1,9 @@
-﻿using common;
+﻿using io.github.toyota32k.toolkit.utils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using ytplayer.common;
 using ytplayer.data;
 
 namespace ytplayer.download.downloader {

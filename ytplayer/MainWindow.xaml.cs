@@ -1,4 +1,5 @@
-﻿using common;
+﻿using io.github.toyota32k.toolkit.utils;
+using io.github.toyota32k.toolkit.view;
 using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
@@ -56,7 +57,7 @@ namespace ytplayer {
     /**
      * ビューモデル
      */
-    public class MainViewModel : MicViewModelBase {
+    public class MainViewModel : ViewModelBase {
         public ReactiveProperty<ObservableCollection<DLEntry>> MainList { get; } = new ReactiveProperty<ObservableCollection<DLEntry>>(new ObservableCollection<DLEntry>());
         public ReactivePropertySlim<bool> AutoDownload { get; } = new ReactivePropertySlim<bool>(true);
         public ReactivePropertySlim<bool> AutoPlay { get; } = new ReactivePropertySlim<bool>(true);
@@ -95,7 +96,7 @@ namespace ytplayer {
         public ReactiveCommand EditDescriptionCommand { get; } = new ReactiveCommand();
 
         // Dialog
-        public abstract class DialogViewModel: MicViewModelBase {
+        public abstract class DialogViewModel: ViewModelBase {
             public virtual bool CheckBeforeOk() { return true; }
             public abstract DialogTypeId Type { get; }
         }
@@ -223,7 +224,7 @@ namespace ytplayer {
             }
         }
 
-        public class ProgressViewModel : MicViewModelBase, ISyncProgress {
+        public class ProgressViewModel : ViewModelBase, ISyncProgress {
             public ReactiveProperty<string> Message { get; } = new ReactiveProperty<string>();
             public ReactiveProperty<int> Total { get; } = new ReactiveProperty<int>();
             public ReactiveProperty<int> Current { get; } = new ReactiveProperty<int>();
