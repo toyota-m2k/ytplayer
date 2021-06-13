@@ -2,6 +2,7 @@
 using io.github.toyota32k.toolkit.view;
 using Reactive.Bindings;
 using System;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -10,46 +11,21 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using ytplayer.common;
+using ytplayer.data;
 
 namespace ytplayer.player {
-    public interface IPlayerViewModel {
-        IReadOnlyReactiveProperty<double> Duration { get; }
-        IReadOnlyReactiveProperty<bool> IsReady { get; }
-        IReadOnlyReactiveProperty<bool> IsPlaying { get; }
-        IReadOnlyReactiveProperty<bool> IsReadyAndPlaying { get; }
-        IReactiveProperty<double> Speed { get; }
-        IReactiveProperty<double> Volume { get; }
-        Subject<bool> Ended { get; }
-    }
+    //public interface IPlayerViewModel {
+    //    IReadOnlyReactiveProperty<double> Duration { get; }
+    //    IReadOnlyReactiveProperty<bool> IsReady { get; }
+    //    IReadOnlyReactiveProperty<bool> IsPlaying { get; }
+    //    IReadOnlyReactiveProperty<bool> IsReadyAndPlaying { get; }
+    //    IReactiveProperty<double> Speed { get; }
+    //    IReactiveProperty<double> Volume { get; }
+    //    Subject<bool> Ended { get; }
+    //}
 
-    public class PlayerViewModel : ViewModelBase, IPlayerViewModel {
-        IReadOnlyReactiveProperty<double> IPlayerViewModel.Duration => Duration;
-        IReadOnlyReactiveProperty<bool> IPlayerViewModel.IsReady => IsReady;
-        IReadOnlyReactiveProperty<bool> IPlayerViewModel.IsPlaying => IsPlaying;
-        IReadOnlyReactiveProperty<bool> IPlayerViewModel.IsReadyAndPlaying => IsReadyAndPlaying;
-        IReactiveProperty<double> IPlayerViewModel.Speed => Speed;
-        IReactiveProperty<double> IPlayerViewModel.Volume => Volume;
-
-        public ReactiveProperty<double> Duration { get; } = new ReactiveProperty<double>(100);
-        public ReactiveProperty<bool> IsReady { get; } = new ReactiveProperty<bool>(false);
-        public ReactiveProperty<bool> IsPlaying { get; } = new ReactiveProperty<bool>(false);
-        public ReadOnlyReactiveProperty<bool> IsReadyAndPlaying { get; }
-        public ReactiveProperty<bool> ShowPanel { get; } = new ReactiveProperty<bool>(false);
-        public ReactiveProperty<bool> ShowSizePanel { get; } = new ReactiveProperty<bool>(false);
-        public ReactiveProperty<double> Speed { get; } = new ReactiveProperty<double>(0.5);
-        public ReactiveProperty<double> Volume { get; } = new ReactiveProperty<double>(0.5);
-        public Subject<bool> Ended { get; } = new Subject<bool>();
-
-        public ReactiveProperty<bool> Fullscreen { get; } = new ReactiveProperty<bool>(false);
-        public ReactiveCommand MaximizeCommand { get; } = new ReactiveCommand();
-
-        public PlayerViewModel() {
-            IsReadyAndPlaying = IsReady.CombineLatest(IsPlaying, (r, p) => r && p).ToReadOnlyReactiveProperty();
-        }
-    }
 
     public interface IPlayer {
-        IPlayerViewModel ViewModel { get; }
         void SetSource(string path, double startFrom, bool start=true);
         void Play();
         void Pause();
@@ -70,7 +46,6 @@ namespace ytplayer.player {
                 DataContext = value;
             }
         }
-        IPlayerViewModel IPlayer.ViewModel => ViewModel;
         private bool starting = false;
         private CursorManager CursorManager;
 
@@ -82,6 +57,7 @@ namespace ytplayer.player {
         public Player() {
             ViewModel = new PlayerViewModel();
             ViewModel.MaximizeCommand.Subscribe(ToggleFullscreen);
+            ViewModel.Player = this;
             InitializeComponent();
         }
 
@@ -149,8 +125,12 @@ namespace ytplayer.player {
 
         private void OnMediaOpened(object sender, RoutedEventArgs e) {
             ViewModel.IsReady.Value = true;
-            ViewModel.Duration.Value = MediaPlayer.NaturalDuration.TimeSpan.TotalMilliseconds;
-            if(starting) {
+            ViewModel.Duration.Value = (ulong)MediaPlayer.NaturalDuration.TimeSpan.TotalMilliseconds;
+            var current = ViewModel.PlayList.Current.Value;
+            if(current!=null) {
+                current.DurationInSec = ViewModel.Duration.Value / 1000;
+            }
+            if (starting) {
                 Play();
                 double pos = 0;
                 if(ReservePosition>0 && ReservePosition<ViewModel.Duration.Value) {
@@ -166,13 +146,15 @@ namespace ytplayer.player {
 
         private void OnMediaEnded(object sender, RoutedEventArgs e) {
             ViewModel.IsPlaying.Value = false;
-            ViewModel.Ended.OnNext(true);
+            //ViewModel.Ended.OnNext(true);
+            ViewModel.GoForwardCommand.Execute();
         }
 
         private void OnMediaFailed(object sender, ExceptionRoutedEventArgs e) {
             ViewModel.IsReady.Value = false;
             ViewModel.IsPlaying.Value = false;
-            ViewModel.Ended.OnNext(false);
+            //ViewModel.Ended.OnNext(false);
+            ViewModel.GoForwardCommand.Execute();
         }
 
         private bool ShowPanel(FrameworkElement panel, bool show) {

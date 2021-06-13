@@ -6,34 +6,14 @@ using System.Reactive.Subjects;
 using ytplayer.data;
 
 namespace ytplayer.player {
-    public interface IPlayable {
-        string KEY { get; }
-        string Path { get; }
-        string Name { get; }
-        string Url { get; }
-        Rating Rating { get; set; }
-        bool HasFile { get; }
-        double Volume { get; set; }
-        ulong DurationInSec { get; set; }
-        ulong TrimStart { get; set; }
-        ulong TrimEnd { get; set; }
-        void Delete();
-    }
-
-    public interface IPlayList {
-        void SetList(IEnumerable<IPlayable> s, IPlayable initialItem = null);
-        void Add(IPlayable item);
-        ReadOnlyReactiveProperty<IPlayable> Current { get; }
-    }
-
-    public class PlayList : IPlayList {
-        private ReactiveProperty<List<IPlayable>> List { get; } = new ReactiveProperty<List<IPlayable>>();
+    public class PlayList {
+        private ReactiveProperty<List<DLEntry>> List { get; } = new ReactiveProperty<List<DLEntry>>();
         public ReactiveProperty<int> CurrentIndex { get; } = new ReactiveProperty<int>(-1,ReactivePropertyMode.RaiseLatestValueOnSubscribe);
         
         public ReadOnlyReactiveProperty<int> CurrentPos { get; }
         public ReadOnlyReactiveProperty<int> TotalCount { get; }
 
-        public ReadOnlyReactiveProperty<IPlayable> Current { get; }
+        public ReadOnlyReactiveProperty<DLEntry> Current { get; }
         public ReadOnlyReactiveProperty<bool> HasNext { get; }
         public ReadOnlyReactiveProperty<bool> HasPrev { get; }
 
@@ -54,8 +34,8 @@ namespace ytplayer.player {
             }).ToReadOnlyReactiveProperty();
         }
 
-        public void SetList(IEnumerable<IPlayable> s, IPlayable initialItem=null) {
-            List.Value = new List<IPlayable>(s.Where((e) => e.HasFile));
+        public void SetList(IEnumerable<DLEntry> s, DLEntry initialItem =null) {
+            List.Value = new List<DLEntry>(s.Where((e) => e.HasFile));
             if(List.Value.Count==0) {
                 CurrentIndex.Value = -1;
             } else if(initialItem!=null && List.Value.Contains(initialItem)) { 
@@ -65,10 +45,10 @@ namespace ytplayer.player {
             }
         }
 
-        public void Add(IPlayable item) {
+        public void Add(DLEntry item) {
             int index = CurrentIndex.Value;
             if (List.Value==null) {
-                List.Value = new List<IPlayable>();
+                List.Value = new List<DLEntry>();
                 index = 0;
             }
             if (!List.Value.Where((v) => v.Url == item.Url).Any()) {

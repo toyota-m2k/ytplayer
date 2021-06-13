@@ -240,7 +240,7 @@ namespace ytplayer.data {
 
 
     [Table(Name = "t_download_ex")]
-    public class DLEntry : PropertyChangeNotifier, IPlayable {
+    public class DLEntry : PropertyChangeNotifier {
         [Column(Name = "id", IsPrimaryKey = true, CanBeNull = false)]
         public string KEY { get; private set; }
         public string Id => KEY;
