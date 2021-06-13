@@ -38,6 +38,10 @@ namespace ytplayer.player {
         public ReactiveCommand ResetSpeedCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ResetVolumeCommand { get; } = new ReactiveCommand();
 
+        // Chapter
+        public ReactiveCommand AddChapterCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand EditChapterCommand { get; } = new ReactiveCommand();
+
         // Trimming
         public ReactiveProperty<double> TrimStart { get; } = new ReactiveProperty<double>();
         public ReactiveProperty<double> TrimEnd { get; } = new ReactiveProperty<double>();
@@ -125,6 +129,7 @@ namespace ytplayer.player {
             ViewModel.GoForwardCommand.Subscribe(Next);
             ViewModel.GoBackCommand.Subscribe(Prev);
             ViewModel.TrashCommand.Subscribe(Trash);
+
             ViewModel.PlayList.Current.Subscribe(OnCurrentChanged);
             ViewModel.PlayList.ListItemAdded.Subscribe((v) => {
                 if(!ViewModel.IsPlaying.Value) {
@@ -133,8 +138,20 @@ namespace ytplayer.player {
             });
             ViewModel.FitMode.Value = player.Stretch == Stretch.UniformToFill;
             ViewModel.FitMode.Subscribe(FitView);
+
+            ViewModel.AddChapterCommand.Subscribe(AddChapter);
+            ViewModel.EditChapterCommand.Subscribe(EditChapter);
+
             ViewModel.SetTrimCommand.Subscribe(SetTrim);
             ViewModel.ResetTrimCommand.Subscribe(ResetTrim);
+
+        }
+
+        private void AddChapter() {
+
+        }
+        private void EditChapter() {
+
         }
 
         private void SetTrim(object obj) {

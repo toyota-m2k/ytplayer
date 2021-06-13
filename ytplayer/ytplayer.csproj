@@ -168,9 +168,14 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="common\CursorManager.cs" />
+    <Compile Include="data\ChapterEntry.cs" />
+    <Compile Include="data\ChapterInfo.cs" />
     <Compile Include="data\StorageTable.cs" />
     <Compile Include="data\SyncManager.cs" />
     <Compile Include="download\downloader\impl\FFMpegConverter.cs" />
+    <Compile Include="player\ChapterView.xaml.cs">
+      <DependentUpon>ChapterView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="player\PlayRange.cs" />
     <Compile Include="RequestAcceptor.cs" />
     <Compile Include="server\lib\HttpBuilder.cs" />
@@ -237,6 +242,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="player\ChapterView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="player\ControlPanel.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

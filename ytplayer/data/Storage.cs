@@ -14,31 +14,13 @@ namespace ytplayer.data {
         private const int DB_VERSION = 4;
 
         private SQLiteConnection Connection { get; set; }
-
         public static long LastUpdated { get; set; } = 0;
-
-        public class KVEntryTable : StorageTable<KVEntry> {
-            public KVEntryTable(SQLiteConnection connection) : base(connection) { }
-            public override bool Contains(string key) {
-                return Table.Where((c) => c.KEY == key).Any();
-            }
-            public override bool Contains(KVEntry entry) {
-                return Contains(entry.KEY);
-            }
-            public KVEntry Find(string key) {
-                return Table.Where((c) => c.KEY == key).SingleOrDefault();
-            }
-        }
-
-        //public DataContext Context { get; set; }
 
         public DLEntryTable DLTable { get; }
         public KVEntryTable KVTable { get; }
+        public ChapterTable ChapterTable { get; }
 
         public string DBPath { get; }
-
-        //public Storage(string path) : this(path, false) {
-        //}
 
         private Storage(string path) {
             bool creation = false;
@@ -66,6 +48,8 @@ namespace ytplayer.data {
 
             DLTable = new DLEntryTable(Connection);
             KVTable = new KVEntryTable(Connection);
+            ChapterTable = new ChapterTable(Connection);
+
             DLTable.Context.Log = Console.Out;
         }
 
@@ -315,7 +299,8 @@ namespace ytplayer.data {
                     owner TEXT NOT NULL,
                     position  INTEGER NOT NULL,
                     skip INTEGER NOT NULL DEFAULT 0,
-                    FOREIGN KEY(owner) REFERENCES t_download_ex(id)
+                    FOREIGN KEY(owner) REFERENCES t_download_ex(id),
+                    UNIQUE(owner,position)
                 )"
             );
 

@@ -21,7 +21,7 @@ namespace ytplayer.data {
             Table = Context.GetTable<T>();
         }
 
-        public abstract bool Contains(string key);
+        //public abstract bool Contains(string key);
         public abstract bool Contains(T entry);
 
         public IEnumerable<T> List => Table;
