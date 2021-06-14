@@ -40,7 +40,15 @@ namespace ytplayer.player {
                 }
             };
             Loaded += OnLoaded;
-            mDisposablePool.Add(ViewModel.IsReadyAndPlaying.Subscribe((playing) => {
+        }
+
+        private void OnLoaded(object sender, RoutedEventArgs e) {
+            Minimum = 0;
+            Loaded -= OnLoaded;
+            ValueChanged += OnValueChanged;
+            Unloaded += OnUnloaded;
+
+            mDisposablePool.Add(ViewModel.IsPlaying.Subscribe((playing) => {
                 if (playing) {
                     mTimer.Start();
                 } else {
@@ -49,34 +57,7 @@ namespace ytplayer.player {
             }));
             mDisposablePool.Add(ViewModel.Duration.Subscribe((duration) => {
                 this.Maximum = duration;
-                //if(RangeLimit.Start>0) {
-                //    Player.SeekPosition = RangeLimit.Start;
-                //}
             }));
-        }
-
-        public void Initialize() {
-            //Player = player;
-            //mPlayingSubscriber = player.ViewModel.IsReadyAndPlaying.Subscribe((playing) => {
-            //    if (playing) {
-            //        mTimer.Start();
-            //    } else {
-            //        mTimer.Stop();
-            //    }
-            //});
-            //mDurationSubscriber = player.ViewModel.Duration.Subscribe((duration) => {
-            //    this.Maximum = duration;
-            //    //if(RangeLimit.Start>0) {
-            //    //    Player.SeekPosition = RangeLimit.Start;
-            //    //}
-            //});
-        }
-
-        private void OnLoaded(object sender, RoutedEventArgs e) {
-            Minimum = 0;
-            Loaded -= OnLoaded;
-            ValueChanged += OnValueChanged;
-            Unloaded += OnUnloaded;
         }
 
         private void OnValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) {

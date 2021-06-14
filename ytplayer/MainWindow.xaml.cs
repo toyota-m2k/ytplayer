@@ -933,7 +933,7 @@ namespace ytplayer {
             }
         }
 
-        private void OnPlayItemChanged(IPlayable obj) {
+        private void OnPlayItemChanged(DLEntry obj) {
             Storage.DLTable.Update();
             if (null == obj) return;
             if (obj != null) {
@@ -952,9 +952,9 @@ namespace ytplayer {
             var win = GetPlayer();
             var selected = MainListView.SelectedItems;
             if(selected.Count>1) {
-                win.PlayList.SetList(selected.ToEnumerable<DLEntry>());
+                win.SetPlayList(selected.ToEnumerable<DLEntry>());
             } else {
-                win.PlayList.SetList(viewModel.MainList.Value, MainListView.SelectedItem as IPlayable);
+                win.SetPlayList(viewModel.MainList.Value, MainListView.SelectedItem as DLEntry);
             }
         }
 
@@ -1110,7 +1110,7 @@ namespace ytplayer {
             if (succeeded && !extractAudio) {
                 Dispatcher.Invoke(() => {
                     if (viewModel.AutoPlay.Value) {
-                        GetPlayer().PlayList.Add(target);
+                        GetPlayer().AddToPlayList(target);
                     }
                 });
             }
@@ -1120,7 +1120,7 @@ namespace ytplayer {
             Dispatcher.Invoke(() => {
                 Storage.DLTable.Add(target);
                 if (viewModel.AutoPlay.Value) {
-                    GetPlayer().PlayList.Add(target);
+                    GetPlayer().AddToPlayList(target);
                 }
             });
         }

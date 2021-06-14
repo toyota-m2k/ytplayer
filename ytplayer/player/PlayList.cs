@@ -7,31 +7,31 @@ using ytplayer.data;
 
 namespace ytplayer.player {
     public class PlayList {
-        private ReactiveProperty<List<DLEntry>> List { get; } = new ReactiveProperty<List<DLEntry>>();
-        public ReactiveProperty<int> CurrentIndex { get; } = new ReactiveProperty<int>(-1,ReactivePropertyMode.RaiseLatestValueOnSubscribe);
+        private ReactivePropertySlim<List<DLEntry>> List { get; } = new ReactivePropertySlim<List<DLEntry>>(null);
+        public ReactivePropertySlim<int> CurrentIndex { get; } = new ReactivePropertySlim<int>(-1, ReactivePropertyMode.RaiseLatestValueOnSubscribe);
         
-        public ReadOnlyReactiveProperty<int> CurrentPos { get; }
-        public ReadOnlyReactiveProperty<int> TotalCount { get; }
+        public ReadOnlyReactivePropertySlim<int> CurrentPos { get; }
+        public ReadOnlyReactivePropertySlim<int> TotalCount { get; }
 
-        public ReadOnlyReactiveProperty<DLEntry> Current { get; }
-        public ReadOnlyReactiveProperty<bool> HasNext { get; }
-        public ReadOnlyReactiveProperty<bool> HasPrev { get; }
+        public ReadOnlyReactivePropertySlim<DLEntry> Current { get; }
+        public ReadOnlyReactivePropertySlim<bool> HasNext { get; }
+        public ReadOnlyReactivePropertySlim<bool> HasPrev { get; }
 
         public Subject<int> ListItemAdded = new Subject<int>();
 
         public PlayList() {
-            CurrentPos = CurrentIndex.Select((v) => v + 1).ToReadOnlyReactiveProperty();
-            TotalCount = CurrentIndex.Select((v) => List?.Value?.Count ?? 0).ToReadOnlyReactiveProperty();
+            CurrentPos = CurrentIndex.Select((v) => v + 1).ToReadOnlyReactivePropertySlim();
+            TotalCount = CurrentIndex.Select((v) => List?.Value?.Count ?? 0).ToReadOnlyReactivePropertySlim();
             Current = List.CombineLatest(CurrentIndex, (list, index) => {
                 return (0<=index && index<list.Count) ? list[index] : null;
-            }).ToReadOnlyReactiveProperty();
+            }).ToReadOnlyReactivePropertySlim();
 
             HasNext = List.CombineLatest(CurrentIndex, (list, index) => {
                 return index+1 < (list?.Count ?? 0);
-            }).ToReadOnlyReactiveProperty();
+            }).ToReadOnlyReactivePropertySlim();
             HasPrev = List.CombineLatest(CurrentIndex, (List, index) => {
                 return 0 < index && List!=null;
-            }).ToReadOnlyReactiveProperty();
+            }).ToReadOnlyReactivePropertySlim();
         }
 
         public void SetList(IEnumerable<DLEntry> s, DLEntry initialItem =null) {

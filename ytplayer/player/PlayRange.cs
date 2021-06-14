@@ -3,6 +3,8 @@
         private ulong mStart = 0;
         private ulong mEnd = 0;
 
+        static public PlayRange Empty => new PlayRange(0,0);
+
         public PlayRange(ulong start, ulong end) {
             Start = start;
             End = end;
@@ -29,6 +31,8 @@
                 }
             }
         }
+
+
     }
 
     //public class PlayRangeWatcher : IDisposable {

@@ -12,33 +12,45 @@ using System.Threading.Tasks;
 using ytplayer.data;
 
 namespace ytplayer.player {
+    public enum PlayerState {
+        UNAVAILABLE,
+        LOADING,
+        READY,
+        PLAYING,
+        ENDED,
+        ERROR,
+    }
     public class PlayerViewModel : ViewModelBase {
-
         // Item Entry
-        public ReactiveProperty<ulong> Duration { get; } = new ReactiveProperty<ulong>(1000);
-        public ReactiveProperty<ulong> Position { get; } = new ReactiveProperty<ulong>(0);
+        public ReactivePropertySlim<ulong> Duration { get; } = new ReactivePropertySlim<ulong>(1000);
+        public ReactivePropertySlim<ulong> Position { get; } = new ReactivePropertySlim<ulong>(0);
+        public ReactivePropertySlim<PlayerState> State { get; } = new ReactivePropertySlim<PlayerState>(PlayerState.UNAVAILABLE);
 
-        public ReactiveProperty<bool> IsReady { get; } = new ReactiveProperty<bool>(false);
-        public ReactiveProperty<bool> IsPlaying { get; } = new ReactiveProperty<bool>(false);
-        public ReadOnlyReactiveProperty<bool> IsReadyAndPlaying { get; }
-        public ReactiveProperty<double> Speed { get; } = new ReactiveProperty<double>(0.5);
-        public ReactiveProperty<double> Volume { get; } = new ReactiveProperty<double>(0.5);
+        public ReadOnlyReactivePropertySlim<bool> IsReady { get; }
+        public ReadOnlyReactivePropertySlim<bool> IsPlaying { get; }
+
+        public ReactivePropertySlim<double> Speed { get; } = new ReactivePropertySlim<double>(0.5);
+        public ReactivePropertySlim<double> Volume { get; } = new ReactivePropertySlim<double>(0.5);
+
         // Trimming
-        public ReactiveProperty<ulong> TrimStart { get; } = new ReactiveProperty<ulong>();
-        public ReactiveProperty<ulong> TrimEnd { get; } = new ReactiveProperty<ulong>();
+        public ReadOnlyReactivePropertySlim<ulong> TrimStart { get; }
+        public ReadOnlyReactivePropertySlim<ulong> TrimEnd { get; }
+        public ReadOnlyReactivePropertySlim<PlayRange> PlayRange { get; }
 
-        public ReadOnlyReactiveProperty<string> TrimStartText { get; }
-        public ReadOnlyReactiveProperty<string> TrimEndText { get; }
-        public ReadOnlyReactiveProperty<string> DurationText { get; }
-        public ReadOnlyReactiveProperty<string> PositionText { get; }
+        public ReadOnlyReactivePropertySlim<string> TrimStartText { get; }
+        public ReadOnlyReactivePropertySlim<string> TrimEndText { get; }
+        public ReadOnlyReactivePropertySlim<string> DurationText { get; }
+        public ReadOnlyReactivePropertySlim<string> PositionText { get; }
 
 
         public PlayList PlayList { get; } = new PlayList();
+        public bool AutoPlay { get; } = true;
         //public Subject<bool> Ended { get; } = new Subject<bool>();
         public ObservableCollection<Category> Categories => new ObservableCollection<Category>(Settings.Instance.Categories.SelectList);
 
         public ReactiveCommand PlayCommand { get; } = new ReactiveCommand();
         public ReactiveCommand PauseCommand { get; } = new ReactiveCommand();
+        //public ReactiveCommand StopCommand { get; } = new ReactiveCommand();
         public ReactiveCommand GoBackCommand { get; } = new ReactiveCommand();
         public ReactiveCommand GoForwardCommand { get; } = new ReactiveCommand();
         public ReactiveCommand TrashCommand { get; } = new ReactiveCommand();
@@ -56,15 +68,17 @@ namespace ytplayer.player {
         public ReactiveProperty<bool> Fullscreen { get; } = new ReactiveProperty<bool>(false);
         public ReactiveCommand MaximizeCommand { get; } = new ReactiveCommand();
 
+        // Player
         private WeakReference<Player> mPlayer = null;
         public Player Player {
             get => mPlayer?.GetValue();
-            set { mPlayer = value==null ? null : new WeakReference<Player>(value); }
+            set { mPlayer = value == null ? null : new WeakReference<Player>(value); }
         }
         public ulong PlayerPosition {
-            get => (ulong)Player.SeekPosition;
-            set { Player.SeekPosition = value; }
+            get => (ulong)(Player?.SeekPosition ?? 0);
+            set { Player?.Apply((player)=>player.SeekPosition = value); }
         }
+
 
         //private IDisposable EndEventRegester { get; set; }
         //private IDisposable DurationRegester { get; set; }
@@ -74,12 +88,19 @@ namespace ytplayer.player {
             return string.Format("{0}:{1:00}:{2:00}", t.Hours, t.Minutes, t.Seconds);
         }
 
+
         public PlayerViewModel() {
-            DurationText = Duration.Select((v) => FormatDuration(v)).ToReadOnlyReactiveProperty();
-            PositionText = Position.Select((v) => FormatDuration(v)).ToReadOnlyReactiveProperty();
-            TrimStartText = TrimStart.Select((v) => FormatDuration(v)).ToReadOnlyReactiveProperty();
-            TrimEndText = TrimEnd.Select((v) => FormatDuration(v)).ToReadOnlyReactiveProperty();
-            IsReadyAndPlaying = IsReady.CombineLatest(IsPlaying, (r, p) => r && p).ToReadOnlyReactiveProperty();
+            TrimStart = PlayList.Current.Select((c) => c?.TrimStart??0).ToReadOnlyReactivePropertySlim();
+            TrimEnd = PlayList.Current.Select((c) => c?.TrimEnd ?? 0).ToReadOnlyReactivePropertySlim();
+            PlayRange = PlayList.Current.Select((c) => new PlayRange(c?.TrimStart??0, c?.TrimEnd??0)).ToReadOnlyReactivePropertySlim();
+
+            DurationText = Duration.Select((v) => FormatDuration(v)).ToReadOnlyReactivePropertySlim();
+            PositionText = Position.Select((v) => FormatDuration(v)).ToReadOnlyReactivePropertySlim();
+            TrimStartText = TrimStart.Select((v) => FormatDuration(v)).ToReadOnlyReactivePropertySlim();
+            TrimEndText = TrimEnd.Select((v) => FormatDuration(v)).ToReadOnlyReactivePropertySlim();
+
+            IsPlaying = State.Select((v) => v == PlayerState.PLAYING).ToReadOnlyReactivePropertySlim();
+            IsReady = State.Select((v) => v == PlayerState.READY || v == PlayerState.PLAYING).ToReadOnlyReactivePropertySlim();
         }
     }
 }

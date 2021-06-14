@@ -68,6 +68,7 @@ namespace ytplayer.data {
             try {
                 return new Storage(path);
             } catch(Exception e) {
+                LoggerEx.error(e);
                 return null;
             }
         }

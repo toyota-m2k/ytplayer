@@ -101,46 +101,18 @@ namespace ytplayer.player {
     /// ControlPanel.xaml の相互作用ロジック
     /// </summary>
     public partial class ControlPanel : UserControl {
-        private WeakReference<IPlayer> mPlayer;
-        private IPlayer Player => mPlayer?.GetValue();
-
         PlayerViewModel ViewModel => DataContext as PlayerViewModel;
 
         public ControlPanel() {
             InitializeComponent();
         }
 
-        public void Initialize(IPlayer player) {
-            //mPlayer = new WeakReference<IPlayer>(player);
-            //TimelineSlider.Initialize(player);
-            //TimelineSlider.ReachRangeEnd += OnReachRangeEnd;
-            //ViewModel.PlayCommand.Subscribe(Play);
-            //ViewModel.PauseCommand.Subscribe(Pause);
-            //ViewModel.GoForwardCommand.Subscribe(Next);
-            //ViewModel.GoBackCommand.Subscribe(Prev);
-            //ViewModel.TrashCommand.Subscribe(Trash);
-
-            //ViewModel.PlayList.Current.Subscribe(OnCurrentChanged);
-            //ViewModel.PlayList.ListItemAdded.Subscribe((v) => {
-            //    if(!ViewModel.IsPlaying.Value) {
-            //        ViewModel.PlayList.CurrentIndex.Value = v;
-            //    }
-            //});
-            //ViewModel.FitMode.Value = player.Stretch == Stretch.UniformToFill;
-            //ViewModel.FitMode.Subscribe(FitView);
-
-            //ViewModel.AddChapterCommand.Subscribe(AddChapter);
-            //ViewModel.EditChapterCommand.Subscribe(EditChapter);
-
-            //ViewModel.SetTrimCommand.Subscribe(SetTrim);
-            //ViewModel.ResetTrimCommand.Subscribe(ResetTrim);
-
+        private void OnLoaded(object sender, System.Windows.RoutedEventArgs e) {
+            TimelineSlider.ReachRangeEnd += OnReachRangeEnd;
         }
-
-        public void Terminate() {
+        private void OnUnloaded(object sender, System.Windows.RoutedEventArgs e) {
             TimelineSlider.ReachRangeEnd -= OnReachRangeEnd;
         }
-
 
         private void AddChapter() {
 
@@ -192,25 +164,21 @@ namespace ytplayer.player {
             }
         }
 
-        private void OnCurrentChanged(DLEntry item) {
-            Player.Stop();
+        //private void OnCurrentChanged(DLEntry item) {
 
-            double start = 0;
-            if (item != null) {
-                ViewModel.Volume.Value = item.Volume;
-                ViewModel.TrimStart.Value = item.TrimStart;
-                ViewModel.TrimEnd.Value = item.TrimEnd;
-                TimelineSlider.RangeLimit = new PlayRange(item.TrimStart, item.TrimEnd);
-                if (item.KEY == Settings.Instance.LastPlayingUrl && Settings.Instance.LastPlayingPos > 0) {
-                    start = Settings.Instance.LastPlayingPos;
-                } else {
-                    start = item.TrimStart;
-                }
-                Settings.Instance.LastPlayingUrl = null;
-                Settings.Instance.LastPlayingPos = 0;
-            }
-            Player.SetSource(item?.Path, start, true);
-        }
+        //    double start = 0;
+        //    if (item != null) {
+        //        TimelineSlider.RangeLimit = new PlayRange(item.TrimStart, item.TrimEnd);
+        //        if (item.KEY == Settings.Instance.LastPlayingUrl && Settings.Instance.LastPlayingPos > 0) {
+        //            start = Settings.Instance.LastPlayingPos;
+        //        } else {
+        //            start = item.TrimStart;
+        //        }
+        //        Settings.Instance.LastPlayingUrl = null;
+        //        Settings.Instance.LastPlayingPos = 0;
+        //    }
+        //    Player.SetSource(item?.Path, start, true);
+        //}
 
         //public void Play() {
         //    Player?.Play();

@@ -1,58 +1,67 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Threading.Tasks;
 using System.Windows;
+using ytplayer.data;
 
 namespace ytplayer.player {
     /// <summary>
     /// PlayerWindow.xaml の相互作用ロジック
     /// </summary>
     public partial class PlayerWindow : Window {
+        private PlayerViewModel ViewModel {
+            get => DataContext as PlayerViewModel;
+            set {
+                ViewModel?.Dispose();
+                DataContext = value;
+            }
+        }
+
         public PlayerWindow() {
-            DataContext = this;
+            ViewModel = new PlayerViewModel();
             InitializeComponent();
         }
 
-        public event Action<IPlayable> PlayItemChanged;
+        public event Action<DLEntry> PlayItemChanged;
         public event Action<PlayerWindow> PlayWindowClosing;
         public event Action<PlayerWindow> PlayWindowClosed;
 
-        public IPlayList PlayList => Player.ControlPanel.PlayList;
+        private TaskCompletionSource<bool> LoadCompletion = new TaskCompletionSource<bool>();
 
-        public (IPlayable entry, double position) CurrentPlayingInfo {
+        //public IPlayList PlayList => Player.ControlPanel.PlayList;
+
+        public (DLEntry entry, double position) CurrentPlayingInfo {
             get {
-                var entry = PlayList.Current.Value;
+                var entry = ViewModel.PlayList.Current.Value;
                 double position = 0;
-                var player = Player as IPlayer;
-                if(player.ViewModel.IsReady.Value) {
-                    position = player.
-                        SeekPosition;
+                if(ViewModel.IsReady.Value) {
+                    position = Player.SeekPosition;
                 }
                 return (entry, position);
             }
         }
 
-        public void ResumePlay(IEnumerable<IPlayable> list, IPlayable entry/*, double pos*/) {
+        public void ResumePlay(IEnumerable<DLEntry> list, DLEntry entry/*, double pos*/) {
             if (entry != null) {
-                PlayList.SetList(list, entry);
+                ViewModel.PlayList.SetList(list, entry);
                 //Player.ReserveSeekPosition(pos);
             }
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
-            Player.Initialize();
-            PlayList.Current.Subscribe(CurrentChanged);
+            ViewModel.PlayList.Current.Subscribe(OnCurrentItemChanged);
+            LoadCompletion.TrySetResult(true);
         }
 
-        private void CurrentChanged(IPlayable obj) {
-            this.Title = obj?.Name ?? "";
-            PlayList.Current.Subscribe((c) => {
-                PlayItemChanged?.Invoke(c);
-            });
+        private void OnCurrentItemChanged(DLEntry item) {
+            this.Title = item?.Name ?? "";
+            PlayItemChanged?.Invoke(item);
         }
 
         protected override void OnClosing(CancelEventArgs e) {
             base.OnClosing(e);
+            LoadCompletion.TrySetResult(false);
             PlayWindowClosing?.Invoke(this);
         }
 
@@ -61,7 +70,7 @@ namespace ytplayer.player {
             PlayWindowClosed?.Invoke(this);
             PlayWindowClosed = null;
             PlayItemChanged = null;
-            Player.Terminate();
+            ViewModel = null;
         }
 
         private void Window_PreviewDragOver(object sender, DragEventArgs e) {
@@ -71,5 +80,16 @@ namespace ytplayer.player {
         private void Window_Drop(object sender, DragEventArgs e) {
             MainWindow.Instance?.RegisterUrl(e.Data.GetData(DataFormats.Text) as string, true);
         }
+
+        public async void SetPlayList(IEnumerable<DLEntry> s, DLEntry initialItem = null) {
+            await LoadCompletion.Task;
+            ViewModel.PlayList.SetList(s, initialItem);
+        }
+
+        public async void AddToPlayList(DLEntry item) {
+            await LoadCompletion.Task;
+            ViewModel.PlayList.Add(item);
+        }
+
     }
 }

@@ -25,29 +25,23 @@ namespace ytplayer.player {
     //}
 
 
-    public interface IPlayer {
-        void SetSource(string path, double startFrom, bool start=true);
-        void Play();
-        void Pause();
-        void Stop();
-        //void ReserveSeekPosition(double pos);
-        double SeekPosition { get; set; }
-        Stretch Stretch { get; set; }
-    }
+    //public interface IPlayer {
+    //    void SetSource(string path, double startFrom, bool start=true);
+    //    void Play();
+    //    void Pause();
+    //    void Stop();
+    //    //void ReserveSeekPosition(double pos);
+    //    double SeekPosition { get; set; }
+    //    Stretch Stretch { get; set; }
+    //}
 
     /// <summary>
     /// Player.xaml の相互作用ロジック
     /// </summary>
-    public partial class Player : UserControl, IPlayer {
-        PlayerViewModel ViewModel {
-            get => DataContext as PlayerViewModel;
-            set {
-                ViewModel?.Dispose();
-                DataContext = value;
-            }
-        }
-        private bool starting = false;
+    public partial class Player : UserControl {
+        PlayerViewModel ViewModel => DataContext as PlayerViewModel;
         private CursorManager CursorManager;
+        private double ReservePosition = 0;
 
         public Stretch Stretch {
             get => MediaPlayer.Stretch;
@@ -55,85 +49,64 @@ namespace ytplayer.player {
         }
 
         public Player() {
-            ViewModel = new PlayerViewModel();
-            ViewModel.MaximizeCommand.Subscribe(ToggleFullscreen);
-            ViewModel.Player = this;
             InitializeComponent();
         }
 
-        public void Initialize() {
-            ControlPanel.Initialize(this);
+        private void OnLoaded(object sender, RoutedEventArgs e) {
+            ViewModel.Player = this;
+            ViewModel.MaximizeCommand.Subscribe(ToggleFullscreen);
+            ViewModel.Fullscreen.Value = Window.GetWindow(this).WindowStyle == WindowStyle.None;
             CursorManager = new CursorManager(Window.GetWindow(this));
             ViewModel.Speed.Subscribe((speed) => {
                 double sr = (speed >= 0.5) ? 1 + (speed - 0.5) * 2 /* 1 ～ 2 */ : 0.2 + 0.8 * (speed * 2)/*0.2 ～ 1*/;
                 MediaPlayer.SpeedRatio = sr;
             });
+            ViewModel.Volume.Subscribe((volume) => {
+                MediaPlayer.Volume = volume;
+            });
+            ViewModel.PlayList.Current.Subscribe(OnCurrentItemChanged);
+
+            ViewModel.PlayCommand.Subscribe(Play);
+            ViewModel.PauseCommand.Subscribe(Pause);
         }
 
-        public void Terminate() {
-            ControlPanel.Terminate();
-            ViewModel = null;
-        }
-
-        public void SetSource(string path, double startFrom, bool start=true) {
-            starting = start;
-            ViewModel.IsReady.Value = false;
-            ViewModel.IsPlaying.Value = false;
-            ViewModel.Speed.Value = 0.5;
-            ReservePosition = startFrom;
-            MediaPlayer.Source = string.IsNullOrEmpty(path) ? null : new Uri(path);
-            if(path!=null) {
-                Debug.Assert(PathUtil.isFile(path));
-                Play();
-            }
-        }
-
-        public void Play() {
-            ViewModel.IsPlaying.Value = true;
-            MediaPlayer.Play();
-        }
-
-        public void Stop() {
-            ViewModel.IsPlaying.Value = false;
+        private void OnCurrentItemChanged(DLEntry item) {
             MediaPlayer.Stop();
-        }
+            ViewModel.State.Value = PlayerState.UNAVAILABLE;
 
-        public void Pause() {
-            if(ViewModel.IsPlaying.Value) {
-                ViewModel.IsPlaying.Value = false;
-                MediaPlayer.Pause();
-            }
-        }
+            ReservePosition = 0;
+            Uri uri = null;
+            if (item != null) {
+                if (item.KEY == Settings.Instance.LastPlayingUrl && Settings.Instance.LastPlayingPos > 0) {
+                    ReservePosition = Settings.Instance.LastPlayingPos;
+                } else {
+                    ReservePosition = item.TrimStart;
+                }
+                ViewModel.Volume.Value = item.Volume;
 
-        public double SeekPosition {
-            get => ViewModel.IsReady.Value ? MediaPlayer.Position.TotalMilliseconds : 0;
-            set {
-                if (ViewModel.IsReady.Value) {
-                    MediaPlayer.Position = TimeSpan.FromMilliseconds(value);
+                string path = item.Path;
+                if(!string.IsNullOrEmpty(path)) {
+                    uri = new Uri(path);
+                    ViewModel.State.Value = PlayerState.LOADING;
                 }
             }
+            MediaPlayer.Source = uri;
+            //if(uri!=null) {
+            //    Play();
+            //}
         }
 
-        private double ReservePosition = 0;
-        //public void ReserveSeekPosition(double pos) {
-        //    if(ViewModel.IsReady.Value) {
-        //        MediaPlayer.Position = TimeSpan.FromMilliseconds(pos);
-        //    } else {
-        //        ReservePosition = pos;
-        //    }
-        //}
-
         private void OnMediaOpened(object sender, RoutedEventArgs e) {
-            ViewModel.IsReady.Value = true;
+            ViewModel.State.Value = PlayerState.READY;
             ViewModel.Duration.Value = (ulong)MediaPlayer.NaturalDuration.TimeSpan.TotalMilliseconds;
             var current = ViewModel.PlayList.Current.Value;
-            if(current!=null) {
+            if (current != null) {
                 current.DurationInSec = ViewModel.Duration.Value / 1000;
             }
-            if (starting) {
+            if (ViewModel.AutoPlay) {
                 Play();
                 double pos = 0;
-                if(ReservePosition>0 && ReservePosition<ViewModel.Duration.Value) {
+                if (ReservePosition > 0 && ReservePosition < ViewModel.Duration.Value) {
                     pos = ReservePosition;
                 }
                 MediaPlayer.Position = TimeSpan.FromMilliseconds(pos);
@@ -145,16 +118,47 @@ namespace ytplayer.player {
         }
 
         private void OnMediaEnded(object sender, RoutedEventArgs e) {
-            ViewModel.IsPlaying.Value = false;
-            //ViewModel.Ended.OnNext(true);
+            ViewModel.State.Value = PlayerState.ENDED;
             ViewModel.GoForwardCommand.Execute();
         }
 
         private void OnMediaFailed(object sender, ExceptionRoutedEventArgs e) {
-            ViewModel.IsReady.Value = false;
-            ViewModel.IsPlaying.Value = false;
-            //ViewModel.Ended.OnNext(false);
+            ViewModel.State.Value = PlayerState.ERROR;
             ViewModel.GoForwardCommand.Execute();
+        }
+
+        public void Play() {
+            if (ViewModel.IsReady.Value) {
+                MediaPlayer.Play();
+                ViewModel.State.Value = PlayerState.PLAYING;
+            }
+        }
+
+        public void Pause() {
+            if (ViewModel.IsPlaying.Value) {
+                MediaPlayer.Pause();
+                ViewModel.State.Value = PlayerState.READY;
+            }
+        }
+
+
+        //public void Stop() {
+        //    if (ViewModel.IsReady.Value) {
+        //        MediaPlayer.Stop();
+        //        ViewModel.State.Value = PlayerState.READY;
+        //        ViewModel.Position.Value = 0;
+        //    }
+        //}
+
+        public double SeekPosition {
+            get => ViewModel.IsReady.Value ? MediaPlayer.Position.TotalMilliseconds : 0;
+            set {
+                if (ViewModel.IsReady.Value) {
+                    MediaPlayer.Position = TimeSpan.FromMilliseconds(value);
+                } else {
+                    LoggerEx.error("cannot seek. (movie is not ready.)");
+                }
+            }
         }
 
         private bool ShowPanel(FrameworkElement panel, bool show) {
@@ -186,10 +190,6 @@ namespace ytplayer.player {
             if (!ShowPanel(sender as FrameworkElement, false)) {
                 CursorManager.Reset();
             }
-        }
-
-        private void OnLoaded(object sender, RoutedEventArgs e) {
-            ViewModel.Fullscreen.Value = Window.GetWindow(this).WindowStyle == WindowStyle.None;
         }
 
         private void ToggleFullscreen() {
