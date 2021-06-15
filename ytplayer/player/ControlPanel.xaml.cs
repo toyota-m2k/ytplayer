@@ -10,93 +10,6 @@ using System.Windows.Media;
 using ytplayer.data;
 
 namespace ytplayer.player {
-
-//    public class ControlPanelViewModel : ViewModelBase {
-//        public PlayList PlayList { get; } = new PlayList();
-
-//        public ReadOnlyReactiveProperty<string> DurationText { get; }
-//        public ReadOnlyReactiveProperty<string> PositionText { get; }
-//        public ReadOnlyReactiveProperty<bool> IsPlaying { get; }
-//        public ReadOnlyReactiveProperty<bool> IsReady { get; }
-//#pragma warning disable IDE0052 // 読み取られていないプライベート メンバーを削除
-//        private IDisposable EndEventRegester { get; }
-//        private IDisposable DurationRegester { get; }
-//#pragma warning restore IDE0052 // 読み取られていないプライベート メンバーを削除
-//        public ObservableCollection<Category> Categories => new ObservableCollection<Category>(Settings.Instance.Categories.SelectList);
-//        public ReactiveProperty<bool> FitMode { get; } = new ReactiveProperty<bool>();
-
-//        [Disposal(disposable:false)]
-//        public IReactiveProperty<double> Speed { get; }
-//        [Disposal(disposable: false)]
-//        public IReactiveProperty<double> Volume { get; }
-
-//        public ReactiveCommand PlayCommand { get; } = new ReactiveCommand();
-//        public ReactiveCommand PauseCommand { get; } = new ReactiveCommand();
-//        public ReactiveCommand GoBackCommand { get; } = new ReactiveCommand();
-//        public ReactiveCommand GoForwardCommand { get; } = new ReactiveCommand();
-//        public ReactiveCommand TrashCommand { get; } = new ReactiveCommand();
-//        public ReactiveCommand ResetSpeedCommand { get; } = new ReactiveCommand();
-//        public ReactiveCommand ResetVolumeCommand { get; } = new ReactiveCommand();
-
-//        // Chapter
-//        public ReactiveCommand AddChapterCommand { get; } = new ReactiveCommand();
-//        public ReactiveCommand EditChapterCommand { get; } = new ReactiveCommand();
-
-//        // Trimming
-//        public ReactiveProperty<double> TrimStart { get; } = new ReactiveProperty<double>();
-//        public ReactiveProperty<double> TrimEnd { get; } = new ReactiveProperty<double>();
-//        public ReadOnlyReactiveProperty<string> TrimStartText { get; }
-//        public ReadOnlyReactiveProperty<string> TrimEndText { get; }
-//        public ReactiveCommand SetTrimCommand { get; } = new ReactiveCommand();
-//        public ReactiveCommand ResetTrimCommand { get; } = new ReactiveCommand();
-
-//        private string FormatDuration(double duration) {
-//            var t = TimeSpan.FromMilliseconds(duration);
-//            return string.Format("{0}:{1:00}:{2:00}", t.Hours, t.Minutes, t.Seconds);
-//        }
-
-//        //dummy for initialize
-//        public ControlPanelViewModel() {
-//            var dummyString = new ReactiveProperty<string>();
-//            var dummyBool = new ReactiveProperty<bool>();
-//            var dummyDouble = new ReactiveProperty<double>();
-//            DurationText = dummyString.ToReadOnlyReactiveProperty();
-//            PositionText = dummyString.ToReadOnlyReactiveProperty();
-//            IsPlaying = dummyBool.ToReadOnlyReactiveProperty();
-//            IsReady = dummyBool.ToReadOnlyReactiveProperty();
-//            Speed = dummyDouble;
-//            Volume = dummyDouble;
-//            TrimStart = dummyDouble;
-//            TrimEnd = dummyDouble;
-//            TrimStartText = dummyString.ToReadOnlyReactiveProperty();
-//            TrimEndText = dummyString.ToReadOnlyReactiveProperty();
-//        }
-
-//        public ControlPanelViewModel(IPlayer player, TimelineSlider slider) {
-//            DurationText = player.ViewModel.Duration.Select((v) => FormatDuration(v)).ToReadOnlyReactiveProperty();
-//            PositionText = slider.Position.Select((v) => FormatDuration(v)).ToReadOnlyReactiveProperty();
-//            IsPlaying = player.ViewModel.IsPlaying.ToReadOnlyReactiveProperty();
-//            IsReady = player.ViewModel.IsReady.ToReadOnlyReactiveProperty();
-//            EndEventRegester = player.ViewModel.Ended.Subscribe((v) => GoForwardCommand.Execute());
-//            DurationRegester = player.ViewModel.Duration.Subscribe((v)=> {
-//                if (v>0 && null != PlayList.Current.Value) {
-//                    PlayList.Current.Value.DurationInSec = (ulong)Math.Round(v/1000);
-//                }
-//            });
-//            Speed = player.ViewModel.Speed;
-//            Volume = player.ViewModel.Volume;
-//            Volume.Subscribe((v) => {
-//                //Logger.debug($"Volume = {v}");
-//                PlayList.Current.Value?.Apply((o) => o.Volume = v);
-//            });
-//            ResetSpeedCommand.Subscribe(() => Speed.Value = 0.5);
-//            ResetVolumeCommand.Subscribe(() => Volume.Value = 0.5);
-
-//            TrimStartText = TrimStart.Select((v) => FormatDuration(v)).ToReadOnlyReactiveProperty();
-//            TrimEndText = TrimEnd.Select((v) => FormatDuration(v)).ToReadOnlyReactiveProperty();
-//        }
-//    }
-
     /// <summary>
     /// ControlPanel.xaml の相互作用ロジック
     /// </summary>
@@ -112,13 +25,6 @@ namespace ytplayer.player {
         }
         private void OnUnloaded(object sender, System.Windows.RoutedEventArgs e) {
             TimelineSlider.ReachRangeEnd -= OnReachRangeEnd;
-        }
-
-        private void AddChapter() {
-
-        }
-        private void EditChapter() {
-
         }
 
         //private void SetTrim(object obj) {
@@ -163,43 +69,5 @@ namespace ytplayer.player {
                 ViewModel.PauseCommand.Execute();
             }
         }
-
-        //private void OnCurrentChanged(DLEntry item) {
-
-        //    double start = 0;
-        //    if (item != null) {
-        //        TimelineSlider.RangeLimit = new PlayRange(item.TrimStart, item.TrimEnd);
-        //        if (item.KEY == Settings.Instance.LastPlayingUrl && Settings.Instance.LastPlayingPos > 0) {
-        //            start = Settings.Instance.LastPlayingPos;
-        //        } else {
-        //            start = item.TrimStart;
-        //        }
-        //        Settings.Instance.LastPlayingUrl = null;
-        //        Settings.Instance.LastPlayingPos = 0;
-        //    }
-        //    Player.SetSource(item?.Path, start, true);
-        //}
-
-        //public void Play() {
-        //    Player?.Play();
-        //}
-        //public void Pause() {
-        //    Player?.Pause();
-        //}
-
-        //public void Next() {
-        //    ViewModel.PlayList.Next();
-        //}
-
-        //public void Prev() {
-        //    ViewModel.PlayList.Prev();
-        //}
-        //public void Trash() {
-        //    ViewModel.PlayList.Current.Value.Delete();
-        //    Next();
-        //}
-        //public void FitView(bool mode) {
-        //    Player?.Apply((player) => player.Stretch = mode ? Stretch.UniformToFill : Stretch.Uniform);
-        //}
     }
 }

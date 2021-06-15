@@ -169,6 +169,7 @@
     </ApplicationDefinition>
     <Compile Include="common\CursorManager.cs" />
     <Compile Include="common\DisposablePool.cs" />
+    <Compile Include="common\WeakList.cs" />
     <Compile Include="data\ChapterEntry.cs" />
     <Compile Include="data\ChapterInfo.cs" />
     <Compile Include="data\StorageTable.cs" />
@@ -178,7 +179,7 @@
       <DependentUpon>ChapterView.xaml</DependentUpon>
     </Compile>
     <Compile Include="player\PlayerViewModel.cs" />
-    <Compile Include="player\PlayRange.cs" />
+    <Compile Include="data\PlayRange.cs" />
     <Compile Include="RequestAcceptor.cs" />
     <Compile Include="server\lib\HttpBuilder.cs" />
     <Compile Include="server\lib\HttpProcessor.cs" />

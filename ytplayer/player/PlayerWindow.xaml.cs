@@ -1,9 +1,11 @@
-﻿using System;
+﻿using io.github.toyota32k.toolkit.utils;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows;
 using ytplayer.data;
+using ytplayer.download;
 
 namespace ytplayer.player {
     /// <summary>
@@ -18,8 +20,9 @@ namespace ytplayer.player {
             }
         }
 
-        public PlayerWindow() {
-            ViewModel = new PlayerViewModel();
+
+        public PlayerWindow(IStorageSupplier storageSupplier) {
+            ViewModel = new PlayerViewModel(storageSupplier);
             InitializeComponent();
         }
 
@@ -51,6 +54,7 @@ namespace ytplayer.player {
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
             ViewModel.PlayList.Current.Subscribe(OnCurrentItemChanged);
+            ViewModel.StorageClosed.Subscribe((_) => Close());
             LoadCompletion.TrySetResult(true);
         }
 

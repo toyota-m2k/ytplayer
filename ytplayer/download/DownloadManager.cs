@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ytplayer.common;
 using ytplayer.data;
 using ytplayer.download.downloader;
 using ytplayer.download.downloader.impl;
@@ -13,11 +14,22 @@ namespace ytplayer.download {
         bool StandardOutput(string msg);
         bool ErrorOutput(string msg);
     }
+
+    public interface IStorageConsumer {
+        void OnClosingStorage(Storage storage);
+    }
+
+    public interface IStorageSupplier {
+        Storage Storage { get; }
+        void BindConsumer(IStorageConsumer consumer);
+        void UnbindConsumer(IStorageConsumer consumer);
+    }
+
     public interface IDownloadHost : IReportOutput {
         void Completed(DLEntry target, bool succeeded, bool extractAudio);
         void FoundSubItem(DLEntry foundEntry);
     }
-    public class DownloadManager {
+    public class DownloadManager : IStorageSupplier {
         public Storage Storage { get; private set; }
 
         private Queue<IDownloader> Queue = new Queue<IDownloader>();
@@ -35,6 +47,23 @@ namespace ytplayer.download {
             Start();
         }
 
+        private WeakList<IStorageConsumer> StorageConsumers = new WeakList<IStorageConsumer>();
+        void IStorageSupplier.BindConsumer(IStorageConsumer consumer) {
+            StorageConsumers.Add(consumer);
+        }
+        
+        void IStorageSupplier.UnbindConsumer(IStorageConsumer consumer) {
+            StorageConsumers.Remove(consumer);
+        }
+
+        private void NotifyClosing() {
+            foreach(var c in StorageConsumers) {
+                c?.OnClosingStorage(Storage);
+            }
+            StorageConsumers.Clear();
+        }
+
+
         private void Start() {
             Task.Run(() => {
                 while(Alive) {
@@ -49,6 +78,7 @@ namespace ytplayer.download {
 
         public async void Dispose() {
             await CloseAsync();
+            NotifyClosing();
             Storage?.Dispose();
             Storage = null;
         }

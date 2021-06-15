@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Threading;
 using ytplayer.common;
+using ytplayer.data;
 
 namespace ytplayer.player {
     public class TimelineSlider : Slider {

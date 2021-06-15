@@ -909,7 +909,7 @@ namespace ytplayer {
         private PlayerWindow mPlayerWindow = null;
         private PlayerWindow GetPlayer() {
             if (mPlayerWindow == null) {
-                mPlayerWindow = new PlayerWindow();
+                mPlayerWindow = new PlayerWindow(mDownloadManager);
                 mPlayerWindow.PlayItemChanged += OnPlayItemChanged;
                 mPlayerWindow.PlayWindowClosing += OnPlayerWindowClosing;
                 mPlayerWindow.PlayWindowClosed += OnPlayerWindowClosed;

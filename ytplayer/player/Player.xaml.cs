@@ -1,11 +1,6 @@
 ﻿using io.github.toyota32k.toolkit.utils;
-using io.github.toyota32k.toolkit.view;
-using Reactive.Bindings;
 using System;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -14,27 +9,6 @@ using ytplayer.common;
 using ytplayer.data;
 
 namespace ytplayer.player {
-    //public interface IPlayerViewModel {
-    //    IReadOnlyReactiveProperty<double> Duration { get; }
-    //    IReadOnlyReactiveProperty<bool> IsReady { get; }
-    //    IReadOnlyReactiveProperty<bool> IsPlaying { get; }
-    //    IReadOnlyReactiveProperty<bool> IsReadyAndPlaying { get; }
-    //    IReactiveProperty<double> Speed { get; }
-    //    IReactiveProperty<double> Volume { get; }
-    //    Subject<bool> Ended { get; }
-    //}
-
-
-    //public interface IPlayer {
-    //    void SetSource(string path, double startFrom, bool start=true);
-    //    void Play();
-    //    void Pause();
-    //    void Stop();
-    //    //void ReserveSeekPosition(double pos);
-    //    double SeekPosition { get; set; }
-    //    Stretch Stretch { get; set; }
-    //}
-
     /// <summary>
     /// Player.xaml の相互作用ロジック
     /// </summary>
@@ -54,6 +28,8 @@ namespace ytplayer.player {
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
             ViewModel.Player = this;
+            ViewModel.FitMode.Value = Stretch == Stretch.UniformToFill;
+            ViewModel.FitMode.Subscribe(FitView);
             ViewModel.MaximizeCommand.Subscribe(ToggleFullscreen);
             ViewModel.Fullscreen.Value = Window.GetWindow(this).WindowStyle == WindowStyle.None;
             CursorManager = new CursorManager(Window.GetWindow(this));
@@ -72,7 +48,11 @@ namespace ytplayer.player {
 
         private void OnCurrentItemChanged(DLEntry item) {
             MediaPlayer.Stop();
+            ViewModel.SaveChapterListIfNeeds();
             ViewModel.State.Value = PlayerState.UNAVAILABLE;
+            ViewModel.Trimming.Value = null;
+            ViewModel.Chapters.Value = null;
+            ViewModel.DisabledRanges.Value = null;
 
             ReservePosition = 0;
             Uri uri = null;
@@ -102,6 +82,7 @@ namespace ytplayer.player {
             var current = ViewModel.PlayList.Current.Value;
             if (current != null) {
                 current.DurationInSec = ViewModel.Duration.Value / 1000;
+                ViewModel.PrepareChapterListForCurrentItem();
             }
             if (ViewModel.AutoPlay) {
                 Play();
@@ -141,6 +122,9 @@ namespace ytplayer.player {
             }
         }
 
+        public void FitView(bool mode) {
+            Stretch = mode ? Stretch.UniformToFill : Stretch.Uniform;
+        }
 
         //public void Stop() {
         //    if (ViewModel.IsReady.Value) {

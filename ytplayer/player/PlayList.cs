@@ -58,19 +58,23 @@ namespace ytplayer.player {
             ListItemAdded.OnNext(List.Value.Count-1); // Endedのプレーヤーに再生を再開させるため
         }
 
-        public bool Next() {
+        public void Next() {
             if(HasNext.Value) {
                 CurrentIndex.Value++;
-                return true;
             }
-            return false;
         }
-        public bool Prev() {
+        public void Prev() {
             if(HasPrev.Value) {
                 CurrentIndex.Value--;
-                return true;
             }
-            return false;
+        }
+
+        public void DeleteCurrent() {
+            var item = Current.Value;
+            if(item!=null) {
+                item.Delete();
+                Next();
+            }
         }
     }
 }

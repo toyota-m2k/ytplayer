@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace ytplayer.data {
-    [Table(Name = "t_capter")]
+    [Table(Name = "t_chapter")]
     public class ChapterEntry {
         [Column(Name = "owner", CanBeNull = false)]
         public string Owner { get; private set; }
@@ -46,40 +46,12 @@ namespace ytplayer.data {
             return Table.Where((c) => c.Owner == entry.Owner && c.Position == entry.Position).Any();
         }
 
-        private ChapterEntry GetAt(string owner, ulong position) {
-            return Table.Where((c) => c.Owner == owner && c.Position == position).SingleOrDefault();
-        }
-
-        public void ConvertTrimAttribute(DLEntry dle) {
-            if(dle.TrimStart>0) {
-                ChapterEntry ce = GetAt(dle.KEY, dle.TrimStart);
-                if(ce==null) {
-                    ce = ChapterEntry.Create(dle.KEY, dle.TrimStart, true);
-                    this.Add(ce);
-                }
-                dle.TrimStart = 0;
-            }
-            if(dle.TrimEnd>0) {
-                ChapterEntry ce = GetAt(dle.KEY, dle.TrimEnd);
-                if (ce == null) {
-                    ce = ChapterEntry.Create(dle.KEY, dle.TrimEnd, true);
-                    this.Add(ce);
-                }
-                dle.TrimEnd = 0;
-            }
-        }
-
-        public ChapterList GetChapterList(DLEntry owner) {
-            ConvertTrimAttribute(owner);
-            return new ChapterList(owner.KEY, Table.Where((c) => c.Owner == owner.KEY).Select((c) => c.ToChapterInfo()));
-        }
-
-        private ChapterList RawGetChapterList(string owner) {
+        public ChapterList GetChapterList(string owner) {
             return new ChapterList(owner, Table.Where((c) => c.Owner == owner).Select((c)=>c.ToChapterInfo()));
         }
         
         public void UpdateByChapterList(ChapterList updated) {
-            var current = RawGetChapterList(updated.Owner);
+            var current = GetChapterList(updated.Owner);
 
             var appended = updated.Values.Except(current.Values).Select((c)=>ChapterEntry.Create(updated.Owner, c)).ToList();
             var deleted = current.Values.Except(updated.Values).Select((c) => ChapterEntry.Create(updated.Owner, c)).ToList();
