@@ -53,7 +53,6 @@ namespace ytplayer.player {
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
-            ViewModel.EditChapterCommand.Subscribe(EditChapterList);
             ViewModel.PlayList.Current.Subscribe(OnCurrentItemChanged);
             ViewModel.StorageClosed.Subscribe((_) => Close());
             LoadCompletion.TrySetResult(true);
@@ -95,10 +94,6 @@ namespace ytplayer.player {
         public async void AddToPlayList(DLEntry item) {
             await LoadCompletion.Task;
             ViewModel.PlayList.Add(item);
-        }
-
-        public void EditChapterList() {
-            Player.Pause();
         }
     }
 }

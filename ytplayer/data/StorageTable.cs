@@ -21,6 +21,17 @@ namespace ytplayer.data {
             Table = Context.GetTable<T>();
         }
 
+        // SQLite + Linq で、Primary Key を autoincrement にすると、なぜか、連続する複数回のinsertで、DuplicateKeyException が出て失敗する。
+        // https://stackoverflow.com/questions/37159299/insert-with-autoincrement
+        // では、３つの解決策が示されているが、１，２はダメで、３の、Insertするたびに、Contextを作り直す、という効率の悪そうな方法しかうまく行かなかった。
+        public void FlashForce() {
+            Update();
+            var connection = Context.Connection;
+            Context.Dispose();
+            Context = new DataContext(connection);
+            Table = Context.GetTable<T>();
+        }
+
         //public abstract bool Contains(string key);
         public abstract bool Contains(T entry);
 

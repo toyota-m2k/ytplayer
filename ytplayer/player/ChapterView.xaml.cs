@@ -45,12 +45,12 @@ namespace ytplayer.player {
             RangeView.Children.Clear();
             var duration = ViewModel.Duration.Value;
             if (list != null && duration > 0) {
-                foreach (var c in list.Keys) {
+                foreach (var c in list.Values) {
                     var rc = new Rectangle() {
                         Width = 2,
                         Fill = new SolidColorBrush(Colors.White),
                         HorizontalAlignment = HorizontalAlignment.Left,
-                        Margin = new Thickness(Time2Position(c), 0, 0, 0)
+                        Margin = new Thickness(Time2Position(c.Position), 0, 0, 0)
                     };
                     TickerView.Children.Add(rc);
                 }

@@ -5,6 +5,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using ytplayer.data;
@@ -67,6 +68,18 @@ namespace ytplayer.player {
                 ViewModel.GoForwardCommand.Execute();
             } else {
                 ViewModel.PauseCommand.Execute();
+            }
+        }
+
+        private void OnSkipChapterButtonClicked(object sender, System.Windows.RoutedEventArgs e) {
+            var entry = (ChapterInfo)((FrameworkElement)sender).Tag;
+            entry.Skip = !entry.Skip;
+            ViewModel.NotifyChapterUpdated();
+        }
+        private void OnDeleteChapterButtonClicked(object sender, System.Windows.RoutedEventArgs e) {
+            var entry = (ChapterInfo)((FrameworkElement)sender).Tag;
+            if (ViewModel.Chapters.Value.RemoveChapter(entry)) {
+                ViewModel.NotifyChapterUpdated();
             }
         }
     }

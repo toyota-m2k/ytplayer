@@ -1,18 +1,30 @@
-﻿using System;
+﻿using io.github.toyota32k.toolkit.view;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using ytplayer.player;
 
 namespace ytplayer.data {
-    public struct ChapterInfo {
-        public ulong Position;
-        public bool Skip;
+    public class ChapterInfo : PropertyChangeNotifier {
+        private bool mSkip;
+
+        public bool IsModified { get; private set; } = false;
+
+        public ulong Position { get; private set; }
+
+        public bool Skip { 
+            get => mSkip;
+            set {
+                if (setProp(callerName(), ref mSkip, value)) { 
+                    IsModified = true; 
+                }
+            }
+        }
         public ChapterInfo(ulong pos, bool skip = false) {
             Position = pos;
-            Skip = skip;
+            mSkip = skip;
         }
+        public string PositionText => PlayerViewModel.FormatDuration(Position);
     }
 
     //public struct ChapterSpan {
@@ -24,14 +36,20 @@ namespace ytplayer.data {
     //    }
     //}
 
-    public class ChapterList : SortedList<ulong, ChapterInfo> {
+    public class ChapterList {
+        public ObservableCollection<ChapterInfo> Values { get; } = new ObservableCollection<ChapterInfo>();
         const ulong MIN_CHAPTER_SPAN = 1000;
         public string Owner { get; }
-        public bool IsModified { get; private set; } = false;
+
+        private bool mIsModified = false;
+        public bool IsModified {
+            get { return mIsModified || Values.Where((c) => c.IsModified).Any(); }
+            private set { mIsModified = value; }
+        }
         public ChapterList(string owner, IEnumerable<ChapterInfo> src) {
             Owner = owner;
             foreach (var c in src) {
-                Add(c.Position, c);
+                AddChapter(c);
             }
         }
 
@@ -39,6 +57,9 @@ namespace ytplayer.data {
             if (GetNeighbourChapterIndex(pos, out var prev, out var next)) {
                 return false;
             }
+            return CanAddChapter(pos, prev, next);
+        }
+        private bool CanAddChapter(ulong pos, int prev, int next) {
             ulong diff(ulong a, ulong b) {
                 return a < b ? b - a : a - b;
             }
@@ -52,20 +73,30 @@ namespace ytplayer.data {
         }
 
         public bool AddChapter(ChapterInfo chapter) {
+            int prev, next;
+            if(GetNeighbourChapterIndex(chapter.Position, out prev, out next)) {
+                return false;
+            }
             if (!CanAddChapter(chapter.Position)) {
                 return false;
             }
-            Add(chapter.Position, chapter);
+            if(next<0) {
+                Values.Add(chapter);
+            } else {
+                Values.Insert(next, chapter);
+            }
             IsModified = true;
             return true;
         }
 
         public bool RemoveChapter(ChapterInfo chapter) {
-            if (Remove(chapter.Position)) {
-                IsModified = true;
-                return true;
+            int prev, next;
+            if (!GetNeighbourChapterIndex(chapter.Position, out prev, out next)) {
+                return false;
             }
-            return false;
+            Values.RemoveAt(prev + 1);
+            IsModified = true;
+            return true;
         }
 
         /**
@@ -78,20 +109,19 @@ namespace ytplayer.data {
             */
         public bool GetNeighbourChapterIndex(ulong current, out int prev, out int next) {
             prev = next = -1;
-            int count = Count, s = 0, e = count - 1, m;
+            int count = Values.Count, s = 0, e = count - 1, m;
             if (e < 0) {
                 return false;
             }
 
-            var markers = Keys;
-            if (markers[e] < current) {
+            if (Values[e].Position < current) {
                 prev = e;
                 return false;
             }
 
-            while (s < e) {
+            do {
                 m = (s + e) / 2;
-                ulong v = markers[m];
+                ulong v = Values[m].Position;
                 if (v == current) {
                     prev = m - 1;
                     if (m < count - 1) {
@@ -103,7 +133,7 @@ namespace ytplayer.data {
                 } else { // current < markers[m]
                     e = m;
                 }
-            }
+            } while (s < e);
             next = s;
             prev = s - 1;
             return false;

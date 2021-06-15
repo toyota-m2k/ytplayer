@@ -99,7 +99,7 @@ namespace ytplayer.player {
         }
 
         private void OnMediaEnded(object sender, RoutedEventArgs e) {
-            ViewModel.State.Value = PlayerState.ENDED;
+            ViewModel.State.Value = PlayerState.READY;
             ViewModel.GoForwardCommand.Execute();
         }
 

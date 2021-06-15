@@ -38,6 +38,7 @@
             <Path x:Key="PathDreadful" Data="M12,2C6.47,2 2,6.47 2,12C2,17.53 6.47,22 12,22A10,10 0 0,0 22,12C22,6.47 17.5,2 12,2M6.76,8.82L7.82,7.76L8.88,8.82L9.94,7.76L11,8.82L9.94,9.88L11,10.94L9.94,12L8.88,10.94L7.82,12L6.76,10.94L7.82,9.88L6.76,8.82M6.89,17.5C7.69,15.46 9.67,14 12,14C14.33,14 16.31,15.46 17.11,17.5H6.89M17.24,10.94L16.18,12L15.12,10.94L14.06,12L13,10.94L14.06,9.88L13,8.82L14.06,7.76L15.12,8.82L16.18,7.76L17.24,8.82L16.18,9.88L17.24,10.94Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
             <Path x:Key="PathResetSpeed" Data="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9A3,3 0 0,1 15,12Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
             <Path x:Key="PathResetVolume" Data="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9A3,3 0 0,1 15,12Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
+            <Path x:Key="PathList" Data="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
         </Grid.Resources>
         <!-- Row:0 再生関連ボタン類 -->
         <Grid Grid.Row="0">
@@ -59,6 +60,7 @@
                         Content="{StaticResource PathPause}" Style="{StaticResource IconButtonStyle}"/>
                 <Button IsEnabled="{Binding PlayList.HasPrev.Value}" Margin="8,0,0,0"
                         Focusable="False"
+                        Visibility="{Binding ChapterEditing.Value, Converter={StaticResource NegBoolVisibilityConverter}}"
                         Command="{Binding GoBackCommand}"  
                         Content="{StaticResource PathPrev}" Style="{StaticResource IconButtonStyle}"/>
 
@@ -71,6 +73,7 @@
 
                 <Button IsEnabled="{Binding PlayList.HasNext.Value}"
                         Focusable="False"
+                        Visibility="{Binding ChapterEditing.Value, Converter={StaticResource NegBoolVisibilityConverter}}"
                         Command="{Binding GoForwardCommand}"  
                         Content="{StaticResource PathNext}" Style="{StaticResource IconButtonStyle}"/>
                 <ToggleButton IsEnabled="{Binding IsReady.Value}"
@@ -121,13 +124,86 @@
                 </Button.RenderTransform>
                 <common:PathView Path="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z"/>
             </Button>
-            <Button Style="{StaticResource IconButtonStyle}" 
-                    Command="{Binding EditChapterCommand}" Padding="4">
-                <common:PathView Path="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"/>
-            </Button>
+            <ToggleButton
+                Focusable="False"
+                IsChecked="{Binding ChapterEditing.Value, Mode=TwoWay}"
+                Content="{StaticResource PathList}" Style="{StaticResource IconToggleButtonStyle}"/>
+        </StackPanel>
+        <!-- Edit Chapters-->
+        <StackPanel
+            Grid.Row="3"
+            Orientation="Vertical"
+            Visibility="{Binding ChapterEditing.Value, Converter={StaticResource BoolVisibilityConverter}}"
+            >
+            <StackPanel.Resources>
+                <Style x:Key="SkipChapterIconStyle" TargetType="Path">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Path=Skip}" Value="True">
+                            <Setter Property="Data" Value="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+                            <Setter Property="Fill" Value="Red"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Path=Skip}" Value="False">
+                            <Setter Property="Data" Value="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/>
+                            <Setter Property="Fill" Value="LightGreen"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+
+            </StackPanel.Resources>
+            <common:StretchListView 
+                Width="300"
+                Height="300"
+                StretchColumnIndex="1" StretchColumnMinWidth="200" ItemsSource="{Binding EditingChapterList.Value}">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Skip" Width="40">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Height="20" Padding="0" Background="Transparent"
+                                            FocusVisualStyle="{x:Null}"
+                                            Click="OnSkipChapterButtonClicked" 
+                                            Tag="{Binding}" 
+                                            BorderThickness="0" 
+                                            HorizontalAlignment="Stretch">
+                                        <Viewbox Width="20" Height="20">
+                                            <Canvas Width="24" Height="24">
+                                                <Path Style="{StaticResource SkipChapterIconStyle}"/>
+                                            </Canvas>
+                                        </Viewbox>
+                                    </Button>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Position" Width="200" DisplayMemberBinding="{Binding PositionText}"/>
+                        <GridViewColumn Header="Delete" Width="40">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Height="20" Padding="0" Background="Transparent"
+                                            FocusVisualStyle="{x:Null}"
+                                            Click="OnDeleteChapterButtonClicked" 
+                                            Tag="{Binding}" 
+                                            BorderThickness="0" 
+                                            HorizontalAlignment="Stretch">
+                                        <Viewbox Width="20" Height="20">
+                                            <Canvas Width="24" Height="24">
+                                                <Path Fill="Gray" Data="M14.12,10.47L12,12.59L9.87,10.47L8.46,11.88L10.59,14L8.47,16.12L9.88,17.53L12,15.41L14.12,17.53L15.53,16.12L13.41,14L15.53,11.88L14.12,10.47M15.5,4L14.5,3H9.5L8.5,4H5V6H19V4H15.5M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19M8,9H16V19H8V9Z"/>
+                                            </Canvas>
+                                        </Viewbox>
+                                    </Button>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+
+                    </GridView>
+                </ListView.View>
+            </common:StretchListView>
         </StackPanel>
         <!-- Trimming -->
-        <Grid Grid.Row="3" Margin="0,10,0,0">
+        <Grid 
+            Grid.Row="3" 
+            Visibility="{Binding ChapterEditing.Value, Converter={StaticResource NegBoolVisibilityConverter}}"
+            Margin="0,10,0,0"
+            >
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -180,7 +256,10 @@
         </Grid>
         
         <!-- Volume/Speed -->
-        <Grid Grid.Row="4">
+        <Grid
+            Grid.Row="4"
+            Visibility="{Binding ChapterEditing.Value, Converter={StaticResource NegBoolVisibilityConverter}}"
+             >
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -200,7 +279,10 @@
         </Grid>
         
         <!-- Rating / Category -->
-        <StackPanel Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Center" Orientation="Horizontal">
+        <StackPanel 
+            Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Center" Orientation="Horizontal"
+            Visibility="{Binding ChapterEditing.Value, Converter={StaticResource NegBoolVisibilityConverter}}"
+            >
             <RadioButton 
                 Focusable="False"
                 IsChecked="{Binding PlayList.Current.Value.Rating, 

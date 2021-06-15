@@ -41,7 +41,9 @@ namespace ytplayer.player {
         public ReactivePropertySlim<ChapterList> Chapters { get; } = new ReactivePropertySlim<ChapterList>(null,ReactivePropertyMode.RaiseLatestValueOnSubscribe);
         public ReactivePropertySlim<List<PlayRange>> DisabledRanges { get; } = new ReactivePropertySlim<List<PlayRange>>(null);
         public ReadOnlyReactivePropertySlim<bool> HasDisabledRange { get; }
-        
+        public ReactivePropertySlim<bool> ChapterEditing { get; } = new ReactivePropertySlim<bool>(false);
+        public ReactivePropertySlim<ObservableCollection<ChapterInfo>> EditingChapterList { get; } = new ReactivePropertySlim<ObservableCollection<ChapterInfo>>();
+
         /**
          * 現在再生中の動画のチャプター設定が変更されていればDBに保存する。
          */
@@ -125,6 +127,13 @@ namespace ytplayer.player {
             return null;
         }
 
+        public void NotifyChapterUpdated() {
+            Chapters.Value.Apply((chapterList) => {
+                Chapters.Value = chapterList;
+                DisabledRanges.Value = chapterList.GetDisabledRanges(Trimming.Value).ToList();
+            });
+        }
+
         private void AddChapter() {
             var item = PlayList.Current.Value;
             if (item == null) return;
@@ -187,7 +196,7 @@ namespace ytplayer.player {
         public ReadOnlyReactivePropertySlim<string> DurationText { get; }
         public ReadOnlyReactivePropertySlim<string> PositionText { get; }
 
-        private string FormatDuration(ulong duration) {
+        static public string FormatDuration(ulong duration) {
             var t = TimeSpan.FromMilliseconds(duration);
             return string.Format("{0}:{1:00}:{2:00}", t.Hours, t.Minutes, t.Seconds);
         }
@@ -205,7 +214,6 @@ namespace ytplayer.player {
         public ReactiveCommand ResetSpeedCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ResetVolumeCommand { get; } = new ReactiveCommand();
         public ReactiveCommand AddChapterCommand { get; } = new ReactiveCommand();
-        public ReactiveCommand EditChapterCommand { get; } = new ReactiveCommand();
         public ReactiveCommand PrevChapterCommand { get; } = new ReactiveCommand();
         public ReactiveCommand NextChapterCommand { get; } = new ReactiveCommand();
         public ReactiveCommand SetTrimCommand { get; } = new ReactiveCommand();
@@ -265,8 +273,16 @@ namespace ytplayer.player {
             IsPlaying = State.Select((v) => v == PlayerState.PLAYING).ToReadOnlyReactivePropertySlim();
             IsReady = State.Select((v) => v == PlayerState.READY || v == PlayerState.PLAYING).ToReadOnlyReactivePropertySlim();
 
-            GoForwardCommand.Subscribe(PlayList.Next);
-            GoBackCommand.Subscribe(PlayList.Prev);
+            GoForwardCommand.Subscribe(() => {
+                if (!ChapterEditing.Value) {
+                    PlayList.Next();
+                }
+            });
+            GoBackCommand.Subscribe(() => {
+                if (!ChapterEditing.Value) {
+                    PlayList.Prev();
+                }
+            });
             TrashCommand.Subscribe(PlayList.DeleteCurrent);
             ResetSpeedCommand.Subscribe(() => Speed.Value = 0.5);
             ResetVolumeCommand.Subscribe(() => Volume.Value = 0.5);
@@ -277,6 +293,14 @@ namespace ytplayer.player {
             AddChapterCommand.Subscribe(AddChapter);
             PrevChapterCommand.Subscribe(PrevChapter);
             NextChapterCommand.Subscribe(NextChapter);
+
+            ChapterEditing.Subscribe((c) => {
+                if(c) {
+                    EditingChapterList.Value = Chapters.Value.Values;
+                } else {
+                    EditingChapterList.Value = null;
+                }
+            });
         }
 
         public override void Dispose() {
