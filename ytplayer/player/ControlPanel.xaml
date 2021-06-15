@@ -24,8 +24,10 @@
         <Grid.Resources>
             <Path x:Key="PathPlay" Data="M8,5.14V19.14L19,12.14L8,5.14Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
             <Path x:Key="PathPause" Data="M14,19H18V5H14M6,19H10V5H6V19Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
-            <Path x:Key="PathPrev" Data="M6,18V6H8V18H6M9.5,12L18,6V18L9.5,12Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
-            <Path x:Key="PathNext" Data="M16,18H18V6H16M6,18L14.5,12L6,6V18Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
+            <Path x:Key="PathPrev" Data="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
+            <Path x:Key="PathNext" Data="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
+            <Path x:Key="PathPrevChapter" Data="M6,18V6H8V18H6M9.5,12L18,6V18L9.5,12Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
+            <Path x:Key="PathNextChapter" Data="M16,18H18V6H16M6,18L14.5,12L6,6V18Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
             <Path x:Key="PathFit" Data="M19,12H17V15H14V17H19V12M7,9H10V7H5V12H7V9M21,3H3A2,2 0 0,0 1,5V19A2,2 0 0,0 3,21H21A2,2 0 0,0 23,19V5A2,2 0 0,0 21,3M21,19H3V5H21V19Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
             <Path x:Key="PathMaximize" Data="M9.5,13.09L10.91,14.5L6.41,19H10V21H3V14H5V17.59L9.5,13.09M10.91,9.5L9.5,10.91L5,6.41V10H3V3H10V5H6.41L10.91,9.5M14.5,13.09L19,17.59V14H21V21H14V19H17.59L13.09,14.5L14.5,13.09M13.09,9.5L17.59,5H14V3H21V10H19V6.41L14.5,10.91L13.09,9.5Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
             <Path x:Key="PathTrash" Data="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
@@ -59,6 +61,14 @@
                         Focusable="False"
                         Command="{Binding GoBackCommand}"  
                         Content="{StaticResource PathPrev}" Style="{StaticResource IconButtonStyle}"/>
+
+                <Button Focusable="False"
+                        Command="{Binding PrevChapterCommand}"  
+                        Content="{StaticResource PathPrevChapter}" Style="{StaticResource IconButtonStyle}"/>
+                <Button Focusable="False"
+                        Command="{Binding NextChapterCommand}"  
+                        Content="{StaticResource PathNextChapter}" Style="{StaticResource IconButtonStyle}"/>
+
                 <Button IsEnabled="{Binding PlayList.HasNext.Value}"
                         Focusable="False"
                         Command="{Binding GoForwardCommand}"  
@@ -91,6 +101,7 @@
                 MinWidth="300"
                 SmallChange="10000" LargeChange="10000"
                 Margin="0,-8,0,0"
+                Value="{Binding Position.Value, Mode=TwoWay}"
                 />
             <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
                 <TextBlock Text="{Binding PositionText.Value}" Foreground="White"/>

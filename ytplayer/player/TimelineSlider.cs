@@ -82,9 +82,10 @@ namespace ytplayer.player {
         }
 
         private void OnValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) {
-            ViewModel.Position.Value = (ulong)this.Value;
             if (!mSliderSeekingFromPlayer) {
-                ViewModel.PlayerPosition = (ulong)this.Value;
+                ViewModel?.Apply((vm) => {
+                    vm.PlayerPosition = (ulong)this.Value;
+                });
             }
             //Debug.WriteLine(e.ToString());
         }

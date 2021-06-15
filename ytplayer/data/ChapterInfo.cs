@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,7 +25,7 @@ namespace ytplayer.data {
     //}
 
     public class ChapterList : SortedList<ulong, ChapterInfo> {
-        const long MIN_CHAPTER_SPAN = 1000;
+        const ulong MIN_CHAPTER_SPAN = 1000;
         public string Owner { get; }
         public bool IsModified { get; private set; } = false;
         public ChapterList(string owner, IEnumerable<ChapterInfo> src) {
@@ -35,14 +36,16 @@ namespace ytplayer.data {
         }
 
         public bool CanAddChapter(ulong pos) {
-            long prev, next;
-            if (GetNeighbourChapterIndex(pos, out prev, out next)) {
+            if (GetNeighbourChapterIndex(pos, out var prev, out var next)) {
                 return false;
             }
-            if (prev >= 0 && Math.Abs(prev - (long)pos) < MIN_CHAPTER_SPAN) {
+            ulong diff(ulong a, ulong b) {
+                return a < b ? b - a : a - b;
+            }
+            if (prev >= 0 && diff(Values[prev].Position, pos) < MIN_CHAPTER_SPAN) {
                 return false;
             }
-            if (next >= 0 && Math.Abs(next - (long)pos) < MIN_CHAPTER_SPAN) {
+            if (next >= 0 && diff(Values[next].Position, pos) < MIN_CHAPTER_SPAN) {
                 return false;
             }
             return true;
@@ -68,12 +71,12 @@ namespace ytplayer.data {
         /**
             * 指定位置(current)近傍のChapterを取得
             * 
-            * @param prev (out) currentの前のマーカー（なければ-1）
-            * @param next (out) currentの次のマーカー（なければ-1）
+            * @param prev (out) currentの前のChapter（なければ-1）
+            * @param next (out) currentの次のChapter（なければ-1）
             * @return true: currentがマーカー位置にヒット（prevとnextにひとつ前/後のindexがセットされる）
             *         false: ヒットしていない
             */
-        private bool GetNeighbourChapterIndex(ulong current, out long prev, out long next) {
+        public bool GetNeighbourChapterIndex(ulong current, out int prev, out int next) {
             prev = next = -1;
             int count = Count, s = 0, e = count - 1, m;
             if (e < 0) {
@@ -163,5 +166,6 @@ namespace ytplayer.data {
                 yield return new PlayRange(trimEnd, 0);
             }
         }
+
     }
 }

@@ -135,7 +135,32 @@ namespace ytplayer.player {
                 Chapters.Value = chapterList;
                 DisabledRanges.Value = chapterList.GetDisabledRanges(Trimming.Value).ToList();
             }
+        }
 
+        private void NextChapter() {
+            var chapterList = Chapters.Value;
+            chapterList.GetNeighbourChapterIndex(PlayerPosition, out var prev, out var next);
+            if(next>=0) {
+                var c = chapterList.Values[next].Position;
+                if(Trimming.Value.Contains(c)) {
+                    Position.Value = c;
+                }
+            }
+        }
+        private void PrevChapter() {
+            var chapterList = Chapters.Value;
+            var basePosition = PlayerPosition;
+            if (basePosition > 1000)
+                basePosition -= 1000;
+            chapterList.GetNeighbourChapterIndex(basePosition, out var prev, out var next);
+            if (prev >= 0) {
+                var c = chapterList.Values[prev].Position;
+                if (Trimming.Value.Contains(c)) {
+                    Position.Value = c;
+                } else {
+                    Position.Value = Trimming.Value.Start;
+                }
+            }
         }
 
         #endregion
@@ -181,6 +206,8 @@ namespace ytplayer.player {
         public ReactiveCommand ResetVolumeCommand { get; } = new ReactiveCommand();
         public ReactiveCommand AddChapterCommand { get; } = new ReactiveCommand();
         public ReactiveCommand EditChapterCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand PrevChapterCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand NextChapterCommand { get; } = new ReactiveCommand();
         public ReactiveCommand SetTrimCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ResetTrimCommand { get; } = new ReactiveCommand();
 
@@ -248,6 +275,8 @@ namespace ytplayer.player {
             ResetTrimCommand.Subscribe(ResetTrimming);
 
             AddChapterCommand.Subscribe(AddChapter);
+            PrevChapterCommand.Subscribe(PrevChapter);
+            NextChapterCommand.Subscribe(NextChapter);
         }
 
         public override void Dispose() {
