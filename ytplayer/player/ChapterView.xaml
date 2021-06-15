@@ -15,7 +15,7 @@
             x:Name="TickerView" 
             Background="Transparent" 
             ClipToBounds="True" 
-            Height="8">
+            Height="16">
             <!--<Rectangle Width="1" Fill="White" HorizontalAlignment="Left" Margin="100,0,0,0"/>-->
         </Grid>
         <Grid 
@@ -23,7 +23,8 @@
             Background="#80FF00" 
             ClipToBounds="True" 
             Height="8"
-            Visibility="{Binding HasSkipChapter.Value, Converter={StaticResource BoolVisibilityConverter}}">
+            Margin="0,-8,0,0"
+            Visibility="{Binding HasDisabledRange.Value, Converter={StaticResource BoolVisibilityConverter}}">
             <!--<Rectangle Width="100" Fill="Gray" HorizontalAlignment="Left" Margin="100,0,0,0"/>-->
         </Grid>
     </StackPanel>

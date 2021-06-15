@@ -53,6 +53,7 @@ namespace ytplayer.player {
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
+            ViewModel.EditChapterCommand.Subscribe(EditChapterList);
             ViewModel.PlayList.Current.Subscribe(OnCurrentItemChanged);
             ViewModel.StorageClosed.Subscribe((_) => Close());
             LoadCompletion.TrySetResult(true);
@@ -65,6 +66,7 @@ namespace ytplayer.player {
 
         protected override void OnClosing(CancelEventArgs e) {
             base.OnClosing(e);
+            ViewModel.SaveChapterListIfNeeds();
             LoadCompletion.TrySetResult(false);
             PlayWindowClosing?.Invoke(this);
         }
@@ -95,5 +97,8 @@ namespace ytplayer.player {
             ViewModel.PlayList.Add(item);
         }
 
+        public void EditChapterList() {
+            Player.Pause();
+        }
     }
 }

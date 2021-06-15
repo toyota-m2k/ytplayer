@@ -47,7 +47,7 @@ namespace ytplayer.player {
             if (list != null && duration > 0) {
                 foreach (var c in list.Keys) {
                     var rc = new Rectangle() {
-                        Width = 1,
+                        Width = 2,
                         Fill = new SolidColorBrush(Colors.White),
                         HorizontalAlignment = HorizontalAlignment.Left,
                         Margin = new Thickness(Time2Position(c), 0, 0, 0)
@@ -62,8 +62,9 @@ namespace ytplayer.player {
             var duration = ViewModel.Duration.Value;
             if (list != null && duration > 0) {
                 foreach (var r in list) {
+                    var end = r.End == 0 ? duration : r.End;
                     var rc = new Rectangle() {
-                        Width = Time2Position(r.End - r.Start),
+                        Width = Time2Position(end - r.Start),
                         Fill = new SolidColorBrush(Colors.Gray),
                         HorizontalAlignment = HorizontalAlignment.Left,
                         Margin = new Thickness(Time2Position(r.Start), 0, 0, 0)

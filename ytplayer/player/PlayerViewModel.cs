@@ -22,7 +22,8 @@ namespace ytplayer.player {
         ERROR,
     }
     public class PlayerViewModel : ViewModelBase, IStorageConsumer {
-        // Item Entry
+        #region Properties of Item Entry
+
         public ReactivePropertySlim<ulong> Duration { get; } = new ReactivePropertySlim<ulong>(1000);
         public ReactivePropertySlim<ulong> Position { get; } = new ReactivePropertySlim<ulong>(0);
         public ReactivePropertySlim<PlayerState> State { get; } = new ReactivePropertySlim<PlayerState>(PlayerState.UNAVAILABLE);
@@ -33,12 +34,17 @@ namespace ytplayer.player {
         public ReactivePropertySlim<double> Speed { get; } = new ReactivePropertySlim<double>(0.5);
         public ReactivePropertySlim<double> Volume { get; } = new ReactivePropertySlim<double>(0.5);
 
-        // Trimming/Chapters
-        //public ReadOnlyReactivePropertySlim<ulong> TrimStart { get; }
-        //public ReadOnlyReactivePropertySlim<ulong> TrimEnd { get; }
-        public ReactivePropertySlim<PlayRange> Trimming { get; } = new ReactivePropertySlim<PlayRange>(null);
-        public ReactivePropertySlim<ChapterList> Chapters { get; } = new ReactivePropertySlim<ChapterList>(null);
+        #endregion
+
+        #region Trimming/Chapters
+        public ReactivePropertySlim<PlayRange> Trimming { get; } = new ReactivePropertySlim<PlayRange>(PlayRange.Empty);
+        public ReactivePropertySlim<ChapterList> Chapters { get; } = new ReactivePropertySlim<ChapterList>(null,ReactivePropertyMode.RaiseLatestValueOnSubscribe);
         public ReactivePropertySlim<List<PlayRange>> DisabledRanges { get; } = new ReactivePropertySlim<List<PlayRange>>(null);
+        public ReadOnlyReactivePropertySlim<bool> HasDisabledRange { get; }
+        
+        /**
+         * 現在再生中の動画のチャプター設定が変更されていればDBに保存する。
+         */
         public void SaveChapterListIfNeeds() {
             var storage = StorageSupplier?.Storage;
             if (null == storage) return;
@@ -48,6 +54,9 @@ namespace ytplayer.player {
             if (chapterList == null || !chapterList.IsModified) return;
             storage.ChapterTable.UpdateByChapterList(chapterList);
         }
+        /**
+         * 再生する動画のチャプターリスト、トリミング情報、無効化範囲リストを準備する。
+         */
         public void PrepareChapterListForCurrentItem() {
             //Chapters.Value = null;
             //DisabledRanges.Value = null;
@@ -64,25 +73,103 @@ namespace ytplayer.player {
             }
         }
 
+        private void SetTrimming(object obj) {
+            switch (obj as String) {
+                case "Start":   SetTrimming(SetTrimmingStart); break;
+                case "End": SetTrimming(SetTrimmingEnd); break;
+                default: return;
+            }
+        }
+        private void ResetTrimming(object obj) {
+            switch (obj as String) {
+                case "Start": ResetTrimming(SetTrimmingStart); break;
+                case "End": ResetTrimming(SetTrimmingEnd); break;
+                default: return;
+            }
+        }
+
+        private void ResetTrimming(Func<DLEntry, ulong, PlayRange?> setFunc) {
+            var item = PlayList.Current.Value;
+            if (item == null) return;
+            var trimming = setFunc(item, 0);
+            if (trimming == null) return;
+
+            Trimming.Value = trimming.Value;
+            DisabledRanges.Value = Chapters.Value.GetDisabledRanges(trimming.Value).ToList();
+        }
+
+        private void SetTrimming(Func<DLEntry, ulong, PlayRange?> setFunc) {
+            var item = PlayList.Current.Value;
+            if (item == null) return;
+            var pos = PlayerPosition;
+            var trimming = setFunc(item, pos);
+            if (trimming == null) return;
+
+            Trimming.Value = trimming.Value;
+            DisabledRanges.Value = Chapters.Value.GetDisabledRanges(trimming.Value).ToList();
+        }
+        private PlayRange? SetTrimmingStart(DLEntry item, ulong pos) {
+            var trimming = Trimming.Value;
+            if(trimming.TrySetStart(pos)) {
+                item.TrimStart = pos;
+                return trimming;
+            }
+            return null;
+        }
+        private PlayRange? SetTrimmingEnd(DLEntry item, ulong pos) {
+            var trimming = Trimming.Value;
+            if (trimming.TrySetEnd(pos)) {
+                item.TrimEnd = pos;
+                return trimming;
+            }
+            return null;
+        }
+
+        private void AddChapter() {
+            var item = PlayList.Current.Value;
+            if (item == null) return;
+            var pos = PlayerPosition;
+            var chapterList = Chapters.Value;
+            if (chapterList == null) return;
+            if(chapterList.AddChapter(new ChapterInfo(pos))) {
+                Chapters.Value = chapterList;
+                DisabledRanges.Value = chapterList.GetDisabledRanges(Trimming.Value).ToList();
+            }
+
+        }
+
+        #endregion
+
+        #region Linkage to Storage Source
+
+        private WeakReference<IStorageSupplier> mStorageSupplier;
+        private IStorageSupplier StorageSupplier => mStorageSupplier?.GetValue();
+
         public Subject<bool> StorageClosed { get; } = new Subject<bool>();
-        public void OnClosingStorage(Storage storage) {
+
+        void IStorageConsumer.OnClosingStorage(Storage storage) {
             SaveChapterListIfNeeds();
             mStorageSupplier = null;
             StorageClosed.OnNext(true);
         }
 
+        #endregion
+
+        #region Display Text
 
         public ReadOnlyReactivePropertySlim<string> TrimStartText { get; }
         public ReadOnlyReactivePropertySlim<string> TrimEndText { get; }
         public ReadOnlyReactivePropertySlim<string> DurationText { get; }
         public ReadOnlyReactivePropertySlim<string> PositionText { get; }
 
+        private string FormatDuration(ulong duration) {
+            var t = TimeSpan.FromMilliseconds(duration);
+            return string.Format("{0}:{1:00}:{2:00}", t.Hours, t.Minutes, t.Seconds);
+        }
 
+        #endregion
 
-        public PlayList PlayList { get; } = new PlayList();
-        public bool AutoPlay { get; } = true;
-        //public Subject<bool> Ended { get; } = new Subject<bool>();
-        public ObservableCollection<Category> Categories => new ObservableCollection<Category>(Settings.Instance.Categories.SelectList);
+        #region Commands
 
         public ReactiveCommand PlayCommand { get; } = new ReactiveCommand();
         public ReactiveCommand PauseCommand { get; } = new ReactiveCommand();
@@ -97,6 +184,10 @@ namespace ytplayer.player {
         public ReactiveCommand SetTrimCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ResetTrimCommand { get; } = new ReactiveCommand();
 
+        #endregion
+
+        #region Window Managements
+
         // Window
         public ReactivePropertySlim<bool> FitMode { get; } = new ReactivePropertySlim<bool>();
         public ReactivePropertySlim<bool> ShowPanel { get; } = new ReactivePropertySlim<bool>(false);
@@ -104,6 +195,17 @@ namespace ytplayer.player {
         public ReactivePropertySlim<bool> Fullscreen { get; } = new ReactivePropertySlim<bool>(false);
         public ReactiveCommand MaximizeCommand { get; } = new ReactiveCommand();
 
+        #endregion
+
+        #region PlayList
+
+        public PlayList PlayList { get; } = new PlayList();
+        public bool AutoPlay { get; } = true;
+        public ObservableCollection<Category> Categories => new ObservableCollection<Category>(Settings.Instance.Categories.SelectList);
+
+        #endregion
+
+        #region Reference to Player
         // Player
         private WeakReference<Player> mPlayer = null;
         public Player Player {
@@ -115,18 +217,9 @@ namespace ytplayer.player {
             set { Player?.Apply((player)=>player.SeekPosition = value); }
         }
 
+        #endregion
 
-        //private IDisposable EndEventRegester { get; set; }
-        //private IDisposable DurationRegester { get; set; }
-
-        private string FormatDuration(ulong duration) {
-            var t = TimeSpan.FromMilliseconds(duration);
-            return string.Format("{0}:{1:00}:{2:00}", t.Hours, t.Minutes, t.Seconds);
-        }
-
-        private WeakReference<IStorageSupplier> mStorageSupplier;
-        private IStorageSupplier StorageSupplier => mStorageSupplier?.GetValue();
-
+        #region Construction/Destruction
 
         public PlayerViewModel(IStorageSupplier storageSupplier) {
             mStorageSupplier = new WeakReference<IStorageSupplier>(storageSupplier);
@@ -138,8 +231,9 @@ namespace ytplayer.player {
 
             DurationText = Duration.Select((v) => FormatDuration(v)).ToReadOnlyReactivePropertySlim();
             PositionText = Position.Select((v) => FormatDuration(v)).ToReadOnlyReactivePropertySlim();
-            TrimStartText = Trimming.Select((v) => FormatDuration(v?.Start??0)).ToReadOnlyReactivePropertySlim();
-            TrimEndText = Trimming.Select((v) => FormatDuration(v?.End??0)).ToReadOnlyReactivePropertySlim();
+            TrimStartText = Trimming.Select((v) => FormatDuration(v.Start)).ToReadOnlyReactivePropertySlim();
+            TrimEndText = Trimming.Select((v) => FormatDuration(v.End)).ToReadOnlyReactivePropertySlim();
+            HasDisabledRange = DisabledRanges.Select((c) => c != null && c.Count > 0).ToReadOnlyReactivePropertySlim();
 
             IsPlaying = State.Select((v) => v == PlayerState.PLAYING).ToReadOnlyReactivePropertySlim();
             IsReady = State.Select((v) => v == PlayerState.READY || v == PlayerState.PLAYING).ToReadOnlyReactivePropertySlim();
@@ -149,11 +243,18 @@ namespace ytplayer.player {
             TrashCommand.Subscribe(PlayList.DeleteCurrent);
             ResetSpeedCommand.Subscribe(() => Speed.Value = 0.5);
             ResetVolumeCommand.Subscribe(() => Volume.Value = 0.5);
+
+            SetTrimCommand.Subscribe(SetTrimming);
+            ResetTrimCommand.Subscribe(ResetTrimming);
+
+            AddChapterCommand.Subscribe(AddChapter);
         }
 
         public override void Dispose() {
             StorageSupplier?.UnbindConsumer(this);
             base.Dispose();
         }
+
+        #endregion
     }
 }

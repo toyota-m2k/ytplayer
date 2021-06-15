@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 namespace ytplayer.data {
     [Table(Name = "t_chapter")]
     public class ChapterEntry {
+        [Column(Name = "id", IsPrimaryKey = true, CanBeNull = false)]
+        private int? id { get; set; } = null;
+
         [Column(Name = "owner", CanBeNull = false)]
         public string Owner { get; private set; }
 
@@ -58,6 +61,7 @@ namespace ytplayer.data {
 
             Table.InsertAllOnSubmit(appended);
             Table.DeleteAllOnSubmit(deleted);
+            Update();
         }
     }
 }
