@@ -11,7 +11,12 @@
         PreviewDragOver="Window_PreviewDragOver"
         mc:Ignorable="d"
         Title="PlayerWindow" Height="450" Width="800">
+    <Window.Resources>
+        <ResourceDictionary Source="../res/YtpResource.xaml"/>
+    </Window.Resources>
     <Grid>
         <local:Player HorizontalAlignment="Stretch" VerticalAlignment="Stretch" x:Name="Player"/>
+        <RichTextBox HorizontalAlignment="Stretch" VerticalAlignment="Stretch" x:Name="OutputView"
+                 Visibility="Hidden" Opacity="0.9"/>
     </Grid>
 </Window>

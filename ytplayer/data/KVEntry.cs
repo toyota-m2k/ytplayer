@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Linq.Mapping;
+using System.Data.SQLite;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -32,5 +33,17 @@ namespace ytplayer.data {
         }
     }
 
+    public class KVEntryTable : StorageTable<KVEntry> {
+        public KVEntryTable(SQLiteConnection connection) : base(connection) { }
+        public bool Contains(string key) {
+            return Table.Where((c) => c.KEY == key).Any();
+        }
+        public override bool Contains(KVEntry entry) {
+            return Contains(entry.KEY);
+        }
+        public KVEntry Find(string key) {
+            return Table.Where((c) => c.KEY == key).SingleOrDefault();
+        }
+    }
 
 }

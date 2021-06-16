@@ -168,10 +168,18 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="common\CursorManager.cs" />
+    <Compile Include="common\DisposablePool.cs" />
+    <Compile Include="common\WeakList.cs" />
+    <Compile Include="data\ChapterEntry.cs" />
+    <Compile Include="data\ChapterInfo.cs" />
     <Compile Include="data\StorageTable.cs" />
     <Compile Include="data\SyncManager.cs" />
     <Compile Include="download\downloader\impl\FFMpegConverter.cs" />
-    <Compile Include="player\PlayRange.cs" />
+    <Compile Include="player\ChapterView.xaml.cs">
+      <DependentUpon>ChapterView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="player\PlayerViewModel.cs" />
+    <Compile Include="data\PlayRange.cs" />
     <Compile Include="RequestAcceptor.cs" />
     <Compile Include="server\lib\HttpBuilder.cs" />
     <Compile Include="server\lib\HttpProcessor.cs" />
@@ -212,6 +220,9 @@
     <Compile Include="player\TimelineSlider.cs" />
     <Compile Include="res\YtpConvertrer.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="wav\CommandProcessor.cs" />
+    <Compile Include="wav\MediaConvert.cs" />
+    <Compile Include="wav\WavFile.cs" />
     <Compile Include="YtpDef.cs" />
     <Page Include="dialog\CategoryRatingDialog.xaml">
       <SubType>Designer</SubType>
@@ -237,6 +248,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="player\ChapterView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="player\ControlPanel.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

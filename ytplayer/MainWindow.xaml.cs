@@ -94,6 +94,7 @@ namespace ytplayer {
         public ReactiveCommand ResetAndDownloadCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ExtractAudioCommand { get; } = new ReactiveCommand();
         public ReactiveCommand EditDescriptionCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand CopyVideoPathCommand { get; } = new ReactiveCommand();
 
         // Dialog
         public abstract class DialogViewModel: ViewModelBase {
@@ -381,6 +382,7 @@ namespace ytplayer {
             viewModel.ResetAndDownloadCommand.Subscribe(ResetAndDownload);
             viewModel.DeleteAndBlockCommand.Subscribe(DeleteAndBlock);
             viewModel.EditDescriptionCommand.Subscribe(EditDescription);
+            viewModel.CopyVideoPathCommand.Subscribe(CopyVideoPath);
 
             viewModel.ShowFilterEditor.Subscribe((v) => {
                 if (v) {
@@ -844,6 +846,13 @@ namespace ytplayer {
             });
         }
 
+        private void CopyVideoPath() {
+            var path = SelectedEntry?.VPath;
+            if (path != null) {
+                Clipboard.SetDataObject(path);
+            }
+        }
+
 
         #endregion
 
@@ -900,7 +909,7 @@ namespace ytplayer {
         private PlayerWindow mPlayerWindow = null;
         private PlayerWindow GetPlayer() {
             if (mPlayerWindow == null) {
-                mPlayerWindow = new PlayerWindow();
+                mPlayerWindow = new PlayerWindow(mDownloadManager);
                 mPlayerWindow.PlayItemChanged += OnPlayItemChanged;
                 mPlayerWindow.PlayWindowClosing += OnPlayerWindowClosing;
                 mPlayerWindow.PlayWindowClosed += OnPlayerWindowClosed;
@@ -924,7 +933,7 @@ namespace ytplayer {
             }
         }
 
-        private void OnPlayItemChanged(IPlayable obj) {
+        private void OnPlayItemChanged(DLEntry obj) {
             Storage.DLTable.Update();
             if (null == obj) return;
             if (obj != null) {
@@ -943,9 +952,9 @@ namespace ytplayer {
             var win = GetPlayer();
             var selected = MainListView.SelectedItems;
             if(selected.Count>1) {
-                win.PlayList.SetList(selected.ToEnumerable<DLEntry>());
+                win.SetPlayList(selected.ToEnumerable<DLEntry>());
             } else {
-                win.PlayList.SetList(viewModel.MainList.Value, MainListView.SelectedItem as IPlayable);
+                win.SetPlayList(viewModel.MainList.Value, MainListView.SelectedItem as DLEntry);
             }
         }
 
@@ -1101,7 +1110,7 @@ namespace ytplayer {
             if (succeeded && !extractAudio) {
                 Dispatcher.Invoke(() => {
                     if (viewModel.AutoPlay.Value) {
-                        GetPlayer().PlayList.Add(target);
+                        GetPlayer().AddToPlayList(target);
                     }
                 });
             }
@@ -1111,7 +1120,7 @@ namespace ytplayer {
             Dispatcher.Invoke(() => {
                 Storage.DLTable.Add(target);
                 if (viewModel.AutoPlay.Value) {
-                    GetPlayer().PlayList.Add(target);
+                    GetPlayer().AddToPlayList(target);
                 }
             });
         }

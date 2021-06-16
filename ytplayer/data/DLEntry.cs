@@ -220,7 +220,7 @@ namespace ytplayer.data {
 
     public class DLEntryTable : StorageTable<DLEntry> {
         public DLEntryTable(SQLiteConnection connection) : base(connection) { }
-        public override bool Contains(string key) {
+        public bool Contains(string key) {
             return Table.Where((c) => c.KEY == key).Any();
         }
         public override bool Contains(DLEntry entry) {
@@ -240,7 +240,7 @@ namespace ytplayer.data {
 
 
     [Table(Name = "t_download_ex")]
-    public class DLEntry : PropertyChangeNotifier, IPlayable {
+    public class DLEntry : PropertyChangeNotifier {
         [Column(Name = "id", IsPrimaryKey = true, CanBeNull = false)]
         public string KEY { get; private set; }
         public string Id => KEY;

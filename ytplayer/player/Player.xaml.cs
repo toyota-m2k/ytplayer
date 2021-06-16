@@ -1,78 +1,21 @@
 ﻿using io.github.toyota32k.toolkit.utils;
-using io.github.toyota32k.toolkit.view;
-using Reactive.Bindings;
 using System;
-using System.Diagnostics;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using ytplayer.common;
+using ytplayer.data;
 
 namespace ytplayer.player {
-    public interface IPlayerViewModel {
-        IReadOnlyReactiveProperty<double> Duration { get; }
-        IReadOnlyReactiveProperty<bool> IsReady { get; }
-        IReadOnlyReactiveProperty<bool> IsPlaying { get; }
-        IReadOnlyReactiveProperty<bool> IsReadyAndPlaying { get; }
-        IReactiveProperty<double> Speed { get; }
-        IReactiveProperty<double> Volume { get; }
-        Subject<bool> Ended { get; }
-    }
-
-    public class PlayerViewModel : ViewModelBase, IPlayerViewModel {
-        IReadOnlyReactiveProperty<double> IPlayerViewModel.Duration => Duration;
-        IReadOnlyReactiveProperty<bool> IPlayerViewModel.IsReady => IsReady;
-        IReadOnlyReactiveProperty<bool> IPlayerViewModel.IsPlaying => IsPlaying;
-        IReadOnlyReactiveProperty<bool> IPlayerViewModel.IsReadyAndPlaying => IsReadyAndPlaying;
-        IReactiveProperty<double> IPlayerViewModel.Speed => Speed;
-        IReactiveProperty<double> IPlayerViewModel.Volume => Volume;
-
-        public ReactiveProperty<double> Duration { get; } = new ReactiveProperty<double>(100);
-        public ReactiveProperty<bool> IsReady { get; } = new ReactiveProperty<bool>(false);
-        public ReactiveProperty<bool> IsPlaying { get; } = new ReactiveProperty<bool>(false);
-        public ReadOnlyReactiveProperty<bool> IsReadyAndPlaying { get; }
-        public ReactiveProperty<bool> ShowPanel { get; } = new ReactiveProperty<bool>(false);
-        public ReactiveProperty<bool> ShowSizePanel { get; } = new ReactiveProperty<bool>(false);
-        public ReactiveProperty<double> Speed { get; } = new ReactiveProperty<double>(0.5);
-        public ReactiveProperty<double> Volume { get; } = new ReactiveProperty<double>(0.5);
-        public Subject<bool> Ended { get; } = new Subject<bool>();
-
-        public ReactiveProperty<bool> Fullscreen { get; } = new ReactiveProperty<bool>(false);
-        public ReactiveCommand MaximizeCommand { get; } = new ReactiveCommand();
-
-        public PlayerViewModel() {
-            IsReadyAndPlaying = IsReady.CombineLatest(IsPlaying, (r, p) => r && p).ToReadOnlyReactiveProperty();
-        }
-    }
-
-    public interface IPlayer {
-        IPlayerViewModel ViewModel { get; }
-        void SetSource(string path, double startFrom, bool start=true);
-        void Play();
-        void Pause();
-        void Stop();
-        //void ReserveSeekPosition(double pos);
-        double SeekPosition { get; set; }
-        Stretch Stretch { get; set; }
-    }
-
     /// <summary>
     /// Player.xaml の相互作用ロジック
     /// </summary>
-    public partial class Player : UserControl, IPlayer {
-        PlayerViewModel ViewModel {
-            get => DataContext as PlayerViewModel;
-            set {
-                ViewModel?.Dispose();
-                DataContext = value;
-            }
-        }
-        IPlayerViewModel IPlayer.ViewModel => ViewModel;
-        private bool starting = false;
+    public partial class Player : UserControl {
+        PlayerViewModel ViewModel => DataContext as PlayerViewModel;
         private CursorManager CursorManager;
+        private double ReservePosition = 0;
 
         public Stretch Stretch {
             get => MediaPlayer.Stretch;
@@ -80,80 +23,72 @@ namespace ytplayer.player {
         }
 
         public Player() {
-            ViewModel = new PlayerViewModel();
-            ViewModel.MaximizeCommand.Subscribe(ToggleFullscreen);
             InitializeComponent();
         }
 
-        public void Initialize() {
-            ControlPanel.Initialize(this);
+        private void OnLoaded(object sender, RoutedEventArgs e) {
+            ViewModel.Player = this;
+            ViewModel.FitMode.Value = Stretch == Stretch.UniformToFill;
+            ViewModel.FitMode.Subscribe(FitView);
+            ViewModel.MaximizeCommand.Subscribe(ToggleFullscreen);
+            ViewModel.Fullscreen.Value = Window.GetWindow(this).WindowStyle == WindowStyle.None;
             CursorManager = new CursorManager(Window.GetWindow(this));
             ViewModel.Speed.Subscribe((speed) => {
                 double sr = (speed >= 0.5) ? 1 + (speed - 0.5) * 2 /* 1 ～ 2 */ : 0.2 + 0.8 * (speed * 2)/*0.2 ～ 1*/;
                 MediaPlayer.SpeedRatio = sr;
             });
+            ViewModel.Volume.Subscribe((volume) => {
+                MediaPlayer.Volume = volume;
+            });
+            ViewModel.PlayList.Current.Subscribe(OnCurrentItemChanged);
+
+            ViewModel.PlayCommand.Subscribe(Play);
+            ViewModel.PauseCommand.Subscribe(Pause);
+            ViewModel.ChapterEditing.Subscribe(OnChapterEditing);
         }
 
-        public void Terminate() {
-            ControlPanel.Terminate();
-            ViewModel = null;
-        }
-
-        public void SetSource(string path, double startFrom, bool start=true) {
-            starting = start;
-            ViewModel.IsReady.Value = false;
-            ViewModel.IsPlaying.Value = false;
-            ViewModel.Speed.Value = 0.5;
-            ReservePosition = startFrom;
-            MediaPlayer.Source = string.IsNullOrEmpty(path) ? null : new Uri(path);
-            if(path!=null) {
-                Debug.Assert(PathUtil.isFile(path));
-                Play();
-            }
-        }
-
-        public void Play() {
-            ViewModel.IsPlaying.Value = true;
-            MediaPlayer.Play();
-        }
-
-        public void Stop() {
-            ViewModel.IsPlaying.Value = false;
+        private void OnCurrentItemChanged(DLEntry item) {
             MediaPlayer.Stop();
-        }
+            ViewModel.SaveChapterListIfNeeds();
+            ViewModel.State.Value = PlayerState.UNAVAILABLE;
+            ViewModel.Trimming.Value = PlayRange.Empty;
+            ViewModel.Chapters.Value = null;
+            ViewModel.DisabledRanges.Value = null;
 
-        public void Pause() {
-            if(ViewModel.IsPlaying.Value) {
-                ViewModel.IsPlaying.Value = false;
-                MediaPlayer.Pause();
-            }
-        }
+            ReservePosition = 0;
+            Uri uri = null;
+            if (item != null) {
+                if (item.KEY == Settings.Instance.LastPlayingUrl && Settings.Instance.LastPlayingPos > 0) {
+                    ReservePosition = Settings.Instance.LastPlayingPos;
+                } else {
+                    ReservePosition = item.TrimStart;
+                }
+                ViewModel.Volume.Value = item.Volume;
 
-        public double SeekPosition {
-            get => ViewModel.IsReady.Value ? MediaPlayer.Position.TotalMilliseconds : 0;
-            set {
-                if (ViewModel.IsReady.Value) {
-                    MediaPlayer.Position = TimeSpan.FromMilliseconds(value);
+                string path = item.Path;
+                if(!string.IsNullOrEmpty(path)) {
+                    uri = new Uri(path);
+                    ViewModel.State.Value = PlayerState.LOADING;
                 }
             }
+            MediaPlayer.Source = uri;
+            //if(uri!=null) {
+            //    Play();
+            //}
         }
 
-        private double ReservePosition = 0;
-        //public void ReserveSeekPosition(double pos) {
-        //    if(ViewModel.IsReady.Value) {
-        //        MediaPlayer.Position = TimeSpan.FromMilliseconds(pos);
-        //    } else {
-        //        ReservePosition = pos;
-        //    }
-        //}
-
         private void OnMediaOpened(object sender, RoutedEventArgs e) {
-            ViewModel.IsReady.Value = true;
-            ViewModel.Duration.Value = MediaPlayer.NaturalDuration.TimeSpan.TotalMilliseconds;
-            if(starting) {
+            ViewModel.State.Value = PlayerState.READY;
+            ViewModel.Duration.Value = (ulong)MediaPlayer.NaturalDuration.TimeSpan.TotalMilliseconds;
+            var current = ViewModel.PlayList.Current.Value;
+            if (current != null) {
+                current.DurationInSec = ViewModel.Duration.Value / 1000;
+                ViewModel.PrepareChapterListForCurrentItem();
+            }
+            if (ViewModel.AutoPlay) {
                 Play();
                 double pos = 0;
-                if(ReservePosition>0 && ReservePosition<ViewModel.Duration.Value) {
+                if (ReservePosition > 0 && ReservePosition < ViewModel.Duration.Value) {
                     pos = ReservePosition;
                 }
                 MediaPlayer.Position = TimeSpan.FromMilliseconds(pos);
@@ -165,17 +100,54 @@ namespace ytplayer.player {
         }
 
         private void OnMediaEnded(object sender, RoutedEventArgs e) {
-            ViewModel.IsPlaying.Value = false;
-            ViewModel.Ended.OnNext(true);
+            ViewModel.State.Value = PlayerState.READY;
+            ViewModel.GoForwardCommand.Execute();
         }
 
         private void OnMediaFailed(object sender, ExceptionRoutedEventArgs e) {
-            ViewModel.IsReady.Value = false;
-            ViewModel.IsPlaying.Value = false;
-            ViewModel.Ended.OnNext(false);
+            ViewModel.State.Value = PlayerState.ERROR;
+            ViewModel.GoForwardCommand.Execute();
+        }
+
+        public void Play() {
+            if (ViewModel.IsReady.Value) {
+                MediaPlayer.Play();
+                ViewModel.State.Value = PlayerState.PLAYING;
+            }
+        }
+
+        public void Pause() {
+            if (ViewModel.IsPlaying.Value) {
+                MediaPlayer.Pause();
+                ViewModel.State.Value = PlayerState.READY;
+            }
+        }
+
+        public void FitView(bool mode) {
+            Stretch = mode ? Stretch.UniformToFill : Stretch.Uniform;
+        }
+
+        //public void Stop() {
+        //    if (ViewModel.IsReady.Value) {
+        //        MediaPlayer.Stop();
+        //        ViewModel.State.Value = PlayerState.READY;
+        //        ViewModel.Position.Value = 0;
+        //    }
+        //}
+
+        public double SeekPosition {
+            get => ViewModel.IsReady.Value ? MediaPlayer.Position.TotalMilliseconds : 0;
+            set {
+                if (ViewModel.IsReady.Value) {
+                    MediaPlayer.Position = TimeSpan.FromMilliseconds(value);
+                } else {
+                    LoggerEx.error("cannot seek. (movie is not ready.)");
+                }
+            }
         }
 
         private bool ShowPanel(FrameworkElement panel, bool show) {
+            if (ViewModel.ChapterEditing.Value) return true;
             switch (panel?.Tag as string) {
                 case "ControlPanel":
                     ViewModel.ShowPanel.Value = show;
@@ -206,10 +178,6 @@ namespace ytplayer.player {
             }
         }
 
-        private void OnLoaded(object sender, RoutedEventArgs e) {
-            ViewModel.Fullscreen.Value = Window.GetWindow(this).WindowStyle == WindowStyle.None;
-        }
-
         private void ToggleFullscreen() {
             var win = Window.GetWindow(this);
             if (win.WindowStyle == WindowStyle.None) {
@@ -231,5 +199,12 @@ namespace ytplayer.player {
             }
         }
 
+        private void OnChapterEditing(bool edit) {
+            if(edit) {
+                ViewModel.ShowPanel.Value = true;
+                ViewModel.ShowSizePanel.Value = false;
+                CursorManager?.Enable(false);
+            }
+        }
     }
 }
