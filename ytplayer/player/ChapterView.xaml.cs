@@ -25,6 +25,8 @@ namespace ytplayer.player {
     public partial class ChapterView : UserControl {
         public PlayerViewModel ViewModel => DataContext as PlayerViewModel;
 
+        private double PrevWidth = 0;
+
         public ChapterView() {
             InitializeComponent();
         }
@@ -34,6 +36,7 @@ namespace ytplayer.player {
             ViewModel.DisabledRanges.Subscribe(OnDisabledRangesChanged);
         }
 
+
         private double Time2Position(ulong time) {
             var dur = ViewModel.Duration.Value;
             if (dur == 0) return 0;
@@ -41,6 +44,7 @@ namespace ytplayer.player {
         }
 
         private void OnChapterListChanged(ChapterList list) {
+            PrevWidth = ActualWidth;
             TickerView.Children.Clear();
             RangeView.Children.Clear();
             var duration = ViewModel.Duration.Value;
@@ -74,5 +78,12 @@ namespace ytplayer.player {
             }
         }
 
+        private void OnSizeChanged(object sender, SizeChangedEventArgs e) {
+            if(PrevWidth>0 && PrevWidth != ActualWidth) {
+                OnChapterListChanged(ViewModel.Chapters.Value);
+                OnDisabledRangesChanged(ViewModel.DisabledRanges.Value);
+            }
+
+        }
     }
 }

@@ -12,6 +12,7 @@ namespace ytplayer {
         public string FFMpegPath { get; set; } = "";
         public string VideoPath { get; set; } = "";
         public string AudioPath { get; set; } = "";
+        public string WorkPath { get; set; } = "";          // 無音抽出用Wavファイル作成先
         public bool EnableServer { get; set; } = false;
         public int ServerPort { get; set; } = 3500;
         public string SyncPeer { get; set; } = "";
@@ -68,6 +69,15 @@ namespace ytplayer {
                     return AudioPath;
                 }
                 return Environment.GetFolderPath(Environment.SpecialFolder.MyMusic);
+            }
+        }
+        [System.Xml.Serialization.XmlIgnore]
+        public string EnsureWorkPath {
+            get {
+                if (PathUtil.isDirectory(WorkPath)) {
+                    return WorkPath;
+                }
+                return System.IO.Path.GetTempPath();
             }
         }
 

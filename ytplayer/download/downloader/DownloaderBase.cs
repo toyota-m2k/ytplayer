@@ -117,6 +117,8 @@ namespace ytplayer.download.downloader {
                 Arguments = $"{BasicArguments} {SpecialArguments} {Entry.Url}",
                 CreateNoWindow = true,
                 UseShellExecute = false,
+                StandardOutputEncoding = System.Text.Encoding.UTF8,
+                StandardErrorEncoding = System.Text.Encoding.UTF8,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
             };
@@ -190,11 +192,16 @@ namespace ytplayer.download.downloader {
                         }
                     }
                 }
+                process.WaitForExit();
+                LoggerEx.info($"Proc exit: {process.ExitCode}");
             }
             catch (Exception ex) {
                 Environment.CurrentDirectory = orgPath;
                 Entry.Status = Status.FAILED;
                 Logger.error(ex);
+            } finally {
+                DownloadProcess?.Close();
+                DownloadProcess = null;
             }
         }
 
@@ -204,10 +211,9 @@ namespace ytplayer.download.downloader {
                     Entry.Status = Status.CANCELLED;
                 }
                 Alive = false;
-                if(null!=DownloadProcess) {
-                    DownloadProcess.Kill();
-                    DownloadProcess = null;
-                }
+                DownloadProcess?.Kill();
+                DownloadProcess?.Close();
+                DownloadProcess = null;
             }
         }
 

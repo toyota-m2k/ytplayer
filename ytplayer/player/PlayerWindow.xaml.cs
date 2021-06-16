@@ -1,11 +1,16 @@
 ﻿using io.github.toyota32k.toolkit.utils;
+using io.github.toyota32k.toolkit.view;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Documents;
+using System.Windows.Media;
 using ytplayer.data;
 using ytplayer.download;
+using ytplayer.wav;
 
 namespace ytplayer.player {
     /// <summary>
@@ -55,6 +60,7 @@ namespace ytplayer.player {
         private void OnLoaded(object sender, RoutedEventArgs e) {
             ViewModel.PlayList.Current.Subscribe(OnCurrentItemChanged);
             ViewModel.StorageClosed.Subscribe((_) => Close());
+            ViewModel.AutoChapterCommand.Subscribe(OnAutoChapter);
             LoadCompletion.TrySetResult(true);
         }
 
@@ -94,6 +100,96 @@ namespace ytplayer.player {
         public async void AddToPlayList(DLEntry item) {
             await LoadCompletion.Task;
             ViewModel.PlayList.Add(item);
+        }
+
+        private void AddTextToRichEdit(string text, Brush fg) {
+            var p = OutputView.Document.Blocks.FirstBlock as Paragraph;
+            var run = new Run(text);
+            if (fg != null) {
+                run.Foreground = fg;
+            }
+            p.Inlines.Add(run);
+            p.Inlines.Add(new LineBreak());
+            OutputView.ScrollToEnd();
+        }
+
+        private void StandardOutput(string text) {
+            LoggerEx.info(text);
+            StandardError(text);
+        }
+        private void StandardError(string text) {
+            Dispatcher.Invoke(() => {
+                LoggerEx.error(text);
+                Brush brush = null;
+                if (text.StartsWith("size=")) {
+                    brush = new SolidColorBrush(Colors.Green);
+                } else if (text.ToLower().Contains("error")) {
+                    brush = new SolidColorBrush(Colors.Red);
+                }
+                AddTextToRichEdit(text, brush);
+            });
+        }
+
+
+        private async void OnAutoChapter() {
+            if (!ViewModel.ChapterEditing.Value) return;
+            var item = ViewModel.PlayList.Current.Value;
+            if (item == null) return;
+            var chapterList = ViewModel.Chapters.Value;
+
+            if (ViewModel.WavFile == null) {
+                if (chapterList.Values.Count > 0) {
+                    if (MessageBoxResult.OK != MessageBox.Show(GetWindow(this), "All chapters will be replaced with created chapters.", "Auto Chapter", MessageBoxButton.OKCancel)) {
+                        return;
+                    }
+                }
+                OutputView.Visibility = Visibility.Visible;
+                OutputView.Document = new FlowDocument();
+                OutputView.Document.Blocks.Add(new Paragraph());
+                AddTextToRichEdit("Extracting sound track...", new SolidColorBrush(Colors.Blue));
+                try {
+                    var outFile = Path.Combine(Settings.Instance.EnsureWorkPath, "x.wav");
+                    PathUtil.safeDeleteFile(outFile);
+
+                    using (WaitCursor.Start(this)) {
+                        ViewModel.WavFile = await WavFile.CreateFromMP4(item.VPath, outFile, StandardOutput, StandardError);
+                        if(ViewModel.WavFile==null) {
+                            MessageBox.Show(GetWindow(this), "Cannot extract sound track from MP4 file.", "Auto Chapter", MessageBoxButton.OK);
+                            return;
+                        }
+                    }
+                }
+                catch (Exception e) {
+                    LoggerEx.error(e);
+                }
+                finally {
+                    await Task.Delay(1000);
+                    OutputView.Visibility = Visibility.Hidden;
+                    OutputView.Document.Blocks.Clear();
+                }
+            }
+
+            T limit<IT, T>(IT v, T min, T max) {
+                if ((dynamic)v < (dynamic)min) return min;
+                if ((dynamic)max < (dynamic)v) return max;
+                return (T)(dynamic)v;
+            }
+
+            short threshold = limit(ViewModel.AutoChapterThreshold.Value, (short)0, (short)5000);
+            double span = limit((double)(ViewModel.AutoChapterSpan.Value)/1000, (double)0.5, (double)5.0);
+            var ranges = ViewModel.WavFile.ScanChapter(threshold, span);
+
+            if(!Utils.IsNullOrEmpty(ranges)) {
+                chapterList.ClearAllChapters();
+                foreach(var r in ranges) {
+                    var d = r.Item2 - r.Item1;
+                    var p = r.Item2 - Math.Min(d / 2, 1.0);
+                    chapterList.AddChapter(new ChapterInfo((ulong)Math.Round(p * 1000)));
+                }
+                ViewModel.NotifyChapterUpdated();
+            } else {
+                MessageBox.Show(GetWindow(this), "No chapter was detected.", "Auto Chapter", MessageBoxButton.OK);
+            }
         }
     }
 }

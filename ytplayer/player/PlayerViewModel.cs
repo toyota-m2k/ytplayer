@@ -7,10 +7,9 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Text;
-using System.Threading.Tasks;
 using ytplayer.data;
 using ytplayer.download;
+using ytplayer.wav;
 
 namespace ytplayer.player {
     public enum PlayerState {
@@ -48,6 +47,8 @@ namespace ytplayer.player {
          * 現在再生中の動画のチャプター設定が変更されていればDBに保存する。
          */
         public void SaveChapterListIfNeeds() {
+            WavFile?.Dispose();
+            WavFile = null;
             var storage = StorageSupplier?.Storage;
             if (null == storage) return;
             var item = PlayList.Current.Value;
@@ -171,6 +172,15 @@ namespace ytplayer.player {
                 }
             }
         }
+
+        #endregion
+
+        #region Auto Chapter
+
+        public WavFile WavFile { get; set; } = null;
+        public ReactiveCommand AutoChapterCommand { get; } = new ReactiveCommand();
+        public ReactivePropertySlim<uint> AutoChapterThreshold { get; } = new ReactivePropertySlim<uint>(500);
+        public ReactivePropertySlim<uint> AutoChapterSpan { get; } = new ReactivePropertySlim<uint>(1000);
 
         #endregion
 
@@ -299,6 +309,8 @@ namespace ytplayer.player {
                     EditingChapterList.Value = Chapters.Value.Values;
                 } else {
                     EditingChapterList.Value = null;
+                    WavFile?.Dispose();
+                    WavFile = null;
                 }
             });
         }

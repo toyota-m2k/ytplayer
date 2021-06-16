@@ -82,5 +82,18 @@ namespace ytplayer.player {
                 ViewModel.NotifyChapterUpdated();
             }
         }
+
+        private void OnChapterSelected(object sender, SelectionChangedEventArgs e) {
+            //var entry = (ChapterInfo)((FrameworkElement)sender).Tag;
+            //ViewModel.Position.Value = entry.Position;
+            var listView = sender as ListView;
+            if(listView!=null) {
+                var item = listView.SelectedItem as ChapterInfo;
+                if(item!=null) {
+                    ViewModel.Position.Value = item.Position;
+                }
+            }
+        }
+
     }
 }

@@ -39,6 +39,7 @@
             <Path x:Key="PathResetSpeed" Data="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9A3,3 0 0,1 15,12Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
             <Path x:Key="PathResetVolume" Data="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9A3,3 0 0,1 15,12Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
             <Path x:Key="PathList" Data="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
+            <Path x:Key="PathPlus" Data="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
         </Grid.Resources>
         <!-- Row:0 再生関連ボタン類 -->
         <Grid Grid.Row="0">
@@ -117,25 +118,49 @@
         <!-- Chapter -->
         <StackPanel Grid.Row="2" Orientation="Horizontal">
             <TextBlock Text="Chapter" VerticalAlignment="Center" Foreground="White"/>
-            <Button Style="{StaticResource IconButtonStyle}" 
-                    Command="{Binding AddChapterCommand}" RenderTransformOrigin="0.5,0.5" Padding="4">
-                <Button.RenderTransform>
-                    <ScaleTransform ScaleY="-1"/>
-                </Button.RenderTransform>
-                <common:PathView Path="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z"/>
-            </Button>
-            <ToggleButton
+            <Button 
+                Style="{StaticResource IconButtonStyle}" 
+                Content="{StaticResource PathPlus}"
+                Command="{Binding AddChapterCommand}" RenderTransformOrigin="0.5,0.5" Padding="4"
+                VerticalAlignment="Bottom"
+                />
+            <ToggleButton 
                 Focusable="False"
                 IsChecked="{Binding ChapterEditing.Value, Mode=TwoWay}"
-                Content="{StaticResource PathList}" Style="{StaticResource IconToggleButtonStyle}"/>
+                Content="{StaticResource PathList}" Style="{StaticResource IconToggleButtonStyle}"
+                VerticalAlignment="Bottom"
+                />
+            <Button 
+                Content="Auto Chapter"
+                Background="SlateGray"
+                Foreground="White"
+                VerticalAlignment="Bottom"
+                Padding="8,0"
+                Margin="4,0,4,4"
+                Visibility="{Binding ChapterEditing.Value, Converter={StaticResource BoolVisibilityConverter}}"
+                Command="{Binding AutoChapterCommand}"/>
+            <StackPanel 
+                Orientation="Vertical"
+                Margin="4,0,4,4"
+                Visibility="{Binding ChapterEditing.Value, Converter={StaticResource BoolVisibilityConverter}}">
+                <TextBlock Text="Threshold" HorizontalAlignment="Left" Foreground="White"/>
+                <common:NumericTextBox Text="{Binding AutoChapterThreshold.Value}" Width="80" HorizontalAlignment="Left"/>
+            </StackPanel>
+            <StackPanel 
+                Orientation="Vertical"
+                Margin="4,0,4,0"
+                Visibility="{Binding ChapterEditing.Value, Converter={StaticResource BoolVisibilityConverter}}">
+                <TextBlock Text="Span(msec)" HorizontalAlignment="Left" Foreground="White"/>
+                <common:NumericTextBox Text="{Binding AutoChapterSpan.Value}" Width="80" HorizontalAlignment="Left"/>
+            </StackPanel>
+
         </StackPanel>
         <!-- Edit Chapters-->
-        <StackPanel
+        <Grid
             Grid.Row="3"
-            Orientation="Vertical"
             Visibility="{Binding ChapterEditing.Value, Converter={StaticResource BoolVisibilityConverter}}"
             >
-            <StackPanel.Resources>
+            <Grid.Resources>
                 <Style x:Key="SkipChapterIconStyle" TargetType="Path">
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding Path=Skip}" Value="True">
@@ -149,10 +174,12 @@
                     </Style.Triggers>
                 </Style>
 
-            </StackPanel.Resources>
+            </Grid.Resources>
             <common:StretchListView 
-                Width="300"
-                Height="300"
+                HorizontalAlignment="Stretch"
+                Height="350"
+                SelectionChanged="OnChapterSelected"
+                SelectionMode="Single"
                 StretchColumnIndex="1" StretchColumnMinWidth="200" ItemsSource="{Binding EditingChapterList.Value}">
                 <ListView.View>
                     <GridView>
@@ -197,7 +224,7 @@
                     </GridView>
                 </ListView.View>
             </common:StretchListView>
-        </StackPanel>
+        </Grid>
         <!-- Trimming -->
         <Grid 
             Grid.Row="3" 

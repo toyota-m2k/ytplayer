@@ -20,6 +20,7 @@ namespace ytplayer.dialog {
         public ReactivePropertySlim<string> FFMpegPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> VideoPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> AudioPath { get; } = new ReactivePropertySlim<string>();
+        public ReactivePropertySlim<string> WorkPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<bool> EnableServer { get; } = new ReactivePropertySlim<bool>();
         public ReactivePropertySlim<int> ServerPort { get; } = new ReactivePropertySlim<int>();
 
@@ -33,6 +34,7 @@ namespace ytplayer.dialog {
         public ReactiveCommand CommandFFMpegPath { get; } = new ReactiveCommand();
         public ReactiveCommand CommandVideoPath { get; } = new ReactiveCommand();
         public ReactiveCommand CommandAudioPath { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandWorkPath { get; } = new ReactiveCommand();
 
         public ReactiveCommand OKCommand { get; } = new ReactiveCommand();
         public ReactiveCommand CancelCommand { get; } = new ReactiveCommand();
@@ -49,6 +51,7 @@ namespace ytplayer.dialog {
             FFMpegPath.Value = src.FFMpegPath;
             VideoPath.Value = src.VideoPath;
             AudioPath.Value = src.AudioPath;
+            WorkPath.Value = src.WorkPath;
             EnableServer.Value = src.EnableServer;
             ServerPort.Value = src.ServerPort;
 
@@ -59,6 +62,7 @@ namespace ytplayer.dialog {
             CommandFFMpegPath.Subscribe(() => SelectFolder("ffmpeg folder", FFMpegPath));
             CommandVideoPath.Subscribe(() => SelectFolder("Video Folder", VideoPath));
             CommandAudioPath.Subscribe(() => SelectFolder("Audio Folder", AudioPath));
+            CommandWorkPath.Subscribe(() => SelectFolder("Work Directory", WorkPath));
 
             OKCommand.Subscribe(() => {
                 ErrorMessage.Value = Validate();
@@ -154,6 +158,11 @@ namespace ytplayer.dialog {
                     return $"no such directory: {AudioPath.Value}";
                 }
             }
+            if (!string.IsNullOrEmpty(WorkPath.Value)) {
+                if (!PathUtil.isDirectory(WorkPath.Value)) {
+                    return $"no such directory: {WorkPath.Value}";
+                }
+            }
 
             Console.WriteLine($"Current: {Owner.CurrentStorage?.DBPath}");
             Console.WriteLine($"New    : {DBPath.Value}");
@@ -174,6 +183,7 @@ namespace ytplayer.dialog {
             dst.FFMpegPath = FFMpegPath.Value;
             dst.VideoPath = VideoPath.Value;
             dst.AudioPath = AudioPath.Value;
+            dst.WorkPath = WorkPath.Value;
             dst.EnableServer = EnableServer.Value;
             dst.ServerPort = ServerPort.Value;
             dst.Serialize();

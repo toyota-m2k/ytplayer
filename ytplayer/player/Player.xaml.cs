@@ -44,6 +44,7 @@ namespace ytplayer.player {
 
             ViewModel.PlayCommand.Subscribe(Play);
             ViewModel.PauseCommand.Subscribe(Pause);
+            ViewModel.ChapterEditing.Subscribe(OnChapterEditing);
         }
 
         private void OnCurrentItemChanged(DLEntry item) {
@@ -146,6 +147,7 @@ namespace ytplayer.player {
         }
 
         private bool ShowPanel(FrameworkElement panel, bool show) {
+            if (ViewModel.ChapterEditing.Value) return true;
             switch (panel?.Tag as string) {
                 case "ControlPanel":
                     ViewModel.ShowPanel.Value = show;
@@ -197,5 +199,12 @@ namespace ytplayer.player {
             }
         }
 
+        private void OnChapterEditing(bool edit) {
+            if(edit) {
+                ViewModel.ShowPanel.Value = true;
+                ViewModel.ShowSizePanel.Value = false;
+                CursorManager?.Enable(false);
+            }
+        }
     }
 }

@@ -99,6 +99,14 @@ namespace ytplayer.data {
             return true;
         }
 
+        public bool ClearAllChapters() {
+            if (Values.Count > 0) {
+                Values.Clear();
+                IsModified = true;
+                return true;
+            }
+            return false;
+        }
         /**
             * 指定位置(current)近傍のChapterを取得
             * 
