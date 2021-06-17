@@ -726,6 +726,9 @@ namespace ytplayer {
                 });
             }
         }
+
+        
+
         DLEntry IYtListSource.GetPrevEntry(string current, bool moveCursor) {
             return Dispatcher.Invoke(() => {
                 var entry = ((IYtListSource)this).GetEntry(current);
@@ -769,6 +772,11 @@ namespace ytplayer {
                 }
             });
         }
+
+        IEnumerable<ChapterEntry> IYtListSource.GetChaptersOf(string id) {
+            return Storage.ChapterTable.Table.Where((c) => c.Owner == id);
+        }
+
 
 
         private void ProcessSelectedEntries(Action<IEnumerable<DLEntry>> action) {

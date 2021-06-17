@@ -47,8 +47,12 @@ namespace ytplayer.player {
             ViewModel.ChapterEditing.Subscribe(OnChapterEditing);
         }
 
+        private string mCurrentItemId = null;
+
         private void OnCurrentItemChanged(DLEntry item) {
             MediaPlayer.Stop();
+            MediaPlayer.Source = null;
+            mCurrentItemId = item?.KEY;
             ViewModel.SaveChapterListIfNeeds();
             ViewModel.State.Value = PlayerState.UNAVAILABLE;
             ViewModel.Trimming.Value = PlayRange.Empty;
@@ -70,8 +74,13 @@ namespace ytplayer.player {
                     uri = new Uri(path);
                     ViewModel.State.Value = PlayerState.LOADING;
                 }
+                if (uri != null) {
+                    MediaPlayer.Source = uri;
+                    // Sourceをセットしただけでは OnMediaOpenedが呼ばれない。
+                    // Play または、Stop を呼んでおく必要がある。
+                    MediaPlayer.Stop();
+                }
             }
-            MediaPlayer.Source = uri;
         }
 
         private void OnMediaOpened(object sender, RoutedEventArgs e) {
@@ -99,12 +108,19 @@ namespace ytplayer.player {
 
         private void OnMediaEnded(object sender, RoutedEventArgs e) {
             ViewModel.State.Value = PlayerState.READY;
-            ViewModel.ReachRangeEnd.OnNext(true);
+            if (mCurrentItemId != null) {
+                ViewModel.ReachRangeEnd.OnNext(mCurrentItemId);
+                mCurrentItemId = null;
+            }
         }
 
         private void OnMediaFailed(object sender, ExceptionRoutedEventArgs e) {
             ViewModel.State.Value = PlayerState.ERROR;
-            ViewModel.ReachRangeEnd.OnNext(true);
+            LoggerEx.error(e.ErrorException);
+            //if (mCurrentItemId != null) {
+            //    ViewModel.ReachRangeEnd.OnNext(mCurrentItemId);
+            //    mCurrentItemId = null;
+            //}
         }
 
         public void Play() {

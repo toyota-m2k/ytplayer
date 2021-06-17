@@ -21,7 +21,9 @@ namespace ytplayer.server {
         DLEntry CurrentEntry { get; }
         DLEntry GetPrevEntry(string current, bool moveCursor);
         DLEntry GetNextEntry(string current, bool moveCursor);
-        DLEntry GetEntry(string id);        
+        DLEntry GetEntry(string id);
+    
+        IEnumerable<ChapterEntry> GetChaptersOf(string id);
     }
 
     public class YtServer {
@@ -89,6 +91,7 @@ namespace ytplayer.server {
             if (null == Routes) {
                 Routes = new List<Route>
                 {
+                    // SYNC: 端末間同期のために全リストを要求
                     new Route {
                         Name = "ytplayer sync",
                         UrlRegex = @"/ytplayer/sync",
@@ -123,6 +126,7 @@ namespace ytplayer.server {
                             return new TextHttpResponse(json.ToString(), "application/json");
                         }
                     },
+                    // list: プレイリスト要求
                     new Route {
                         /**
                          * リスト要求
@@ -177,6 +181,7 @@ namespace ytplayer.server {
                             return new TextHttpResponse(json.ToString(), "application/json");
                          }
                     },
+                    // CHECK: 前回のプレイリストから変更されたかどうかのチェック
                     new Route {
                         Name = "ytPlayer check update",
                         UrlRegex = @"/ytplayer/check(?:\?\w+)?",
@@ -192,6 +197,7 @@ namespace ytplayer.server {
                             return new TextHttpResponse(json.ToString(), "application/json");
                         }
                     },
+                    // VIDEO:ビデオストリーム要求
                     new Route {
                         Name = "ytPlayer video",
                         UrlRegex = @"/ytplayer/video\?\w+",
@@ -218,6 +224,33 @@ namespace ytplayer.server {
                         }
                     },
 
+                    // chapter: チャプターリスト要求
+                    new Route {
+                        Name = "ytPlayer chapters",
+                        UrlRegex = @"/ytplayer/chapter\?\w+",
+                        Method = "GET",
+                        Callable = (HttpRequest request) => {
+                            var id = QueryParser.Parse(request.Url)["id"];
+                            var chapters = Source?.GetChaptersOf(id);
+                            if(null==chapters) {
+                                return HttpBuilder.ServiceUnavailable();
+                            }
+                            var json = new JsonObject(new Dictionary<string, JsonValue>() {
+                                { "cmd", "chapter"},
+                                { "id", $"{id}" },
+                                { "chapters", new JsonArray(
+                                    chapters.Select((c) => new JsonObject(new Dictionary<string,JsonValue>(){
+                                            { "position", c.Position },
+                                            { "label", c.Label },
+                                            { "skip", c.Skip }
+                                    }))) },
+                                }
+                            );
+                            return new TextHttpResponse(json.ToString(), "application/json");
+                        }
+                    },
+
+                    // category：全カテゴリリストの要求
                     new Route {
                         Name = "ytPlayer Categories",
                         UrlRegex = @"/ytplayer/category",
@@ -236,7 +269,7 @@ namespace ytplayer.server {
                             return new TextHttpResponse(json.ToString(), "application/json");
                         }
                     },
-
+                    // REGISTER: urlの登録/DL要求
                     new Route {
                         Name = "ytPlayer Request Download",
                         UrlRegex = @"/ytplayer/register",
@@ -255,7 +288,7 @@ namespace ytplayer.server {
                             return new TextHttpResponse(json.ToString(), "application/json");
                         }
                     },
-
+                    // SEQ: PlayListを使わない、シーケンシャルアクセス用(next/prev)
                     new Route {
                         Name = "ytPlayer sequential operation.",
                         UrlRegex = @"/ytplayer/seq(?:\?w+)?",

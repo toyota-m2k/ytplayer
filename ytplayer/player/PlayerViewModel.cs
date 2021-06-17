@@ -42,7 +42,7 @@ namespace ytplayer.player {
         public ReadOnlyReactivePropertySlim<bool> HasDisabledRange { get; }
         public ReactivePropertySlim<bool> ChapterEditing { get; } = new ReactivePropertySlim<bool>(false);
         public ReactivePropertySlim<ObservableCollection<ChapterInfo>> EditingChapterList { get; } = new ReactivePropertySlim<ObservableCollection<ChapterInfo>>();
-        public Subject<bool> ReachRangeEnd { get; } = new Subject<bool>();
+        public Subject<string> ReachRangeEnd { get; } = new Subject<string>();
 
         /**
          * 現在再生中の動画のチャプター設定が変更されていればDBに保存する。
@@ -311,7 +311,11 @@ namespace ytplayer.player {
                 }
             });
 
-            ReachRangeEnd.Subscribe((_) => {
+            string prevId = null;
+            ReachRangeEnd.Subscribe((prev) => {
+                if(prevId == prev) {
+                    LoggerEx.error("Next more than twice.");
+                }
                 if (PlayList.HasNext.Value) {
                     GoForwardCommand.Execute();
                 } else {
