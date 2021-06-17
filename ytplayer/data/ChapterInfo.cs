@@ -7,10 +7,20 @@ using ytplayer.player;
 namespace ytplayer.data {
     public class ChapterInfo : PropertyChangeNotifier {
         private bool mSkip;
+        private string mLabel;
 
         public bool IsModified { get; private set; } = false;
 
         public ulong Position { get; private set; }
+
+        public string Label {
+            get => mLabel;
+            set {
+                if(setProp(callerName(), ref mLabel, value)) {
+                    IsModified = true;
+                }
+            }
+        }
 
         public bool Skip { 
             get => mSkip;
@@ -20,9 +30,10 @@ namespace ytplayer.data {
                 }
             }
         }
-        public ChapterInfo(ulong pos, bool skip = false) {
+        public ChapterInfo(ulong pos, bool skip = false, string label=null) {
             Position = pos;
             mSkip = skip;
+            mLabel = label;
         }
         public string PositionText => PlayerViewModel.FormatDuration(Position);
     }

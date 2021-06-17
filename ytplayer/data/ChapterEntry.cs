@@ -15,6 +15,9 @@ namespace ytplayer.data {
         [Column(Name = "position", CanBeNull = false)]
         public ulong Position{ get; private set; }
 
+        [Column(Name = "label", CanBeNull = true)]
+        public string Label { get; private set; }
+
         [Column(Name = "skip", CanBeNull = false)]
         private int skip { get; set; }
         public bool Skip {
@@ -25,18 +28,19 @@ namespace ytplayer.data {
         public ChapterEntry() {
             Owner = "";
             Position = 0;
+            Label = null;
             skip = 0;
         }
 
-        static public ChapterEntry Create(string owner, ulong pos, bool skip=false) {
-            return new ChapterEntry() { Owner = owner, Position = pos, Skip = skip };
+        static public ChapterEntry Create(string owner, ulong pos, bool skip=false, string label=null) {
+            return new ChapterEntry() { Owner = owner, Position = pos, Skip = skip, Label = label };
         }
         static public ChapterEntry Create(string owner, ChapterInfo info) {
-            return new ChapterEntry() { Owner = owner, Position = info.Position, Skip = info.Skip };
+            return new ChapterEntry() { Owner = owner, Position = info.Position, Skip = info.Skip, Label = info.Label };
         }
 
         public ChapterInfo ToChapterInfo() {
-            return new ChapterInfo(Position, Skip);
+            return new ChapterInfo(Position, Skip, Label);
         }
     }
 

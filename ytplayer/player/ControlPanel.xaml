@@ -5,7 +5,6 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ytplayer.player"
              xmlns:common="clr-namespace:io.github.toyota32k.toolkit.view;assembly=io.github.toyota32k.wpfLittleToolkit"
-             Loaded="OnLoaded" Unloaded="OnUnloaded"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="400">
     <UserControl.Resources>
@@ -101,7 +100,6 @@
                 FocusVisualStyle="{x:Null}"
                 VerticalAlignment="Center"
                 HorizontalAlignment="Stretch"
-                x:Name="TimelineSlider" 
                 MinWidth="300"
                 SmallChange="10000" LargeChange="10000"
                 Margin="0,-8,0,0"
@@ -180,7 +178,7 @@
                 Height="350"
                 SelectionChanged="OnChapterSelected"
                 SelectionMode="Single"
-                StretchColumnIndex="1" StretchColumnMinWidth="200" ItemsSource="{Binding EditingChapterList.Value}">
+                StretchColumnIndex="2" StretchColumnMinWidth="200" ItemsSource="{Binding EditingChapterList.Value}">
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="Skip" Width="40">
@@ -201,7 +199,21 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="Position" Width="200" DisplayMemberBinding="{Binding PositionText}"/>
+                        <GridViewColumn Header="Position" Width="80" DisplayMemberBinding="{Binding PositionText}"/>
+                        <GridViewColumn Header="Label" Width="200">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBox 
+                                        Margin="0,4,0,0"
+                                        FocusVisualStyle="{x:Null}"
+                                        Tag="{Binding}" 
+                                        Text="{Binding Label, Mode=TwoWay}"
+                                        BorderThickness="0" 
+                                        MinWidth="200"
+                                        HorizontalAlignment="Stretch"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
                         <GridViewColumn Header="Delete" Width="40">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>

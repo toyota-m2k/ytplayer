@@ -57,6 +57,11 @@ namespace ytplayer.player {
             }
         }
 
+        protected override void OnSourceInitialized(EventArgs e) {
+            base.OnSourceInitialized(e);
+            Settings.Instance.PlayerPlacement.ApplyPlacementTo(this);
+        }
+
         private void OnLoaded(object sender, RoutedEventArgs e) {
             ViewModel.PlayList.Current.Subscribe(OnCurrentItemChanged);
             ViewModel.StorageClosed.Subscribe((_) => Close());
@@ -71,6 +76,7 @@ namespace ytplayer.player {
 
         protected override void OnClosing(CancelEventArgs e) {
             base.OnClosing(e);
+            Settings.Instance.PlayerPlacement.GetPlacementFrom(this);
             ViewModel.SaveChapterListIfNeeds();
             LoadCompletion.TrySetResult(false);
             PlayWindowClosing?.Invoke(this);

@@ -72,12 +72,10 @@ namespace ytplayer.player {
                 }
             }
             MediaPlayer.Source = uri;
-            //if(uri!=null) {
-            //    Play();
-            //}
         }
 
         private void OnMediaOpened(object sender, RoutedEventArgs e) {
+            if (!MediaPlayer.NaturalDuration.HasTimeSpan) return;
             ViewModel.State.Value = PlayerState.READY;
             ViewModel.Duration.Value = (ulong)MediaPlayer.NaturalDuration.TimeSpan.TotalMilliseconds;
             var current = ViewModel.PlayList.Current.Value;
@@ -101,12 +99,12 @@ namespace ytplayer.player {
 
         private void OnMediaEnded(object sender, RoutedEventArgs e) {
             ViewModel.State.Value = PlayerState.READY;
-            ViewModel.GoForwardCommand.Execute();
+            ViewModel.ReachRangeEnd.OnNext(true);
         }
 
         private void OnMediaFailed(object sender, ExceptionRoutedEventArgs e) {
             ViewModel.State.Value = PlayerState.ERROR;
-            ViewModel.GoForwardCommand.Execute();
+            ViewModel.ReachRangeEnd.OnNext(true);
         }
 
         public void Play() {

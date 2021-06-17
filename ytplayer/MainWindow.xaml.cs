@@ -944,6 +944,7 @@ namespace ytplayer {
                 int index = viewModel.MainList.Value.IndexOf((DLEntry)obj);
                 if (index >= 0) {
                     MainListView.SelectedIndex = index;
+                    MainListView.ScrollIntoView(obj);   
                 }
             }
         }
