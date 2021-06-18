@@ -22,6 +22,8 @@ namespace ytplayer.server {
         DLEntry GetPrevEntry(string current, bool moveCursor);
         DLEntry GetNextEntry(string current, bool moveCursor);
         DLEntry GetEntry(string id);
+
+        string CurrentId { get; set; }
     
         IEnumerable<ChapterEntry> GetChaptersOf(string id);
     }
@@ -249,6 +251,14 @@ namespace ytplayer.server {
                             return new TextHttpResponse(json.ToString(), "application/json");
                         }
                     },
+
+                    // current: カレントアイテムのget/set
+                    new Route {
+                        Name = "ytPlayer Current Item",
+                        UrlRegex = @"/ytplayer/current",
+                        Method = "GET",
+                    },
+
 
                     // category：全カテゴリリストの要求
                     new Route {

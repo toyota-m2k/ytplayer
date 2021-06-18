@@ -20,8 +20,8 @@ namespace ytplayer.download.downloader.impl {
                 Arguments = $"-i \"{Entry.VPath}\" -y -f mp3 -vn \"{GetSavedFilePath(null)}\"",
                 CreateNoWindow = true,
                 UseShellExecute = false,
-                StandardOutputEncoding = System.Text.Encoding.UTF8,
-                StandardErrorEncoding = System.Text.Encoding.UTF8,
+                //StandardOutputEncoding = System.Text.Encoding.UTF8,
+                //StandardErrorEncoding = System.Text.Encoding.UTF8,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
             };

@@ -777,6 +777,16 @@ namespace ytplayer {
             return Storage.ChapterTable.Table.Where((c) => c.Owner == id);
         }
 
+        string IYtListSource.CurrentId {
+            get => ((IYtListSource)this).CurrentEntry.KEY;
+            set {
+                var entry = viewModel.MainList.Value.Where((c) => c.KEY == value).SingleOrDefault();
+                if(entry!=null) {
+                    MainListView.SelectedItem = entry;
+                }
+            }
+        }
+
 
 
         private void ProcessSelectedEntries(Action<IEnumerable<DLEntry>> action) {

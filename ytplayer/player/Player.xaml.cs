@@ -117,6 +117,10 @@ namespace ytplayer.player {
         private void OnMediaFailed(object sender, ExceptionRoutedEventArgs e) {
             ViewModel.State.Value = PlayerState.ERROR;
             LoggerEx.error(e.ErrorException);
+
+            // ToDo: 
+            // エラー表示と、Retry or Next 選択
+
             //if (mCurrentItemId != null) {
             //    ViewModel.ReachRangeEnd.OnNext(mCurrentItemId);
             //    mCurrentItemId = null;
