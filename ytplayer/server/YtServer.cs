@@ -27,6 +27,7 @@ namespace ytplayer.server {
         string CurrentId { get; set; }
     
         IEnumerable<ChapterEntry> GetChaptersOf(string id);
+        IEnumerable<IGrouping<String, ChapterEntry>> GetChapters();
     }
 
     public class YtServer {
@@ -94,6 +95,33 @@ namespace ytplayer.server {
             if (null == Routes) {
                 Routes = new List<Route>
                 {
+                    new Route {
+                        Name = "ytplayer sync chapters",
+                        UrlRegex = @"/ytplayer/sych",
+                        Method="GET",
+                        Callable = (HttpRequest request) => {
+                            var chapters = Source.GetChapters().Select( c=>{
+                                return new JsonObject(new Dictionary<string,JsonValue>{
+                                    { "owner", c.Key },
+                                    { "chapters", new JsonArray( c.Select( e=> {
+                                        return new JsonObject(new Dictionary<string, JsonValue> {
+                                            { "Pos", e.Position },
+                                            { "Skip", e.Skip },
+                                            { "Label", e.Label },
+                                        }).Apply(x=>LoggerEx.debug(x.ToString()));
+                                    })).Apply(x=>LoggerEx.debug(x.ToString())) },
+                                });
+                            });
+                            var json = new JsonObject(new Dictionary<string, JsonValue>() {
+                                {"cmd", "sync.chapters"},
+                                {"owners", new JsonArray(chapters) }
+                            });
+                            LoggerEx.debug(json.ToString());
+                            return new TextHttpResponse(json.ToString(), "application/json");
+
+                        }
+                    },
+
                     // SYNC: 端末間同期のために全リストを要求
                     new Route {
                         Name = "ytplayer sync",

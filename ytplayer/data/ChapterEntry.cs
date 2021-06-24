@@ -50,7 +50,20 @@ namespace ytplayer.data {
             return Table.Where((c) => c.Owner == entry.Owner && c.Position == entry.Position).Any();
         }
 
+        class ChapterGroup {
+            public string Owner { get; }
+            public List<ChapterEntry> Chapters { get; }
+
+            public ChapterGroup(string owner, List<ChapterEntry> list) {
+                Owner = owner;
+                Chapters = list;
+            }
+        };
+
         public ChapterList GetChapterList(string owner) {
+            var cc = Table.GroupBy((c) => c.Owner).OrderBy((c)=>c.Key).Select((c) => new ChapterGroup(c.Key, c.ToList())).ToList();
+
+
             return new ChapterList(owner, Table.Where((c) => c.Owner == owner).Select((c)=>c.ToChapterInfo()));
         }
 
