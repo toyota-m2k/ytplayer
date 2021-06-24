@@ -42,6 +42,7 @@ namespace ytplayer.player {
         public ReadOnlyReactivePropertySlim<bool> HasDisabledRange { get; }
         public ReactivePropertySlim<bool> ChapterEditing { get; } = new ReactivePropertySlim<bool>(false);
         public ReactivePropertySlim<ObservableCollection<ChapterInfo>> EditingChapterList { get; } = new ReactivePropertySlim<ObservableCollection<ChapterInfo>>();
+        public Subject<string> ReachRangeEnd { get; } = new Subject<string>();
 
         /**
          * 現在再生中の動画のチャプター設定が変更されていればDBに保存する。
@@ -270,10 +271,6 @@ namespace ytplayer.player {
             mStorageSupplier = new WeakReference<IStorageSupplier>(storageSupplier);
             storageSupplier.BindConsumer(this);
 
-            //TrimStart = PlayList.Current.Select((c) => c?.TrimStart??0).ToReadOnlyReactivePropertySlim();
-            //TrimEnd = PlayList.Current.Select((c) => c?.TrimEnd ?? 0).ToReadOnlyReactivePropertySlim();
-            //Trimming = PlayList.Current.Select((c) => new PlayRange(c?.TrimStart??0, c?.TrimEnd??0)).ToReadOnlyReactivePropertySlim();
-
             DurationText = Duration.Select((v) => FormatDuration(v)).ToReadOnlyReactivePropertySlim();
             PositionText = Position.Select((v) => FormatDuration(v)).ToReadOnlyReactivePropertySlim();
             TrimStartText = Trimming.Select((v) => FormatDuration(v.Start)).ToReadOnlyReactivePropertySlim();
@@ -311,6 +308,18 @@ namespace ytplayer.player {
                     EditingChapterList.Value = null;
                     WavFile?.Dispose();
                     WavFile = null;
+                }
+            });
+
+            string prevId = null;
+            ReachRangeEnd.Subscribe((prev) => {
+                if(prevId == prev) {
+                    LoggerEx.error("Next more than twice.");
+                }
+                if (PlayList.HasNext.Value) {
+                    GoForwardCommand.Execute();
+                } else {
+                    PauseCommand.Execute();
                 }
             });
         }

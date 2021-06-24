@@ -1,35 +1,19 @@
 ﻿using io.github.toyota32k.toolkit.utils;
-using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Threading;
-using ytplayer.common;
 using ytplayer.data;
 
 namespace ytplayer.player {
     public class TimelineSlider : Slider {
         PlayerViewModel ViewModel => DataContext as PlayerViewModel;
-
-        //private WeakReference<IPlayer> mPlayer;
-        //private IPlayer Player {
-        //    get => mPlayer?.GetValue();
-        //    set => mPlayer = new WeakReference<IPlayer>(value);
-        //}
         private DispatcherTimer mTimer;
-        //private IDisposable mPlayingSubscriber;
-        //private IDisposable mDurationSubscriber;
-        //private DisposablePool mDisposablePool = new DisposablePool();
         private bool mSliderSeekingFromPlayer;
-
-        //public ReactiveProperty<double> Position { get; } = new ReactiveProperty<double>();
-        //public PlayRange RangeLimit { get; set; } = new PlayRange(0,0);
-
-        public event Action ReachRangeEnd;
+        private string mCurrentItemId = null;
 
         public TimelineSlider() {
             mTimer = new DispatcherTimer();
@@ -50,7 +34,10 @@ namespace ytplayer.player {
             if(hit.Count()>0) {
                 var range = hit.First();
                 if (range.End == 0) {
-                    ReachRangeEnd?.Invoke();
+                    if (mCurrentItemId != null) {
+                        ViewModel.ReachRangeEnd.OnNext(mCurrentItemId);
+                        mCurrentItemId = null;
+                    }
                 } else {
                     ViewModel.PlayerPosition = range.End;
                     mSliderSeekingFromPlayer = true;
@@ -66,19 +53,19 @@ namespace ytplayer.player {
             ValueChanged += OnValueChanged;
             Unloaded += OnUnloaded;
 
-            ViewModel.IsPlaying.Subscribe((playing) => {
+            ViewModel?.IsPlaying?.Subscribe((playing) => {
                 if (playing) {
                     mTimer.Start();
                 } else {
                     mTimer.Stop();
                 }
             });
-            ViewModel.Duration.Subscribe((duration) => {
+            ViewModel?.Duration?.Subscribe((duration) => {
                 this.Maximum = (double)duration;
             });
-            //ViewModel.DisabledRanges.Subscribe((ranges) => {
-            //    CheckRangeAndSeek(ViewModel.PlayerPosition, ranges);
-            //});
+            ViewModel?.PlayList?.Current?.Subscribe((item) => {
+                mCurrentItemId = item?.KEY;
+            });
         }
 
         private void OnValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) {
@@ -87,13 +74,12 @@ namespace ytplayer.player {
                     vm.PlayerPosition = (ulong)this.Value;
                 });
             }
-            //Debug.WriteLine(e.ToString());
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) {
             Unloaded -= OnUnloaded;
+            ValueChanged -= OnValueChanged;
             mTimer.Stop();
-            ReachRangeEnd = null;
         }
 
 

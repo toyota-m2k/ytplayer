@@ -47,8 +47,12 @@ namespace ytplayer.player {
             ViewModel.ChapterEditing.Subscribe(OnChapterEditing);
         }
 
+        private string mCurrentItemId = null;
+
         private void OnCurrentItemChanged(DLEntry item) {
             MediaPlayer.Stop();
+            MediaPlayer.Source = null;
+            mCurrentItemId = item?.KEY;
             ViewModel.SaveChapterListIfNeeds();
             ViewModel.State.Value = PlayerState.UNAVAILABLE;
             ViewModel.Trimming.Value = PlayRange.Empty;
@@ -70,14 +74,17 @@ namespace ytplayer.player {
                     uri = new Uri(path);
                     ViewModel.State.Value = PlayerState.LOADING;
                 }
+                if (uri != null) {
+                    MediaPlayer.Source = uri;
+                    // Sourceをセットしただけでは OnMediaOpenedが呼ばれない。
+                    // Play または、Stop を呼んでおく必要がある。
+                    MediaPlayer.Stop();
+                }
             }
-            MediaPlayer.Source = uri;
-            //if(uri!=null) {
-            //    Play();
-            //}
         }
 
         private void OnMediaOpened(object sender, RoutedEventArgs e) {
+            if (!MediaPlayer.NaturalDuration.HasTimeSpan) return;
             ViewModel.State.Value = PlayerState.READY;
             ViewModel.Duration.Value = (ulong)MediaPlayer.NaturalDuration.TimeSpan.TotalMilliseconds;
             var current = ViewModel.PlayList.Current.Value;
@@ -101,12 +108,23 @@ namespace ytplayer.player {
 
         private void OnMediaEnded(object sender, RoutedEventArgs e) {
             ViewModel.State.Value = PlayerState.READY;
-            ViewModel.GoForwardCommand.Execute();
+            if (mCurrentItemId != null) {
+                ViewModel.ReachRangeEnd.OnNext(mCurrentItemId);
+                mCurrentItemId = null;
+            }
         }
 
         private void OnMediaFailed(object sender, ExceptionRoutedEventArgs e) {
             ViewModel.State.Value = PlayerState.ERROR;
-            ViewModel.GoForwardCommand.Execute();
+            LoggerEx.error(e.ErrorException);
+
+            // ToDo: 
+            // エラー表示と、Retry or Next 選択
+
+            //if (mCurrentItemId != null) {
+            //    ViewModel.ReachRangeEnd.OnNext(mCurrentItemId);
+            //    mCurrentItemId = null;
+            //}
         }
 
         public void Play() {

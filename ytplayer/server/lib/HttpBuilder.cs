@@ -22,6 +22,16 @@ namespace SimpleHttpServer
             };
         }
 
+        public static IHttpResponse BadRequest() {
+            //string content = File.ReadAllText("Resources/Pages/404.html");
+
+            return new TextHttpResponse() {
+                ReasonPhrase = "BadRequest",
+                StatusCode = 400,
+                Content = "Bad Request."
+            };
+        }
+
         public static IHttpResponse NotFound()
         {
             //string content = File.ReadAllText("Resources/Pages/404.html");

@@ -1,20 +1,9 @@
-﻿using io.github.toyota32k.toolkit.utils;
-using io.github.toyota32k.toolkit.view;
-using Reactive.Bindings;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reactive.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
 using ytplayer.data;
 
@@ -25,6 +14,8 @@ namespace ytplayer.player {
     public partial class ChapterView : UserControl {
         public PlayerViewModel ViewModel => DataContext as PlayerViewModel;
 
+        const double TICK_WIDTH = 2;
+
         private double PrevWidth = 0;
 
         public ChapterView() {
@@ -32,8 +23,8 @@ namespace ytplayer.player {
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
-            ViewModel.Chapters.Subscribe(OnChapterListChanged);
-            ViewModel.DisabledRanges.Subscribe(OnDisabledRangesChanged);
+            ViewModel?.Chapters.Subscribe(OnChapterListChanged);
+            ViewModel?.DisabledRanges.Subscribe(OnDisabledRangesChanged);
         }
 
 
@@ -48,13 +39,15 @@ namespace ytplayer.player {
             TickerView.Children.Clear();
             RangeView.Children.Clear();
             var duration = ViewModel.Duration.Value;
+            if (duration == 0) return;
             if (list != null && duration > 0) {
                 foreach (var c in list.Values) {
+                    var pos = Math.Min(Time2Position(c.Position), ActualWidth - TICK_WIDTH);
                     var rc = new Rectangle() {
-                        Width = 2,
+                        Width = TICK_WIDTH,
                         Fill = new SolidColorBrush(Colors.White),
                         HorizontalAlignment = HorizontalAlignment.Left,
-                        Margin = new Thickness(Time2Position(c.Position), 0, 0, 0)
+                        Margin = new Thickness(pos, 0, 0, 0)
                     };
                     TickerView.Children.Add(rc);
                 }
@@ -83,7 +76,6 @@ namespace ytplayer.player {
                 OnChapterListChanged(ViewModel.Chapters.Value);
                 OnDisabledRangesChanged(ViewModel.DisabledRanges.Value);
             }
-
         }
     }
 }

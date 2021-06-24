@@ -117,8 +117,8 @@ namespace ytplayer.download.downloader {
                 Arguments = $"{BasicArguments} {SpecialArguments} {Entry.Url}",
                 CreateNoWindow = true,
                 UseShellExecute = false,
-                StandardOutputEncoding = System.Text.Encoding.UTF8,
-                StandardErrorEncoding = System.Text.Encoding.UTF8,
+                //StandardOutputEncoding = System.Text.Encoding.UTF8,
+                //StandardErrorEncoding = System.Text.Encoding.UTF8,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
             };

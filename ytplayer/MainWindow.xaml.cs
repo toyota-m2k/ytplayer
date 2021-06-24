@@ -726,6 +726,9 @@ namespace ytplayer {
                 });
             }
         }
+
+        
+
         DLEntry IYtListSource.GetPrevEntry(string current, bool moveCursor) {
             return Dispatcher.Invoke(() => {
                 var entry = ((IYtListSource)this).GetEntry(current);
@@ -769,6 +772,25 @@ namespace ytplayer {
                 }
             });
         }
+
+        IEnumerable<ChapterEntry> IYtListSource.GetChaptersOf(string id) {
+            return Storage.ChapterTable.Table.Where((c) => c.Owner == id);
+        }
+
+        string IYtListSource.CurrentId {
+            get => ((IYtListSource)this).CurrentEntry?.KEY;
+            set {
+                Dispatcher.Invoke(() => {
+                    var entries = viewModel.MainList.Value.Where((c) => c.KEY == value);
+                    var entry = entries.SingleOrDefault();
+                    if (entry != null) {
+                        MainListView.SelectedItem = entry;
+                        MainListView.ScrollIntoView(entry);
+                    }
+                });
+            }
+        }
+
 
 
         private void ProcessSelectedEntries(Action<IEnumerable<DLEntry>> action) {
@@ -944,6 +966,7 @@ namespace ytplayer {
                 int index = viewModel.MainList.Value.IndexOf((DLEntry)obj);
                 if (index >= 0) {
                     MainListView.SelectedIndex = index;
+                    MainListView.ScrollIntoView(obj);   
                 }
             }
         }

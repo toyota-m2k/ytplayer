@@ -11,7 +11,7 @@ namespace ytplayer.data {
 
     public class Storage : IDisposable {
         private const string APP_NAME = "YTPlayer";
-        private const int DB_VERSION = 4;
+        private const int DB_VERSION = 5;
 
         private SQLiteConnection Connection { get; set; }
         public static long LastUpdated { get; set; } = 0;
@@ -255,6 +255,9 @@ namespace ytplayer.data {
 
 
         private void InitTables() {
+            if(getVersion()==4) {
+                executeSql(@"drop table t_chapter");
+            }
             executeSql(
                 //@"CREATE TABLE IF NOT EXISTS t_download (
                 //    url TEXT NOT NULL PRIMARY KEY,
@@ -299,6 +302,7 @@ namespace ytplayer.data {
 	                id	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                     owner TEXT NOT NULL,
                     position  INTEGER NOT NULL,
+                    label TEXT,
                     skip INTEGER NOT NULL DEFAULT 0,
                     FOREIGN KEY(owner) REFERENCES t_download_ex(id),
                     UNIQUE(owner,position)
