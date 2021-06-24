@@ -171,7 +171,7 @@ namespace ytplayer.wav {
 
         public static async Task<WavFile> CreateFromMP4(string inFile, string outWorkFile, Action<string> stdOutput, Action<string> stdError) {
             var conv = new MediaConvert(inFile, outWorkFile, "-map 0:1 -vn -ac 1 -ar 8000  -acodec pcm_s16le -f wav");
-            conv.ShowCommandPrompt = true;
+            //conv.ShowCommandPrompt = true;
             conv.StandardOutput = stdOutput;
             conv.StandardError = stdError;
             if (!await conv.Execute()) {
