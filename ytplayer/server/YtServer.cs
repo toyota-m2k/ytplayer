@@ -1,4 +1,5 @@
 ﻿using io.github.toyota32k.toolkit.utils;
+using io.github.toyota32k.toolkit.view;
 using SimpleHttpServer;
 using SimpleHttpServer.Models;
 using System;
@@ -257,8 +258,36 @@ namespace ytplayer.server {
                         Name = "ytPlayer Current Item",
                         UrlRegex = @"/ytplayer/current",
                         Method = "GET",
+                        Callable = (HttpRequest request) => {
+                            Logger.debug("YtServer: Current (Get)");
+                            var id = Source.CurrentId ?? "";
+                            var json = new JsonObject(new Dictionary<string, JsonValue>() {
+                                { "cmd", "current"},
+                                { "id", $"{id}" },
+                            });
+                            return new TextHttpResponse(json.ToString(), "application/json");
+                        }
                     },
 
+                    new Route {
+                        Name = "ytPlayer Current Item",
+                        UrlRegex = @"/ytplayer/current",
+                        Method = "PUT",
+                        Callable = (HttpRequest request) => {
+                            Logger.debug("YtServer: Current (Put)");
+                            if(!request.Headers.TryGetValue("Content-Type", out string type)) {
+                                return HttpBuilder.BadRequest();
+                            }
+                            try {
+                                var json = new JsonHelper(request.Content);
+                                var id = json.GetString("id");
+                                Source.CurrentId = id;
+                                return new TextHttpResponse(json.ToString(), "application/json");
+                            } catch(Exception e) {
+                                return HttpBuilder.InternalServerError();
+                            }
+                        }
+                    },
 
                     // category：全カテゴリリストの要求
                     new Route {

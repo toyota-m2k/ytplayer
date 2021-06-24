@@ -778,12 +778,16 @@ namespace ytplayer {
         }
 
         string IYtListSource.CurrentId {
-            get => ((IYtListSource)this).CurrentEntry.KEY;
+            get => ((IYtListSource)this).CurrentEntry?.KEY;
             set {
-                var entry = viewModel.MainList.Value.Where((c) => c.KEY == value).SingleOrDefault();
-                if(entry!=null) {
-                    MainListView.SelectedItem = entry;
-                }
+                Dispatcher.Invoke(() => {
+                    var entries = viewModel.MainList.Value.Where((c) => c.KEY == value);
+                    var entry = entries.SingleOrDefault();
+                    if (entry != null) {
+                        MainListView.SelectedItem = entry;
+                        MainListView.ScrollIntoView(entry);
+                    }
+                });
             }
         }
 

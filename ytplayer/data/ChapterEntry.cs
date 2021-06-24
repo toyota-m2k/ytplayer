@@ -92,6 +92,7 @@ namespace ytplayer.data {
             }
 
             Update();
+            updated.ResetModifiedFlag();
         }
     }
 }

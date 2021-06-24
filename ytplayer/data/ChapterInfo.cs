@@ -10,6 +10,7 @@ namespace ytplayer.data {
         private string mLabel;
 
         public bool IsModified { get; private set; } = false;
+        public void ResetModifiedFlag() { IsModified = false; }
 
         public ulong Position { get; private set; }
 
@@ -61,6 +62,13 @@ namespace ytplayer.data {
             Owner = owner;
             foreach (var c in src) {
                 AddChapter(c);
+            }
+        }
+
+        public void ResetModifiedFlag() {
+            mIsModified = false;
+            foreach(var c in Values) {
+                c.ResetModifiedFlag();
             }
         }
 
