@@ -97,35 +97,32 @@ namespace ytplayer.server {
                 {
                     new Route {
                         Name = "ytplayer sync chapters",
-                        UrlRegex = @"/ytplayer/sych",
+                        UrlRegex = @"/ytplayer/sync.chapter",
                         Method="GET",
                         Callable = (HttpRequest request) => {
-                            var chapters = Source.GetChapters().Select( c=>{
-                                return new JsonObject(new Dictionary<string,JsonValue>{
+                            var json = new JsonObject(new Dictionary<string, JsonValue> {
+                                {"cmd", "sync.chapters"},
+                                {"groups", new JsonArray(Source.GetChapters().Select( c=>
+                                    new JsonObject(new Dictionary<string,JsonValue>{
                                     { "owner", c.Key },
                                     { "chapters", new JsonArray( c.Select( e=> {
                                         return new JsonObject(new Dictionary<string, JsonValue> {
-                                            { "Pos", e.Position },
-                                            { "Skip", e.Skip },
-                                            { "Label", e.Label },
-                                        }).Apply(x=>LoggerEx.debug(x.ToString()));
-                                    })).Apply(x=>LoggerEx.debug(x.ToString())) },
-                                });
+                                            { "pos", e.Position },
+                                            { "skip", e.Skip },
+                                            { "label", e.Label },
+                                        });
+                                    }))},
+                                })))},
                             });
-                            var json = new JsonObject(new Dictionary<string, JsonValue>() {
-                                {"cmd", "sync.chapters"},
-                                {"owners", new JsonArray(chapters) }
-                            });
-                            LoggerEx.debug(json.ToString());
+                            //LoggerEx.debug(json.ToString());
                             return new TextHttpResponse(json.ToString(), "application/json");
-
                         }
                     },
 
                     // SYNC: 端末間同期のために全リストを要求
                     new Route {
                         Name = "ytplayer sync",
-                        UrlRegex = @"/ytplayer/sync",
+                        UrlRegex = @"/ytplayer/sync/?$",
                         Method="GET",
                         Callable = (HttpRequest request) => {
                             var /*IEnumerable<JsonObject>*/ list =

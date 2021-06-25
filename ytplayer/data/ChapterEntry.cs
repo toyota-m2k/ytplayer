@@ -60,10 +60,11 @@ namespace ytplayer.data {
             }
         };
 
+        public IEnumerable<ChapterEntry> GetChapterEntries(string owner) {
+            return Table.Where((c) => c.Owner == owner);
+        }
+
         public ChapterList GetChapterList(string owner) {
-            var cc = Table.GroupBy((c) => c.Owner).OrderBy((c)=>c.Key).Select((c) => new ChapterGroup(c.Key, c.ToList())).ToList();
-
-
             return new ChapterList(owner, Table.Where((c) => c.Owner == owner).Select((c)=>c.ToChapterInfo()));
         }
 
@@ -78,6 +79,14 @@ namespace ytplayer.data {
         }
 
         private static PositionComparator PComp = new PositionComparator();
+
+        // Autoincrementのprimary keyのせいで、DuplicateKeyExceptionが出る問題対策
+        public void AddAll(IEnumerable<ChapterEntry> source) {
+            foreach (var a in source) {
+                Table.InsertOnSubmit(a);
+                FlashForce();
+            }
+        }
 
 
         public void UpdateByChapterList(ChapterList updated) {
