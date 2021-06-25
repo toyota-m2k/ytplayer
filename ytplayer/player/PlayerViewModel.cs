@@ -306,8 +306,7 @@ namespace ytplayer.player {
                     EditingChapterList.Value = Chapters.Value.Values;
                 } else {
                     EditingChapterList.Value = null;
-                    WavFile?.Dispose();
-                    WavFile = null;
+                    SaveChapterListIfNeeds();
                 }
             });
 

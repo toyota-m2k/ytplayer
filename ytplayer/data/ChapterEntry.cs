@@ -16,7 +16,7 @@ namespace ytplayer.data {
         public ulong Position{ get; private set; }
 
         [Column(Name = "label", CanBeNull = true)]
-        public string Label { get; private set; }
+        public string Label { get; set; }
 
         [Column(Name = "skip", CanBeNull = false)]
         private int skip { get; set; }
@@ -99,6 +99,7 @@ namespace ytplayer.data {
             foreach(var m in modified) {
                 var entry = Table.Where((c) => c.Position == m.Position && c.Owner == current.Owner).SingleOrDefault();
                 entry.Skip = m.Skip;
+                entry.Label = m.Label;
             }
 
             foreach(var a in appended) {
