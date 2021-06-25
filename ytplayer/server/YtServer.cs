@@ -309,6 +309,7 @@ namespace ytplayer.server {
                                 Source.CurrentId = id;
                                 return new TextHttpResponse(json.ToString(), "application/json");
                             } catch(Exception e) {
+                                Logger.error(e);
                                 return HttpBuilder.InternalServerError();
                             }
                         }
