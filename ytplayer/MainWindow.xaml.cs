@@ -776,6 +776,9 @@ namespace ytplayer {
         IEnumerable<ChapterEntry> IYtListSource.GetChaptersOf(string id) {
             return Storage.ChapterTable.Table.Where((c) => c.Owner == id);
         }
+        IEnumerable<IGrouping<String,ChapterEntry>> IYtListSource.GetChapters() {
+            return Storage.ChapterTable.Table.GroupBy((c) => c.Owner);
+        }
 
         string IYtListSource.CurrentId {
             get => ((IYtListSource)this).CurrentEntry?.KEY;

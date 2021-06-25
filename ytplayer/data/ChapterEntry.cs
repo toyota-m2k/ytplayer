@@ -16,7 +16,7 @@ namespace ytplayer.data {
         public ulong Position{ get; private set; }
 
         [Column(Name = "label", CanBeNull = true)]
-        public string Label { get; private set; }
+        public string Label { get; set; }
 
         [Column(Name = "skip", CanBeNull = false)]
         private int skip { get; set; }
@@ -50,6 +50,20 @@ namespace ytplayer.data {
             return Table.Where((c) => c.Owner == entry.Owner && c.Position == entry.Position).Any();
         }
 
+        class ChapterGroup {
+            public string Owner { get; }
+            public List<ChapterEntry> Chapters { get; }
+
+            public ChapterGroup(string owner, List<ChapterEntry> list) {
+                Owner = owner;
+                Chapters = list;
+            }
+        };
+
+        public IEnumerable<ChapterEntry> GetChapterEntries(string owner) {
+            return Table.Where((c) => c.Owner == owner);
+        }
+
         public ChapterList GetChapterList(string owner) {
             return new ChapterList(owner, Table.Where((c) => c.Owner == owner).Select((c)=>c.ToChapterInfo()));
         }
@@ -66,6 +80,14 @@ namespace ytplayer.data {
 
         private static PositionComparator PComp = new PositionComparator();
 
+        // Autoincrementのprimary keyのせいで、DuplicateKeyExceptionが出る問題対策
+        public void AddAll(IEnumerable<ChapterEntry> source) {
+            foreach (var a in source) {
+                Table.InsertOnSubmit(a);
+                FlashForce();
+            }
+        }
+
 
         public void UpdateByChapterList(ChapterList updated) {
             var current = GetChapterList(updated.Owner);
@@ -77,6 +99,7 @@ namespace ytplayer.data {
             foreach(var m in modified) {
                 var entry = Table.Where((c) => c.Position == m.Position && c.Owner == current.Owner).SingleOrDefault();
                 entry.Skip = m.Skip;
+                entry.Label = m.Label;
             }
 
             foreach(var a in appended) {

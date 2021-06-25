@@ -63,8 +63,8 @@
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.4.4\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
-    <Reference Include="io.github.toyota32k.wpfLittleToolkit, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\io.github.toyota32k.wpfLittleToolkit.1.0.4\lib\net472\io.github.toyota32k.wpfLittleToolkit.dll</HintPath>
+    <Reference Include="io.github.toyota32k.wpfLittleToolkit, Version=1.0.7.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\io.github.toyota32k.wpfLittleToolkit.1.0.7\lib\net472\io.github.toyota32k.wpfLittleToolkit.dll</HintPath>
     </Reference>
     <Reference Include="log4net, Version=2.0.12.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
       <HintPath>..\packages\log4net.2.0.12\lib\net45\log4net.dll</HintPath>
@@ -76,19 +76,19 @@
       <HintPath>..\packages\Expression.Interaction.3.0.40218.0\lib\net46\Microsoft.Expression.Interactions.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.WindowsAPICodePack, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\WindowsAPICodePack.1.1.1\lib\Microsoft.WindowsAPICodePack.dll</HintPath>
+      <HintPath>..\packages\WindowsAPICodePack.1.1.2\lib\Microsoft.WindowsAPICodePack.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.WindowsAPICodePack.ExtendedLinguisticServices, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\WindowsAPICodePack.1.1.1\lib\Microsoft.WindowsAPICodePack.ExtendedLinguisticServices.dll</HintPath>
+      <HintPath>..\packages\WindowsAPICodePack.1.1.2\lib\Microsoft.WindowsAPICodePack.ExtendedLinguisticServices.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.WindowsAPICodePack.Sensors, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\WindowsAPICodePack.1.1.1\lib\Microsoft.WindowsAPICodePack.Sensors.dll</HintPath>
+      <HintPath>..\packages\WindowsAPICodePack.1.1.2\lib\Microsoft.WindowsAPICodePack.Sensors.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.WindowsAPICodePack.Shell, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\WindowsAPICodePack.1.1.1\lib\Microsoft.WindowsAPICodePack.Shell.dll</HintPath>
+      <HintPath>..\packages\WindowsAPICodePack.1.1.2\lib\Microsoft.WindowsAPICodePack.Shell.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.WindowsAPICodePack.ShellExtensions, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\WindowsAPICodePack.1.1.1\lib\Microsoft.WindowsAPICodePack.ShellExtensions.dll</HintPath>
+      <HintPath>..\packages\WindowsAPICodePack.1.1.2\lib\Microsoft.WindowsAPICodePack.ShellExtensions.dll</HintPath>
     </Reference>
     <Reference Include="ReactiveProperty, Version=7.11.0.0, Culture=neutral, PublicKeyToken=910d1732782c71cb, processorArchitecture=MSIL">
       <HintPath>..\packages\ReactiveProperty.7.11.0\lib\netstandard2.0\ReactiveProperty.dll</HintPath>
@@ -169,6 +169,7 @@
     </ApplicationDefinition>
     <Compile Include="common\CursorManager.cs" />
     <Compile Include="common\DisposablePool.cs" />
+    <Compile Include="common\JsonExt.cs" />
     <Compile Include="common\WeakList.cs" />
     <Compile Include="data\ChapterEntry.cs" />
     <Compile Include="data\ChapterInfo.cs" />
@@ -315,6 +316,7 @@
     <Content Include="..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.113.3\build\net451\x86\SQLite.Interop.dll">
       <Link>lib\x86\SQLite.Interop.dll</Link>
     </Content>
+    <Resource Include="license.txt" />
     <Resource Include="Windows Logo.png" />
     <Resource Include="ytplayer.ico" />
   </ItemGroup>

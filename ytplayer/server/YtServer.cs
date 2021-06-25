@@ -27,6 +27,7 @@ namespace ytplayer.server {
         string CurrentId { get; set; }
     
         IEnumerable<ChapterEntry> GetChaptersOf(string id);
+        IEnumerable<IGrouping<String, ChapterEntry>> GetChapters();
     }
 
     public class YtServer {
@@ -94,10 +95,34 @@ namespace ytplayer.server {
             if (null == Routes) {
                 Routes = new List<Route>
                 {
+                    new Route {
+                        Name = "ytplayer sync chapters",
+                        UrlRegex = @"/ytplayer/sync.chapter",
+                        Method="GET",
+                        Callable = (HttpRequest request) => {
+                            var json = new JsonObject(new Dictionary<string, JsonValue> {
+                                {"cmd", "sync.chapters"},
+                                {"groups", new JsonArray(Source.GetChapters().Select( c=>
+                                    new JsonObject(new Dictionary<string,JsonValue>{
+                                    { "owner", c.Key },
+                                    { "chapters", new JsonArray( c.Select( e=> {
+                                        return new JsonObject(new Dictionary<string, JsonValue> {
+                                            { "pos", e.Position },
+                                            { "skip", e.Skip },
+                                            { "label", e.Label },
+                                        });
+                                    }))},
+                                })))},
+                            });
+                            //LoggerEx.debug(json.ToString());
+                            return new TextHttpResponse(json.ToString(), "application/json");
+                        }
+                    },
+
                     // SYNC: 端末間同期のために全リストを要求
                     new Route {
                         Name = "ytplayer sync",
-                        UrlRegex = @"/ytplayer/sync",
+                        UrlRegex = @"/ytplayer/sync/?$",
                         Method="GET",
                         Callable = (HttpRequest request) => {
                             var /*IEnumerable<JsonObject>*/ list =
