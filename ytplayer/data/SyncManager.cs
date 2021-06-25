@@ -43,11 +43,11 @@ namespace ytplayer.data {
                 host += ":3500";
             }
 
-            progress?.OnMessage("Waiting for list ...");
+            progress?.OnMessage("Waiting for item list ...");
             using (var client = new HttpClient()) {
                 List<DLEntry> list;
                 try {
-                    output.StandardOutput("Start synchronizing...");
+                    output.StandardOutput("Start synchronizing items ...");
                     var res = await client.GetStringAsync($"http://{host}/ytplayer/sync");
                     var json = JsonObject.Parse(res);
                     list = (json["list"] as JsonArray)?.Select(v => {
@@ -78,7 +78,7 @@ namespace ytplayer.data {
                         try {
                             logger.debug($"id={c.KEY}, name={c.Name}");
                             logger.debug($"saving:{c.VPath}");
-                            output.StandardOutput($"synchronizing :{c.KEY} - {c.Name}");
+                            output.StandardOutput($"synchronizing item: {c.KEY} - {c.Name}");
                             if (!PathUtil.isFile(c.VPath)) {
                                 using (var inStream = await client.GetStreamAsync($"http://{host}/ytplayer/video?id={c.KEY}"))
                                 using (var outStream = new FileStream(c.VPath, FileMode.Create)) {
@@ -97,8 +97,8 @@ namespace ytplayer.data {
                             break;
                         }
                     }
-                    progress?.OnMessage("Completed.");
-                    output.StandardOutput("Complete synchronizing...");
+                    progress?.OnMessage("Items Completed.");
+                    output.StandardOutput("Complete synchronizing items.");
 
                     await SyncChaptersFrom(client, host, storage, output, progress);
                 }
@@ -117,24 +117,20 @@ namespace ytplayer.data {
 
         private static async Task SyncChaptersFrom(HttpClient client, string host, Storage storage, IReportOutput output, ISyncProgress progress) {
             try {
-                output.StandardOutput("Start synchronizing...");
+                progress?.OnMessage("Waiting for chapter list ...");
+                output.StandardOutput("Start synchronizing chapters");
                 var res = await client.GetStringAsync($"http://{host}/ytplayer/sync.chapter");
                 var json = JsonValue.Parse(res) as JsonObject;
-                if (json == null) return;
-                //var groups = json.GetList("groups", (c) => {
-                //    var g = c as JsonObject;
-                //    if (g == null) return null;
-                //    return new Dictionary<string, List<ChapterInfo>> {
-                //        { g.GetString("owner"), g.GetList<ChapterInfo>("chapters", e=>{
-                //            var eo = e as JsonObject;
-                //            if(eo==null) return null;
-                //            return new ChapterInfo((ulong)eo.GetLong("pos"), eo.GetBoolean("skip"), eo.GetString("label"));
-                //        })},
-                //    };
-                //});
-
+                if (json == null) {
+                    output.StandardOutput("no chapters to be synchronized.");
+                    return;
+                }
                 var groups = json.GetList("groups");
-                foreach(var g in groups) {
+                int count = 0, totalCount = groups.Count;
+                progress?.OnProgress(0, totalCount);
+                progress?.OnMessage("Synchronizing Chapters...");
+                foreach (var g in groups) {
+                    progress?.OnProgress(++count, totalCount);
                     var gg = g as JsonObject;
                     if (gg == null) continue;
                     var owner = gg.GetString("owner");
@@ -145,7 +141,8 @@ namespace ytplayer.data {
                         logger.error($"why? their is null: {owner}");
                         continue;
                     }
-                    if(!storage.DLTable.Contains(owner)) {
+                    var dl = storage.DLTable.Find(owner);
+                    if(dl==null) {
                         // DLEntry は同期済みだから、これはあり得ないはずだが。。。
                         logger.error($"no entry: {owner}");
                         continue;
@@ -156,26 +153,33 @@ namespace ytplayer.data {
                         logger.info($"some chapters is found for {owner}");
                         if(myChapters.Where(c=>!string.IsNullOrWhiteSpace(c.Label)).Any()) {
                             // 自分側にラベル付きのChapterが設定されている
+                            output.StandardOutput($"Skipped-1 {dl.Name}");
                             logger.info("prefer my chapter list... my chapters have labels.");
                             continue;
                         }
                         if(!theirChapters.Where(c=>!string.IsNullOrWhiteSpace((c as JsonObject).GetString("label"))).Any()) {
                             // 相手側のChapterにラベルが設定されていない
+                            output.StandardOutput($"Skipped-2 {dl.Name}");
                             logger.info("prefer my chapter list... their labels don't have labels.");
                             continue;
                         }
+                        output.StandardOutput($"Removed: {dl.Name}");
                         logger.info($"OK, delete my chapters.");
-                        // storage.ChapterTable.Delete(myChapters, true);
-                        foreach(var x in myChapters) { logger.info($"--- deleted: {x.Owner}, {x.Position}, {x.Skip}, {x.Label}"); }
+                        storage.ChapterTable.Delete(myChapters, true);
+                        //foreach (var x in myChapters) { logger.info($"--- deleted: {x.Owner}, {x.Position}, {x.Skip}, {x.Label}"); }
                     }
                     logger.info($"let's import thier chapters.");
-                    // storage.ChapterTable.AddAll(theirChapters.Select(c => ChapterEntry.Create(owner, (ulong)(c as JsonObject).GetLong("pos"), (c as JsonObject).GetBoolean("skip"), (c as JsonObject).GetString("label"))));
-                    foreach(var x in theirChapters.Select(c => ChapterEntry.Create(owner, (ulong)(c as JsonObject).GetLong("pos"), (c as JsonObject).GetBoolean("skip"), (c as JsonObject).GetString("label")))) {
-                        logger.info($"+++ append: {x.Owner}, {x.Position}, {x.Skip}, {x.Label}");
-                    }
+                    storage.ChapterTable.AddAll(theirChapters.Select(c => ChapterEntry.Create(owner, (ulong)(c as JsonObject).GetLong("pos"), (c as JsonObject).GetBoolean("skip"), (c as JsonObject).GetString("label"))));
+                    //foreach(var x in theirChapters.Select(c => ChapterEntry.Create(owner, (ulong)(c as JsonObject).GetLong("pos"), (c as JsonObject).GetBoolean("skip"), (c as JsonObject).GetString("label")))) {
+                    //    logger.info($"+++ append: {x.Owner}, {x.Position}, {x.Skip}, {x.Label}");
+                    //}
+                    output.StandardOutput($"Imported {theirChapters.Count} chapters: {dl.Name}");
                 }
 
-            } catch(Exception e) {
+                progress?.OnMessage("Chapters Completed.");
+                output.StandardOutput("Complete synchronizing chapters.");
+            }
+            catch (Exception e) {
                 logger.error(e);
             }
         }
