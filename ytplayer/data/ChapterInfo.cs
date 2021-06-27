@@ -135,34 +135,24 @@ namespace ytplayer.data {
             *         false: ヒットしていない
             */
         public bool GetNeighbourChapterIndex(ulong current, out int prev, out int next) {
-            prev = next = -1;
-            int count = Values.Count, s = 0, e = count - 1, m;
-            if (e < 0) {
-                return false;
+            int count = Values.Count;
+            int clipIndex(int index) {
+                return (0 <= index && index < count) ? index : -1;
             }
-
-            if (Values[e].Position < current) {
-                prev = e;
-                return false;
-            }
-
-            do {
-                m = (s + e) / 2;
-                ulong v = Values[m].Position;
-                if (v == current) {
-                    prev = m - 1;
-                    if (m < count - 1) {
-                        next = m + 1;
-                    }
+            for (int i=0; i<count; i++) {
+                if(current == Values[i].Position) {
+                    prev = i - 1;
+                    next = clipIndex(i + 1);
                     return true;
-                } else if (v < current) {
-                    s = m + 1;
-                } else { // current < markers[m]
-                    e = m;
                 }
-            } while (s < e);
-            next = s;
-            prev = s - 1;
+                if(current<Values[i].Position) {
+                    prev = i - 1;
+                    next = i;
+                    return false;
+                }
+            }
+            prev = count - 1;
+            next = -1;
             return false;
         }
 
