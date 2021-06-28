@@ -142,59 +142,80 @@ namespace ytplayer.player {
             var item = ViewModel.PlayList.Current.Value;
             if (item == null) return;
             var chapterList = ViewModel.Chapters.Value;
-
-            if (ViewModel.WavFile == null) {
-                if (chapterList.Values.Count > 0) {
-                    if (MessageBoxResult.OK != MessageBox.Show(GetWindow(this), "All chapters will be replaced with created chapters.", "Auto Chapter", MessageBoxButton.OKCancel)) {
-                        return;
-                    }
+            if (chapterList.Values.Count > 0) {
+                if (MessageBoxResult.OK != MessageBox.Show(GetWindow(this), "All chapters will be replaced with created chapters.", "Auto Chapter", MessageBoxButton.OKCancel)) {
+                    return;
                 }
-                OutputView.Visibility = Visibility.Visible;
-                OutputView.Document = new FlowDocument();
-                OutputView.Document.Blocks.Add(new Paragraph());
-                AddTextToRichEdit("Extracting sound track...", new SolidColorBrush(Colors.Blue));
-                try {
-                    var outFile = Path.Combine(Settings.Instance.EnsureWorkPath, "x.wav");
-                    PathUtil.safeDeleteFile(outFile);
+            }
 
-                    using (WaitCursor.Start(this)) {
-                        ViewModel.WavFile = await WavFile.CreateFromMP4(item.VPath, outFile, StandardOutput, StandardError);
-                        if(ViewModel.WavFile==null) {
-                            MessageBox.Show(GetWindow(this), "Cannot extract sound track from MP4 file.", "Auto Chapter", MessageBoxButton.OK);
-                            return;
+            OutputView.Visibility = Visibility.Visible;
+            OutputView.Document = new FlowDocument();
+            OutputView.Document.Blocks.Add(new Paragraph());
+
+            try {
+
+                if (ViewModel.WavFile == null) {
+                    AddTextToRichEdit("Extracting sound track...", new SolidColorBrush(Colors.Blue));
+                    try {
+                        var outFile = Path.Combine(Settings.Instance.EnsureWorkPath, "x.wav");
+                        PathUtil.safeDeleteFile(outFile);
+
+                        using (WaitCursor.Start(this)) {
+                            ViewModel.WavFile = await WavFile.CreateFromMP4(item.VPath, outFile, StandardOutput, StandardError);
+                            if (ViewModel.WavFile == null) {
+                                MessageBox.Show(GetWindow(this), "Cannot extract sound track from MP4 file.", "Auto Chapter", MessageBoxButton.OK);
+                                return;
+                            }
                         }
                     }
+                    catch (Exception e) {
+                        LoggerEx.error(e);
+                    }
                 }
-                catch (Exception e) {
-                    LoggerEx.error(e);
+
+                AddTextToRichEdit("Analyzing sound track...", new SolidColorBrush(Colors.Blue));
+
+                T limit<IT, T>(IT v, T min, T max) {
+                    if ((dynamic)v < (dynamic)min) return min;
+                    if ((dynamic)max < (dynamic)v) return max;
+                    return (T)(dynamic)v;
                 }
-                finally {
-                    await Task.Delay(1000);
-                    OutputView.Visibility = Visibility.Hidden;
-                    OutputView.Document.Blocks.Clear();
+
+                var wavFile = ViewModel.WavFile;
+                short threshold = limit(ViewModel.AutoChapterThreshold.Value, (short)0, (short)5000);
+                double span = limit((double)(ViewModel.AutoChapterSpan.Value) / 1000, (double)0.5, (double)5.0);
+                var result = await Task<bool>.Run(() => {
+                    var ranges = wavFile.ScanChapter(threshold, span);
+
+                    if (!Utils.IsNullOrEmpty(ranges)) {
+                        Dispatcher.Invoke(() => {
+                            chapterList.ClearAllChapters();
+                        });
+                        foreach (var r in ranges) {
+                            var d = r.Item2 - r.Item1;
+                            var p = r.Item2 - Math.Min(d / 2, 1.0);
+                            var pos = (ulong)Math.Round(p * 1000);
+                            Dispatcher.Invoke(() => {
+                                chapterList.AddChapter(new ChapterInfo(pos));
+                                AddTextToRichEdit($"  chapter-{chapterList.Values.Count} : {pos} msec", new SolidColorBrush(Colors.Gray));
+                            });
+                        }
+                        return true;
+                    } else {
+                        return false;
+                    }
+                });
+                if (result) {
+                    ViewModel.NotifyChapterUpdated();
+                } else {
+                    AddTextToRichEdit($"No chapter was detected.", new SolidColorBrush(Colors.Red));
+                    MessageBox.Show(GetWindow(this), "No chapter was detected.", "Auto Chapter", MessageBoxButton.OK);
                 }
             }
-
-            T limit<IT, T>(IT v, T min, T max) {
-                if ((dynamic)v < (dynamic)min) return min;
-                if ((dynamic)max < (dynamic)v) return max;
-                return (T)(dynamic)v;
-            }
-
-            short threshold = limit(ViewModel.AutoChapterThreshold.Value, (short)0, (short)5000);
-            double span = limit((double)(ViewModel.AutoChapterSpan.Value)/1000, (double)0.5, (double)5.0);
-            var ranges = ViewModel.WavFile.ScanChapter(threshold, span);
-
-            if(!Utils.IsNullOrEmpty(ranges)) {
-                chapterList.ClearAllChapters();
-                foreach(var r in ranges) {
-                    var d = r.Item2 - r.Item1;
-                    var p = r.Item2 - Math.Min(d / 2, 1.0);
-                    chapterList.AddChapter(new ChapterInfo((ulong)Math.Round(p * 1000)));
-                }
-                ViewModel.NotifyChapterUpdated();
-            } else {
-                MessageBox.Show(GetWindow(this), "No chapter was detected.", "Auto Chapter", MessageBoxButton.OK);
+            finally {
+                await Task.Delay(1000);
+                OutputView.Visibility = Visibility.Hidden;
+                OutputView.Document.Blocks.Clear();
             }
         }
     }

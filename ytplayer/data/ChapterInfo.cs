@@ -37,6 +37,14 @@ namespace ytplayer.data {
             mLabel = label;
         }
         public string PositionText => PlayerViewModel.FormatDuration(Position);
+
+        private ulong mLength = 0;
+        public ulong Length {
+            get => mLength;
+            set => setProp(callerName(), ref mLength, value, "LengthText");
+        }
+        public string LengthText => PlayerViewModel.FormatDuration(mLength);
+
     }
 
     //public struct ChapterSpan {

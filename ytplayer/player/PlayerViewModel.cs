@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Windows;
 using ytplayer.data;
 using ytplayer.download;
 using ytplayer.wav;
@@ -21,6 +22,10 @@ namespace ytplayer.player {
         ERROR,
     }
     public class PlayerViewModel : ViewModelBase, IStorageConsumer {
+        #region Control Panel Position
+        public ReactivePropertySlim<HorizontalAlignment> PanelHorzAlign { get; } = new ReactivePropertySlim<HorizontalAlignment>(HorizontalAlignment.Right);
+        #endregion
+
         #region Properties of Item Entry
 
         public ReactivePropertySlim<ulong> Duration { get; } = new ReactivePropertySlim<ulong>(1000);
@@ -227,6 +232,8 @@ namespace ytplayer.player {
         public ReactiveCommand AddChapterCommand { get; } = new ReactiveCommand();
         public ReactiveCommand PrevChapterCommand { get; } = new ReactiveCommand();
         public ReactiveCommand NextChapterCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand SyncChapterCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand PanelPositionCommand { get; } = new ReactiveCommand();
         public ReactiveCommand SetTrimCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ResetTrimCommand { get; } = new ReactiveCommand();
 
@@ -306,6 +313,7 @@ namespace ytplayer.player {
                     EditingChapterList.Value = Chapters.Value.Values;
                 } else {
                     EditingChapterList.Value = null;
+                    PanelHorzAlign.Value = HorizontalAlignment.Right;
                     SaveChapterListIfNeeds();
                 }
             });
@@ -319,6 +327,21 @@ namespace ytplayer.player {
                     GoForwardCommand.Execute();
                 } else {
                     PauseCommand.Execute();
+                }
+            });
+
+            PanelPositionCommand.Subscribe(() => {
+                switch(PanelHorzAlign.Value) {
+                    default:
+                    case HorizontalAlignment.Right:
+                        PanelHorzAlign.Value = HorizontalAlignment.Stretch;
+                        break;
+                    case HorizontalAlignment.Stretch:
+                        PanelHorzAlign.Value = HorizontalAlignment.Left;
+                        break;
+                    case HorizontalAlignment.Left:
+                        PanelHorzAlign.Value = HorizontalAlignment.Right;
+                        break;
                 }
             });
         }

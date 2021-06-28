@@ -61,13 +61,14 @@
 
         </Grid>
 
-        <Grid Background="{StaticResource ControlPanelBG}" 
-              MouseEnter="OnMouseEnter" MouseLeave="OnMouseLeave"
-              Opacity="0"
-              VerticalAlignment="Bottom"
-              HorizontalAlignment="Right"
-              Tag="ControlPanel"
-              >
+        <Grid 
+            Background="{StaticResource ControlPanelBG}" 
+            MouseEnter="OnMouseEnter" MouseLeave="OnMouseLeave"
+            Opacity="0"
+            VerticalAlignment="Bottom"
+            HorizontalAlignment="{Binding PanelHorzAlign.Value}"
+            Tag="ControlPanel"
+            >
             <Grid.Style>
                 <!-- Fade in/out effect -->
                 <Style TargetType="Grid">

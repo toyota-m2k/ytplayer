@@ -18,22 +18,27 @@ namespace ytplayer.wav {
         protected virtual bool Prepare() { return true; }
 
         protected virtual ProcessStartInfo MakeParams() {
-            var info = new ProcessStartInfo() {
-                FileName = Command,
-                Arguments = Arguments,
-                CreateNoWindow = true,
-                UseShellExecute = false,
-                RedirectStandardOutput = false,
-                RedirectStandardError = false,
+            if (ShowCommandPrompt) {
+                return new ProcessStartInfo() {
+                    FileName = Command,
+                    Arguments = Arguments,
+                    CreateNoWindow = true,
+                    UseShellExecute = true,
+                    RedirectStandardOutput = false,
+                    RedirectStandardError = false,
+                };
+            } else {
+                return new ProcessStartInfo() {
+                    FileName = Command,
+                    Arguments = Arguments,
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    StandardOutputEncoding = System.Text.Encoding.UTF8,
+                    StandardErrorEncoding = System.Text.Encoding.UTF8,
+                };
             };
-
-            if(!ShowCommandPrompt) {
-                info.StandardOutputEncoding = System.Text.Encoding.UTF8;
-                info.StandardErrorEncoding = System.Text.Encoding.UTF8;
-                info.RedirectStandardOutput = true;
-                info.RedirectStandardError = true;
-            }
-            return info;
         }
 
         public Task<bool> Execute() {

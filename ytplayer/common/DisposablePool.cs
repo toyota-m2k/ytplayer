@@ -6,11 +6,15 @@ using System.Threading.Tasks;
 
 namespace ytplayer.common {
     public class DisposablePool : List<IDisposable>, IDisposable {
-        public void Dispose() {
-            foreach(var e in this) {
+        public void Reset() {
+            foreach (var e in this) {
                 e.Dispose();
             }
             Clear();
+        }
+
+        public void Dispose() {
+            Reset();
         }
     }
 }
