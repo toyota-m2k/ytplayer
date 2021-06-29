@@ -24,6 +24,7 @@ namespace ytplayer.player {
     public class PlayerViewModel : ViewModelBase, IStorageConsumer {
         #region Control Panel Position
         public ReactivePropertySlim<HorizontalAlignment> PanelHorzAlign { get; } = new ReactivePropertySlim<HorizontalAlignment>(HorizontalAlignment.Right);
+        public ReactivePropertySlim<VerticalAlignment> PanelVertAlign { get; } = new ReactivePropertySlim<VerticalAlignment>(VerticalAlignment.Bottom);
         #endregion
 
         #region Properties of Item Entry
@@ -311,9 +312,11 @@ namespace ytplayer.player {
             ChapterEditing.Subscribe((c) => {
                 if(c) {
                     EditingChapterList.Value = Chapters.Value.Values;
+                    PanelVertAlign.Value = VerticalAlignment.Stretch;
                 } else {
                     EditingChapterList.Value = null;
                     PanelHorzAlign.Value = HorizontalAlignment.Right;
+                    PanelVertAlign.Value = VerticalAlignment.Bottom;
                     SaveChapterListIfNeeds();
                 }
             });

@@ -65,7 +65,7 @@
             Background="{StaticResource ControlPanelBG}" 
             MouseEnter="OnMouseEnter" MouseLeave="OnMouseLeave"
             Opacity="0"
-            VerticalAlignment="Bottom"
+            VerticalAlignment="{Binding PanelVertAlign.Value}"
             HorizontalAlignment="{Binding PanelHorzAlign.Value}"
             Tag="ControlPanel"
             >

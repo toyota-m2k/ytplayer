@@ -42,7 +42,9 @@ namespace ytplayer.player {
 
         private void SyncChapter() {
             var pos = ViewModel.PlayerPosition;
-            ViewModel.Chapters.Value.GetNeighbourChapterIndex(pos, out var prev, out var next);
+            if (ViewModel.Chapters.Value.GetNeighbourChapterIndex(pos, out var prev, out var next)) {
+                prev++;
+            } 
             if(prev>=0) {
                 chapterListView.SelectedIndex = prev;
                 chapterListView.ScrollIntoView(chapterListView.Items[prev]);
@@ -68,9 +70,11 @@ namespace ytplayer.player {
                 var c0 = editingList[i];
                 var c1 = editingList[i + 1];
                 c0.Length = c1.Position - c0.Position;
+                c0.Index = i+1;
             }
             var c = editingList[editingList.Count - 1];
             c.Length = duration - c.Position;
+            c.Index = editingList.Count;
         }
 
         private void OnChapterListChanged(object sender, NotifyCollectionChangedEventArgs e) {
@@ -176,7 +180,7 @@ namespace ytplayer.player {
                     var container = FindParent<VirtualizingStackPanel>(textBox);
                     if(container!=null) {
                         // 親コンテナ内で、tag が entry と一致するものを探す。
-                        var tx = GetChildren(container).Where(c =>FindChild<TextBox>(c)?.Run(t=>t.Tag == entry)??false)?.SingleOrDefault() as TextBox;
+                        var tx = GetChildren(container).Select(c => FindChild<TextBox>(c)).Where(c=> c!=null && c.Tag == entry).FirstOrDefault();
                         tx?.Focus();
                     }
                 }

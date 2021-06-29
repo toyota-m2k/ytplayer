@@ -45,6 +45,11 @@ namespace ytplayer.data {
         }
         public string LengthText => PlayerViewModel.FormatDuration(mLength);
 
+        private int mIndex = 0;
+        public int Index {
+            get => mIndex;
+            set => setProp(callerName(), ref mIndex, value);
+        }
     }
 
     //public struct ChapterSpan {

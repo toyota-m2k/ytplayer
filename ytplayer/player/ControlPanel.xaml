@@ -18,7 +18,7 @@
             <RowDefinition Height="Auto"/>  <!-- 0: Player Control Buttons -->
             <RowDefinition Height="Auto"/>  <!-- 1: Position Sider -->
             <RowDefinition Height="Auto"/>  <!-- 2: Chapter -->
-            <RowDefinition Height="Auto"/>  <!-- 3: Trimming -->
+            <RowDefinition Height="*"/>  <!-- 3: Trimming -->
             <RowDefinition Height="Auto"/>  <!-- 4: Volume/Speed -->
             <RowDefinition Height="Auto"/>  <!-- 5: Rating/Category -->
         </Grid.RowDefinitions>
@@ -185,10 +185,10 @@
                 Grid.Row="0"
                 x:Name="chapterListView"
                 HorizontalAlignment="Stretch"
-                Height="350"
+                VerticalAlignment="Stretch"
                 SelectionChanged="OnChapterSelected"
                 SelectionMode="Single"
-                StretchColumnIndex="3" StretchColumnMinWidth="200" ItemsSource="{Binding EditingChapterList.Value}">
+                StretchColumnIndex="4" StretchColumnMinWidth="200" ItemsSource="{Binding EditingChapterList.Value}">
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="Skip" Width="40">
@@ -209,6 +209,7 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
+                        <GridViewColumn Header="No." Width="25" DisplayMemberBinding="{Binding Index}"/>
                         <GridViewColumn Header="Position" Width="60" DisplayMemberBinding="{Binding PositionText}"/>
                         <GridViewColumn Header="Length" Width="60" DisplayMemberBinding="{Binding LengthText}"/>
                         <GridViewColumn Header="Label" Width="200">
