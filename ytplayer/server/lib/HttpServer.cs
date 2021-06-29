@@ -1,5 +1,6 @@
 ﻿// Copyright (C) 2016 by David Jeske, Barend Erasmus and donated to the public domain
 
+using io.github.toyota32k.toolkit.utils;
 using log4net;
 using SimpleHttpServer;
 using SimpleHttpServer.Models;
@@ -11,6 +12,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using ytplayer.download;
 
 namespace SimpleHttpServer
 {
@@ -28,12 +30,15 @@ namespace SimpleHttpServer
 
         private static readonly ILog log = LogManager.GetLogger(typeof(HttpServer));
         private bool Alive = true;
+        private WeakReference<IReportOutput> mReportOutput;
+        private IReportOutput ReportOutput => mReportOutput?.GetValue();
 
         #region Public Methods
-        public HttpServer(int port, List<Route> routes)
+        public HttpServer(int port, List<Route> routes, IReportOutput reportOutput)
         {
             this.Port = port;
             this.Processor = new HttpProcessor();
+            this.mReportOutput = new WeakReference<IReportOutput>(reportOutput);
 
             foreach (var route in routes)
             {
@@ -57,12 +62,18 @@ namespace SimpleHttpServer
         //    }
         //}
 
-        public void Start()
+        public bool Start()
         {
-            Task.Run(async () =>
-            {
+            try {
                 this.Listener = new TcpListener(IPAddress.Any, this.Port);
                 this.Listener.Start();
+            } catch(Exception e) {
+                log.Error(e);
+                Stop();
+                return false;
+            }
+            Task.Run(async () =>
+            {
                 while (Alive)
                 {
                     try
@@ -72,11 +83,13 @@ namespace SimpleHttpServer
                     }
                     catch(Exception e)
                     {
+                        ReportOutput?.ErrorOutput(e.ToString());
                         log.Error(e);
                     }
                 }
                 Listener.Stop();
             });
+            return true;
         }
 
         public void Stop()

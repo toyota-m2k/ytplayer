@@ -10,10 +10,11 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using ytplayer.data;
+using ytplayer.download;
 using ytplayer.server.lib;
 
 namespace ytplayer.server {
-    public interface IYtListSource {
+    public interface IYtListSource:IReportOutput {
         IEnumerable<DLEntry> AllEntries { get; }
         IEnumerable<DLEntry> ListedEntries { get; }
         IEnumerable<DLEntry> SelectedEntries { get; }
@@ -30,7 +31,7 @@ namespace ytplayer.server {
         IEnumerable<IGrouping<String, ChapterEntry>> GetChapters();
     }
 
-    public class YtServer {
+    public class YtServer : IDisposable {
         private int mPort;
         private HttpServer mServer;
         //private Regex mRegex = new Regex(@"/wfplayer/cmd/(?<cmd>[a-zA-Z]+)(/(?<param>\w*))?");
@@ -52,16 +53,24 @@ namespace ytplayer.server {
         public void Start() {
             if (!IsListening) {
                 if (null == mServer) {
-                    mServer = new HttpServer(mPort, Routes);
+                    mServer = new HttpServer(mPort, Routes, Source);
                 }
-                mServer.Start();
-                IsListening = true;
+                if (mServer.Start()) {
+                    IsListening = true;
+                    Source?.StandardOutput($"BooServer has been started: port={mPort}");
+                } else {
+                    mServer = null;
+                    Source?.ErrorOutput($"BooServer cannot be started: port={mPort}");
+                }
             }
         }
 
         public void Stop() {
-            mServer?.Stop();
-            IsListening = false;
+            if (mServer != null) {
+                mServer.Stop();
+                IsListening = false;
+                Source?.StandardOutput($"BooServer was stopped: port={mPort}");
+            }
         }
 
         public void Dispose() {
@@ -100,6 +109,7 @@ namespace ytplayer.server {
                         UrlRegex = @"/ytplayer/sync.chapter",
                         Method="GET",
                         Callable = (HttpRequest request) => {
+                            //Source?.StandardOutput("BooServer: cmd=sync.chapters");
                             var json = new JsonObject(new Dictionary<string, JsonValue> {
                                 {"cmd", "sync.chapters"},
                                 {"groups", new JsonArray(Source.GetChapters().Select( c=>
@@ -125,6 +135,7 @@ namespace ytplayer.server {
                         UrlRegex = @"/ytplayer/sync/?$",
                         Method="GET",
                         Callable = (HttpRequest request) => {
+                            //Source?.StandardOutput("BooServer: cmd=sync");
                             var /*IEnumerable<JsonObject>*/ list =
                             Source?.AllEntries
                                 .Where(c=>c.Status==Status.COMPLETED && c.Media.HasVideo() && (int)c.Rating>=(int)Rating.NORMAL)
@@ -169,6 +180,7 @@ namespace ytplayer.server {
                         UrlRegex = @"/ytplayer/list(?:\?.*)?",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
+                            //Source?.StandardOutput("BooServer: cmd=list");
                             var p = QueryParser.Parse(request.Url);
                             var category = p.GetValue("c");
                             var rating = Convert.ToInt32(p.GetValue("r")??"3");
@@ -215,6 +227,7 @@ namespace ytplayer.server {
                         UrlRegex = @"/ytplayer/check(?:\?\w+)?",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
+                            //Source?.StandardOutput($"BooServer: cmd=check");
                             var date = Convert.ToInt64(QueryParser.Parse(request.Url).GetValue("date"));
                             var sb = new StringBuilder();
                             var f = (date>Storage.LastUpdated) ? 1 : 0;
@@ -240,6 +253,7 @@ namespace ytplayer.server {
                             var entry = source.Where((e)=>e.KEY==id).Single();
                             var range = request.Headers.GetValue("Range");
                             if(null==range) {
+                                //Source?.StandardOutput($"BooServer: cmd=video({id})");
                                 return new StreamingHttpResponse(entry.VPath,"video/mp4", 0, 0);
                             } else {
                                 var m = RegRange.Match(range);
@@ -261,8 +275,10 @@ namespace ytplayer.server {
                             var id = QueryParser.Parse(request.Url)["id"];
                             var chapters = Source?.GetChaptersOf(id);
                             if(null==chapters) {
+                                Source?.ErrorOutput($"BooServer: cmd=chapter ({id}) no chapters.");
                                 return HttpBuilder.ServiceUnavailable();
                             }
+                            //Source?.StandardOutput($"BooServer: cmd=chapter ({id})");
                             var json = new JsonObject(new Dictionary<string, JsonValue>() {
                                 { "cmd", "chapter"},
                                 { "id", $"{id}" },
@@ -284,6 +300,7 @@ namespace ytplayer.server {
                         UrlRegex = @"/ytplayer/current",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
+                            //Source?.StandardOutput("BooServer: cmd=current (get)");
                             Logger.debug("YtServer: Current (Get)");
                             var id = Source.CurrentId ?? "";
                             var json = new JsonObject(new Dictionary<string, JsonValue>() {
@@ -299,6 +316,7 @@ namespace ytplayer.server {
                         UrlRegex = @"/ytplayer/current",
                         Method = "PUT",
                         Callable = (HttpRequest request) => {
+                            //Source?.StandardOutput("BooServer: cmd=current (put)");
                             Logger.debug("YtServer: Current (Put)");
                             if(!request.Headers.TryGetValue("Content-Type", out string type)) {
                                 return HttpBuilder.BadRequest();
@@ -321,6 +339,7 @@ namespace ytplayer.server {
                         UrlRegex = @"/ytplayer/category",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
+                            //Source?.StandardOutput("BooServer: cmd=category");
                             Logger.debug("YtServer: Category");
                             var list = Settings.Instance.Categories.SerializableList;
                             var json = new JsonObject(new Dictionary<string, JsonValue>() {
@@ -346,6 +365,7 @@ namespace ytplayer.server {
                                 accepted = Source?.RegisterUrl(url) ?? false;
                             }
                             string result = accepted ? "accepted" : "rejected";
+                            //Source?.StandardOutput($"BooServer: cmd=register {result}:{url}");
                             var json = new JsonObject(new Dictionary<string,JsonValue>(){
                                 {"cmd", "register" },
                                 {"result", $"{result}" },
