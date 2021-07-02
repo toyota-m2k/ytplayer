@@ -142,8 +142,15 @@ namespace ytplayer.download {
             }
         }
 
+        public void CancelCurrent() {
+            lock (this) {
+                Current?.Cancel();
+            }
+        }
+
         public void Cancel() {
             lock (this) {
+                Current?.Cancel();
                 while (Queue.Count > 0) {
                     var e = Queue.Dequeue();
                     e.Cancel();

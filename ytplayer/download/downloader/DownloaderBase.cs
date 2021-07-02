@@ -170,13 +170,14 @@ namespace ytplayer.download.downloader {
                 var process = BeginProcess();
                 if(process==null) {
                     Entry.Status = Status.CANCELLED;
+                    Host.Completed(Entry, false, ExtractAudio);
                     return;
                 }
-                if(!ProcessStandardOutput(process.StandardOutput)) {
-                    return;
-                }
-                if(!ProcessStandardError(process.StandardError)) {
-                    return;
+                try {
+                    ProcessStandardOutput(process.StandardOutput);
+                    ProcessStandardError(process.StandardError);
+                } catch(Exception e) {
+                    LoggerEx.error(e);
                 }
 
                 bool result = ValidateAndGetResult(Results[0], Entry);
@@ -192,6 +193,7 @@ namespace ytplayer.download.downloader {
                         }
                     }
                 }
+                LoggerEx.info($"Proc waiting ...: {process.ExitCode}");
                 process.WaitForExit();
                 LoggerEx.info($"Proc exit: {process.ExitCode}");
             }
@@ -212,6 +214,8 @@ namespace ytplayer.download.downloader {
                 }
                 Alive = false;
                 DownloadProcess?.Kill();
+                DownloadProcess?.StandardOutput?.Close();
+                DownloadProcess?.StandardError?.Close();
                 DownloadProcess?.Close();
                 DownloadProcess = null;
             }

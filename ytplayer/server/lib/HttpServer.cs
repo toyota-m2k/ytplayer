@@ -83,11 +83,16 @@ namespace SimpleHttpServer
                     }
                     catch(Exception e)
                     {
-                        ReportOutput?.ErrorOutput(e.ToString());
-                        log.Error(e);
+                        if (Alive) {
+                            ReportOutput?.ErrorOutput(e.ToString());
+                            log.Error(e);
+                        }
                     }
                 }
-                Listener.Stop();
+                lock (this) {
+                    Listener?.Stop();
+                    Listener = null;
+                }
             });
             return true;
         }
@@ -95,7 +100,10 @@ namespace SimpleHttpServer
         public void Stop()
         {
             Alive = false;
-            Listener?.Stop();
+            lock (this) {
+                Listener?.Stop();
+                Listener = null;
+            }
         }
         #endregion
 

@@ -456,44 +456,45 @@ namespace ytplayer {
             mServer = null;
         }
 
-        private bool CloseToBeWaited() {
+        private bool ReadyToClose = false;
+        private async Task CloseAndWait() {
             Storage.DLTable.Update();
 
-            bool result = false;
-            if(!mDownloadManager.Disposed) {
-                mDownloadManager.Dispose();
-                result = true;
-            }
-            if(!mDownloadAcceptor.Disposed) {
-                mDownloadAcceptor.Dispose();
-                result = true;
-            }
-            return result;
-        }
-
-        private void WaitAndClose() {
             viewModel.DialogType.Value = DialogTypeId.CLOSING_MESSAGE;
             viewModel.DialogTitle.Value = "Bye...";
             viewModel.DialogActivated.Value = true;
-            Task.Run(async () => {
+
+            if (!mDownloadAcceptor.Disposed) {
+                mDownloadAcceptor.Dispose();
                 await mDownloadAcceptor.WaitForClose();
+            }
+            if (!mDownloadManager.Disposed) {
+                mDownloadManager.Dispose();
                 await mDownloadManager.WaitForClose();
-            }).GetAwaiter().GetResult();
+            }
+            ReadyToClose = true;
         }
         
 
-        private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
+        private async void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
             if (mDownloadManager.IsBusy) {
-                var r = MessageBox.Show("ダウンロード中のため終了できません。キャンセルしますか？", "ytplayer", MessageBoxButton.YesNo);
+                var r = MessageBox.Show("Are you sure to cancel downloading tasks？", "BooTube", MessageBoxButton.YesNo);
                 if (r == MessageBoxResult.No) {
                     e.Cancel = true;
                     return;
                 }
+                mDownloadManager.Cancel();
             }
-
-            if (CloseToBeWaited()) {
-                WaitAndClose();
+            if(!ReadyToClose) {
+                e.Cancel = true;
+                await CloseAndWait();
+                Close();
+                return;
             }
+            //_ = CloseAndWait();
+            //while(!ReadyToClose) {
+            //    MessageBox.Show("Wait for finishing tasks...", "BooTube", MessageBoxButton.OK);
+            //}
 
             StopServer();
 
@@ -1052,12 +1053,15 @@ namespace ytplayer {
             if(viewModel.BusyWithModal || !viewModel.ClipboardWatching.Value) {
                 return; // ダイアログ表示中は何もしない
             }
-            try {
-                RegisterUrl(Clipboard.GetText());
-            } catch(Exception ex) {
-                Logger.error(ex);
-                ((IDownloadHost)this).ErrorOutput(ex.Message);
-            }
+            Dispatcher.InvokeAsync(() => {
+                try {
+                    RegisterUrl(Clipboard.GetText());
+                }
+                catch (Exception ex) {
+                    Logger.error(ex);
+                    ((IDownloadHost)this).ErrorOutput(ex.Message);
+                }
+            });
         }
 
         #endregion
@@ -1116,7 +1120,7 @@ namespace ytplayer {
             msg = msg.Trim();
             if (msg.Length != 0) {
                 Dispatcher.Invoke(() => {
-                    viewModel.OutputList.Add(new OutputMessage(msg, error));
+                    viewModel?.OutputList?.Add(new OutputMessage(msg, error));
                     OutputListView.ScrollToTail();
                 });
             }

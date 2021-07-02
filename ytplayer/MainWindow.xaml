@@ -671,7 +671,7 @@
                           ConverterParameter=CLOSING_MESSAGE}"
                           Margin="10">
                         <StackPanel Orientation="Vertical">
-                            <TextBlock Text="Closing now ..."/>
+                            <TextBlock Text="Closing now ..." Margin="30"/>
                         </StackPanel>
                     </Grid>
                 </Grid>

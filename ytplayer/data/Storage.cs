@@ -33,24 +33,30 @@ namespace ytplayer.data {
             Connection = new SQLiteConnection(builder.ConnectionString);
             Connection.Open();
 
-            if(!creation) {
-                // 新規作成でなければ内容をチェック
-                var appName = getAppName();
-                if(appName!=APP_NAME) {
-                    throw new FormatException($"DB file is not for {APP_NAME}");
+            try {
+                if (!creation) {
+                    // 新規作成でなければ内容をチェック
+                    var appName = getAppName();
+                    if (appName != APP_NAME) {
+                        throw new FormatException($"DB file is not for {APP_NAME}");
+                    }
+                    var version = getVersion();
+                    if (version > DB_VERSION) {
+                        throw new FormatException($"Newer DB version. ({version})");
+                    }
                 }
-                var version = getVersion();
-                if(version> DB_VERSION) {
-                    throw new FormatException($"Newer DB version. ({version})");
-                }
+                InitTables();
+
+                DLTable = new DLEntryTable(Connection);
+                KVTable = new KVEntryTable(Connection);
+                ChapterTable = new ChapterTable(Connection);
+
+                // DLTable.Context.Log = Console.Out;
+            } catch(Exception e) {
+                LoggerEx.error(e);
+                Dispose();
+                throw e;
             }
-            InitTables();
-
-            DLTable = new DLEntryTable(Connection);
-            KVTable = new KVEntryTable(Connection);
-            ChapterTable = new ChapterTable(Connection);
-
-            DLTable.Context.Log = Console.Out;
         }
 
         public static bool CheckDB(string path) {
@@ -179,6 +185,7 @@ namespace ytplayer.data {
         public void Dispose() {
             DLTable?.Dispose();
             KVTable?.Dispose();
+            ChapterTable?.Dispose();
 
             if (Connection != null) {
                 Connection.Close();
@@ -198,15 +205,20 @@ namespace ytplayer.data {
         }
 
         public int getVersion() {
-            using (var cmd = Connection.CreateCommand()) {
-                cmd.CommandText = $"SELECT ivalue FROM t_map WHERE name='version'";
-                using (var reader = cmd.ExecuteReader()) {
-                    if (reader.Read()) {
-                        return Convert.ToInt32(reader["ivalue"]);
+            try {
+                using (var cmd = Connection.CreateCommand()) {
+                    cmd.CommandText = $"SELECT ivalue FROM t_map WHERE name='version'";
+                    using (var reader = cmd.ExecuteReader()) {
+                        if (reader.Read()) {
+                            return Convert.ToInt32(reader["ivalue"]);
+                        }
                     }
                 }
+                return 0;
             }
-            return 0;
+            catch (Exception) {
+                return 0;
+            }
         }
 
         public bool setVersion(int version) {
@@ -226,15 +238,20 @@ namespace ytplayer.data {
         }
 
         public string getAppName() {
-            using (var cmd = Connection.CreateCommand()) {
-                cmd.CommandText = $"SELECT svalue FROM t_map WHERE name='appName'";
-                using (var reader = cmd.ExecuteReader()) {
-                    if (reader.Read()) {
-                        return Convert.ToString(reader["svalue"]);
+            try {
+                using (var cmd = Connection.CreateCommand()) {
+                    cmd.CommandText = $"SELECT svalue FROM t_map WHERE name='appName'";
+                    using (var reader = cmd.ExecuteReader()) {
+                        if (reader.Read()) {
+                            return Convert.ToString(reader["svalue"]);
+                        }
                     }
                 }
+                return null;
             }
-            return null;
+            catch (Exception) {
+                return null;
+            }
         }
 
         public bool setAppName() {

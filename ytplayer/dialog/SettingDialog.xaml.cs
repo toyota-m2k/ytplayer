@@ -23,6 +23,7 @@ namespace ytplayer.dialog {
         public ReactivePropertySlim<string> WorkPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<bool> EnableServer { get; } = new ReactivePropertySlim<bool>();
         public ReactivePropertySlim<int> ServerPort { get; } = new ReactivePropertySlim<int>();
+        public ReactivePropertySlim<bool> AcceptList { get; } = new ReactivePropertySlim<bool>();
 
         public ReactivePropertySlim<string> ErrorMessage { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<bool> Cancellable { get; } = new ReactivePropertySlim<bool>(true);
@@ -54,6 +55,7 @@ namespace ytplayer.dialog {
             WorkPath.Value = src.WorkPath;
             EnableServer.Value = src.EnableServer;
             ServerPort.Value = src.ServerPort;
+            AcceptList.Value = src.AcceptList;
 
             CanUpdateYTD = YoutubeDLPath.Select((v) => PathUtil.isFile(System.IO.Path.Combine(v, "youtube-dl.exe"))).ToReadOnlyReactivePropertySlim();
 
@@ -186,6 +188,7 @@ namespace ytplayer.dialog {
             dst.WorkPath = WorkPath.Value;
             dst.EnableServer = EnableServer.Value;
             dst.ServerPort = ServerPort.Value;
+            dst.AcceptList = AcceptList.Value;
             dst.Serialize();
             dst.ApplyEnvironment();
         }
