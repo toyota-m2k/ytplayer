@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -86,6 +87,8 @@ namespace ytplayer {
         public ReactiveCommand CommandSync { get; } = new ReactiveCommand();
         public ReactiveCommand CommandMoveItems { get; } = new ReactiveCommand();
         public ReactiveCommand CommandBrowser { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandRepairDB { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandImportFiles { get; } = new ReactiveCommand();
 
         // Context Menu
         public ReactiveCommand OpenInWebBrowserCommand { get; } = new ReactiveCommand();
@@ -395,6 +398,8 @@ namespace ytplayer {
             viewModel.CommandImport.Subscribe(ImportUrlList);
             viewModel.CommandSync.Subscribe(SyncFrom);
             viewModel.CommandMoveItems.Subscribe(MoveItems);
+            viewModel.CommandRepairDB.Subscribe(RepairDB);
+            viewModel.CommandImportFiles.Subscribe(ImportVideoFiles);
             viewModel.CommandBrowser.Subscribe(() => Process.Start("btytbrs:"));
             //viewModel.ClipboardWatching.Subscribe((v) => {
             //    if (v) {
@@ -698,7 +703,102 @@ namespace ytplayer {
                 }
             }
         }
+        private async void RepairDB() {
+            using (WaitCursor.Start(this)) {
+                int count = await ImportVideoFiles(Settings.Instance.VideoPath, ImportFileMode.LINK_TO);
+                ((IReportOutput)this).StandardOutput($"Finished: {count} files repaired.");
+            }
+        }
 
+        private async void ImportVideoFiles() {
+            var targetPath = FolderDialogBuilder.Create()
+                .title("Select Folder")
+                .GetFilePath(GetWindow(this));
+            using (WaitCursor.Start(this)) {
+                int count = await ImportVideoFiles(targetPath, ImportFileMode.MOVE_FILE);
+                ((IReportOutput)this).StandardOutput($"Finished: {count} files imported.");
+            }
+        }
+
+        private enum ImportFileMode {
+            MOVE_FILE,
+            COPY_FILE,
+            LINK_TO,
+        };
+
+        static Regex regFilePath = new Regex(@"(?<name>.*)(?:-(?<id>.{11})).mp4");
+        private Task<int> ImportVideoFiles(string sourceDir, ImportFileMode mode) {
+            bool safeCopyFile(string src, string dst) {
+                try {
+                    File.Copy(src, dst, false);
+                    return true;
+                } catch(Exception e) {
+                    ((IReportOutput)this).ErrorOutput($"cannot copy to: {dst}");
+                    LoggerEx.error(e);
+                    return false;
+                }
+            }
+            bool safeMoveFile(string src, string dst) {
+                try {
+                    File.Move(src, dst);
+                    return true;
+                }
+                catch (Exception e) {
+                    ((IReportOutput)this).ErrorOutput($"cannot move to: {dst}");
+                    LoggerEx.error(e);
+                    return false;
+                }
+            }
+
+            return Task.Run(() => {
+                int count = 0;
+                foreach (var path in Directory.EnumerateFiles(sourceDir, "*.mp4", SearchOption.TopDirectoryOnly)) {
+                    var filename = Path.GetFileName(path);
+                    var m = regFilePath.Match(filename);
+                    if (m != null && m.Success) {
+                        var id = m.Groups?["id"]?.Value;
+                        var name = m.Groups?["name"]?.Value;
+                        if (id != null && !Storage.DLTable.Contains(id)) {
+                            // found it!,  to be registered.
+                            var dstPath = path;
+                            switch (mode) {
+                                case ImportFileMode.COPY_FILE:
+                                    dstPath = Path.Combine(Settings.Instance.VideoPath, filename);
+                                    if (!safeCopyFile(path, dstPath)) {
+                                        continue;
+                                    }
+                                    break;
+                                case ImportFileMode.MOVE_FILE:
+                                    dstPath = Path.Combine(Settings.Instance.VideoPath, filename);
+                                    if (!safeMoveFile(path, dstPath)) {
+                                        continue;
+                                    }
+                                    break;
+                                case ImportFileMode.LINK_TO:
+                                    break;
+                            }
+
+                            var fi = new FileInfo(dstPath);
+                            var entry = DLEntry.Create(id, $"https://www.youtube.com/watch?v={id}");
+                            entry.Status = Status.COMPLETED;
+                            entry.VPath = dstPath;
+                            entry.Date = fi.CreationTime;
+                            entry.Media = MediaFlag.VIDEO;
+                            entry.Name = name;
+                            Storage.DLTable.Add(entry);
+                            ((IReportOutput)this).StandardOutput($"regisgered: {name}");
+                            count++;
+                        } else {
+                            ((IReportOutput)this).ErrorOutput($"skipped: {filename}");
+                        }
+                    } else {
+                        ((IReportOutput)this).ErrorOutput($"invalid name: {filename}");
+                    }
+                }
+                Storage.DLTable.Update();
+                return count;
+            });
+        }
 
 
         #endregion

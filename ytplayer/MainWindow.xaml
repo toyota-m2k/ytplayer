@@ -112,6 +112,8 @@
                             <MenuItem Header="Export" Command="{Binding CommandExport}"/>
                             <MenuItem Header="Import" Command="{Binding CommandImport}"/>
                             <MenuItem Header="Sync" Command="{Binding CommandSync}"/>
+                            <MenuItem Header="Rapair" Command="{Binding CommandRepairDB}"/>
+                            <MenuItem Header="Import Video Files" Command="{Binding CommandImportFiles}"/>
                             <MenuItem Header="Move Files" Command="{Binding CommandMoveItems}"/>
                         </ContextMenu>
                     </common:MenuButton.DropDownMenu>
