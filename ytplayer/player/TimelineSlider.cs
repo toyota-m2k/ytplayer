@@ -19,13 +19,28 @@ namespace ytplayer.player {
             mTimer = new DispatcherTimer();
             mTimer.Interval = TimeSpan.FromMilliseconds(50);
             mTimer.Tick += (s, e) => {
-                var pos = ViewModel.PlayerPosition;
+                var vm = ViewModel;
+                if (null == vm) return;
+                var pos = vm.PlayerPosition;
                 mSliderSeekingFromPlayer = true;
                 this.Value = pos;
                 mSliderSeekingFromPlayer = false;
-                CheckRangeAndSeek(pos, ViewModel.DisabledRanges.Value);
+                CheckRangeAndSeek(pos, vm.DisabledRanges.Value);
             };
             Loaded += OnLoaded;
+        }
+
+        private void GoNext() {
+            if (mCurrentItemId != null) {
+                var current = mCurrentItemId;
+                mCurrentItemId = null;
+                ViewModel.ReachRangeEnd.OnNext(current);
+            }
+        }
+
+        public void OnMediaEnd() {
+            mTimer.Stop();
+            GoNext();
         }
 
         private void CheckRangeAndSeek(ulong pos, List<PlayRange> ranges) {
@@ -34,10 +49,7 @@ namespace ytplayer.player {
             if(hit.Count()>0) {
                 var range = hit.First();
                 if (range.End == 0) {
-                    if (mCurrentItemId != null) {
-                        ViewModel.ReachRangeEnd.OnNext(mCurrentItemId);
-                        mCurrentItemId = null;
-                    }
+                    GoNext();
                 } else {
                     ViewModel.PlayerPosition = range.End;
                     mSliderSeekingFromPlayer = true;

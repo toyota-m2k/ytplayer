@@ -47,12 +47,9 @@ namespace ytplayer.player {
             ViewModel.ChapterEditing.Subscribe(OnChapterEditing);
         }
 
-        private string mCurrentItemId = null;
-
         private void OnCurrentItemChanged(DLEntry item) {
             MediaPlayer.Stop();
             MediaPlayer.Source = null;
-            mCurrentItemId = item?.KEY;
             ViewModel.SaveChapterListIfNeeds();
             ViewModel.State.Value = PlayerState.UNAVAILABLE;
             ViewModel.Trimming.Value = PlayRange.Empty;
@@ -108,10 +105,11 @@ namespace ytplayer.player {
 
         private void OnMediaEnded(object sender, RoutedEventArgs e) {
             ViewModel.State.Value = PlayerState.READY;
-            if (mCurrentItemId != null) {
-                ViewModel.ReachRangeEnd.OnNext(mCurrentItemId);
-                mCurrentItemId = null;
-            }
+            ControlPanel.Slider.OnMediaEnd();
+            //if (mCurrentItemId != null) {
+            //    ViewModel.ReachRangeEnd.OnNext(mCurrentItemId);
+            //    mCurrentItemId = null;
+            //}
         }
 
         private void OnMediaFailed(object sender, ExceptionRoutedEventArgs e) {

@@ -103,6 +103,7 @@
         <StackPanel Grid.Row="1" Orientation="Vertical" HorizontalAlignment="Stretch">
             <local:ChapterView x:Name="ChapterView" Margin="5,0"/>
             <local:TimelineSlider 
+                x:Name="Slider"
                 FocusVisualStyle="{x:Null}"
                 VerticalAlignment="Center"
                 HorizontalAlignment="Stretch"
