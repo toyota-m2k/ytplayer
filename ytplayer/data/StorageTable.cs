@@ -109,7 +109,7 @@ namespace ytplayer.data {
             }
             if (DelEvent != null) {
                 foreach (var d in dels) {
-                    AddEvent(d);
+                    DelEvent(d);
                 }
             }
         }
