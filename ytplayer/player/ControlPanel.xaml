@@ -191,6 +191,7 @@
                 x:Name="chapterListView"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
+                MinHeight="100"
                 SelectionChanged="OnChapterSelected"
                 SelectionMode="Single"
                 StretchColumnIndex="4" StretchColumnMinWidth="150" ItemsSource="{Binding EditingChapterList.Value}">
