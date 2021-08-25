@@ -176,6 +176,8 @@
     <Compile Include="data\StorageTable.cs" />
     <Compile Include="data\SyncManager.cs" />
     <Compile Include="download\downloader\impl\FFMpegConverter.cs" />
+    <Compile Include="interop\KeyState.cs" />
+    <Compile Include="player\ChapterBar.cs" />
     <Compile Include="player\ChapterView.xaml.cs">
       <DependentUpon>ChapterView.xaml</DependentUpon>
     </Compile>
@@ -274,6 +276,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="res\IconToggleButton.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="res\TimelineSlider.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

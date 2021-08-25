@@ -101,15 +101,19 @@
 
         <!-- ポジション（Timeline） Slider -->
         <StackPanel Grid.Row="1" Orientation="Vertical" HorizontalAlignment="Stretch">
-            <local:ChapterView x:Name="ChapterView" Margin="5,0"/>
+            <local:ChapterBar 
+                x:Name="ChapterView" Margin="5,0"
+                Height="6"
+                />
             <local:TimelineSlider 
                 x:Name="Slider"
+                Style="{DynamicResource TimelineSliderStyle}"
                 FocusVisualStyle="{x:Null}"
                 VerticalAlignment="Center"
                 HorizontalAlignment="Stretch"
                 MinWidth="300"
                 SmallChange="10000" LargeChange="10000"
-                Margin="0,-8,0,0"
+                Margin="0,-16,0,0"
                 Value="{Binding Position.Value, Mode=TwoWay}"
                 />
             <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
@@ -189,7 +193,7 @@
                 VerticalAlignment="Stretch"
                 SelectionChanged="OnChapterSelected"
                 SelectionMode="Single"
-                StretchColumnIndex="4" StretchColumnMinWidth="200" ItemsSource="{Binding EditingChapterList.Value}">
+                StretchColumnIndex="4" StretchColumnMinWidth="150" ItemsSource="{Binding EditingChapterList.Value}">
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="Skip" Width="40">
@@ -213,7 +217,7 @@
                         <GridViewColumn Header="No." Width="25" DisplayMemberBinding="{Binding Index}"/>
                         <GridViewColumn Header="Position" Width="60" DisplayMemberBinding="{Binding PositionText}"/>
                         <GridViewColumn Header="Length" Width="60" DisplayMemberBinding="{Binding LengthText}"/>
-                        <GridViewColumn Header="Label" Width="200">
+                        <GridViewColumn Header="Label" Width="150">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBox 

@@ -6,6 +6,7 @@
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="IconButton.xaml"/>
         <ResourceDictionary Source="IconToggleButton.xaml"/>
+        <ResourceDictionary Source="TimelineSlider.xaml"/>
     </ResourceDictionary.MergedDictionaries>
     
     <!-- Converters -->

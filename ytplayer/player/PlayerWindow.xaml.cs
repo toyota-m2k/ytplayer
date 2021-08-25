@@ -7,6 +7,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Documents;
+using System.Windows.Input;
 using System.Windows.Media;
 using ytplayer.data;
 using ytplayer.download;
@@ -106,6 +107,17 @@ namespace ytplayer.player {
         public async void AddToPlayList(DLEntry item) {
             await LoadCompletion.Task;
             ViewModel.PlayList.Add(item);
+        }
+
+        private void OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e) {
+            switch (e.Key) {
+                case Key.Escape:
+                    Close();
+                    break;
+                default:
+                    return;
+            }
+            e.Handled = true;
         }
 
         private void AddTextToRichEdit(string text, Brush fg) {

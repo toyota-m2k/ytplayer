@@ -191,40 +191,103 @@ namespace ytplayer.data {
             }
         }
 
-        public IEnumerable<PlayRange> GetDisabledRanges(PlayRange trimming) {
+        public IEnumerable<(ulong,bool)> GetChapterPositionAwareOfTrimming(PlayRange trimming) {
             var trimStart = trimming.Start;
             var trimEnd = trimming.End;
-            foreach(var r in GetDisabledChapterRanges()) {
-                if(r.End < trimming.Start) {
-                    // ignore
-                    continue;
-                } else if(trimStart>0) {
-                    if(r.Start<trimStart) {
-                        yield return new PlayRange(0, r.End);
-                        continue;
-                    } else {
-                        yield return new PlayRange(0, trimStart);
-                    }
-                    trimStart = 0;
-                }
+            bool skip = false;
 
-                if(trimEnd>0) {
-                    if (trimEnd < r.Start) {
-                        break;
-                    } else if(trimEnd < r.End) {
-                        trimEnd = 0;
-                        yield return new PlayRange(r.Start, 0);
-                        break;
+            if (trimming.Start>0) {
+                skip = true;
+                yield return (0, true);
+            }
+
+
+            foreach (var c in Values) {
+                if (trimStart > 0) {
+                    if (c.Position <= trimStart) {
+                        continue;
+                    }
+                    else {
+                        skip = false;
+                        yield return (trimStart, false);
+                        trimStart = 0;
                     }
                 }
-                yield return r;
+                if(trimEnd!=0 && c.Position>=trimEnd) {
+                    break;
+                }
+                if (c.Skip!=skip) {
+                    if (c.Skip) {
+                        skip = true;
+                        yield return (c.Position, true);
+                    }
+                    else  { // !c.Skip
+                        skip = false;
+                        yield return (c.Position, false);
+                    }
+                }
             }
             if(trimStart>0) {
-                yield return new PlayRange(0, trimStart);
+                skip = false;
+                yield return (trimStart, false);
             }
-            if(trimEnd>0) {
-                yield return new PlayRange(trimEnd, 0);
+            if (!skip && trimEnd>0) {
+                yield return (trimEnd, true);
             }
+        }
+
+        public IEnumerable<PlayRange> GetDisabledRanges(PlayRange trimming, ulong duration=0) {
+            var chap = GetChapterPositionAwareOfTrimming(trimming);
+            ulong prev = 0;
+            foreach(var (pos,skip) in chap) {
+                if(skip) {
+                    prev = pos;
+                } else {
+                    yield return new PlayRange(prev, pos);
+                    prev = 0;
+                }
+            }
+            if(prev>0) {
+                yield return new PlayRange(prev, duration);
+            }
+            //var trimStart = trimming.Start;
+            //var trimEnd = trimming.End;
+
+            //var chapters = Values.Where(c => trimStart < c.Position && c.Position < trimEnd);
+
+
+            //foreach(var r in GetDisabledChapterRanges()) {
+            //    r.AdjustTrueEnd(duration);
+            //    if(r.End < trimStart) {
+            //        // ignore
+            //        continue;
+            //    } else if(trimStart>0) {
+            //        if(r.Start<trimStart) {
+            //            yield return new PlayRange(0, r.End);
+            //            continue;
+            //        } else {
+            //            yield return new PlayRange(0, trimStart);
+            //        }
+            //        trimStart = 0;
+            //    }
+
+            //    if(trimEnd>0) {
+            //        if (trimEnd < r.Start) {
+            //            break;
+            //        } else if(trimEnd < r.End) {
+            //            trimEnd = 0;
+            //            yield return new PlayRange(r.Start, 0);
+            //            break;
+            //        }
+            //    }
+            //    yield return r;
+            //}
+            //if(trimStart>0) {
+            //    yield return new PlayRange(0, trimStart);
+            //}
+            //if(trimEnd>0) {
+            //    yield return new PlayRange(trimEnd, 0);
+            //}
         }
 
     }

@@ -20,12 +20,12 @@ namespace ytplayer.player {
             InitializeComponent();
         }
 
-        private IDisposable mChapterEditingObserving = null;
         private common.DisposablePool mDisposablePool = new common.DisposablePool();
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
-            mChapterEditingObserving = ViewModel.ChapterEditing.Subscribe(OnChapterEditing);
+            mDisposablePool.Add(ViewModel.ChapterEditing.Subscribe(OnChapterEditing));
         }
+
         private void OnChapterEditing(bool editing) {
             if(editing) {
                 mDisposablePool.Add(ViewModel.EditingChapterList.Subscribe(c => UpdateChapterLength()));

@@ -28,7 +28,7 @@ namespace ytplayer.player {
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
             ViewModel.Player = this;
-            ViewModel.FitMode.Value = Stretch == Stretch.UniformToFill;
+            ViewModel.FitMode.Value = Stretch == Stretch.Uniform;
             ViewModel.FitMode.Subscribe(FitView);
             ViewModel.MaximizeCommand.Subscribe(ToggleFullscreen);
             ViewModel.Fullscreen.Value = Window.GetWindow(this).WindowStyle == WindowStyle.None;
@@ -140,7 +140,7 @@ namespace ytplayer.player {
         }
 
         public void FitView(bool mode) {
-            Stretch = mode ? Stretch.UniformToFill : Stretch.Uniform;
+            Stretch = mode ? Stretch.Uniform : Stretch.UniformToFill;
         }
 
         //public void Stop() {

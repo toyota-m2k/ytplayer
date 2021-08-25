@@ -22,9 +22,13 @@ namespace ytplayer.player {
         ERROR,
     }
     public class PlayerViewModel : ViewModelBase, IStorageConsumer {
+        const double DEF_NORMAL_PANEL_WIDTH = 320;
+        const double DEF_EDITING_PANEL_WIDTH = 440;
+
         #region Control Panel Position
         public ReactivePropertySlim<HorizontalAlignment> PanelHorzAlign { get; } = new ReactivePropertySlim<HorizontalAlignment>(HorizontalAlignment.Right);
         public ReactivePropertySlim<VerticalAlignment> PanelVertAlign { get; } = new ReactivePropertySlim<VerticalAlignment>(VerticalAlignment.Bottom);
+        public ReactivePropertySlim<double> PanelWidth { get; } = new ReactivePropertySlim<double>(DEF_NORMAL_PANEL_WIDTH);
         #endregion
 
         #region Properties of Item Entry
@@ -43,6 +47,7 @@ namespace ytplayer.player {
 
         #region Trimming/Chapters
         public ReactivePropertySlim<PlayRange> Trimming { get; } = new ReactivePropertySlim<PlayRange>(PlayRange.Empty);
+        public ReadOnlyReactivePropertySlim<bool> HasTrimming { get; }
         public ReactivePropertySlim<ChapterList> Chapters { get; } = new ReactivePropertySlim<ChapterList>(null,ReactivePropertyMode.RaiseLatestValueOnSubscribe);
         public ReactivePropertySlim<List<PlayRange>> DisabledRanges { get; } = new ReactivePropertySlim<List<PlayRange>>(null);
         public ReadOnlyReactivePropertySlim<bool> HasDisabledRange { get; }
@@ -50,6 +55,9 @@ namespace ytplayer.player {
         public ReactivePropertySlim<ObservableCollection<ChapterInfo>> EditingChapterList { get; } = new ReactivePropertySlim<ObservableCollection<ChapterInfo>>();
         public Subject<string> ReachRangeEnd { get; } = new Subject<string>();
 
+        public ReactiveCommand<ulong> NotifyPosition { get; } = new ReactiveCommand<ulong>();
+        public ReactiveCommand<PlayRange> NotifyRange { get; } = new ReactiveCommand<PlayRange>();
+        public ReactivePropertySlim<PlayRange?> DraggingRange { get; } = new ReactivePropertySlim<PlayRange?>(null);
         /**
          * 現在再生中の動画のチャプター設定が変更されていればDBに保存する。
          */
@@ -64,6 +72,7 @@ namespace ytplayer.player {
             if (chapterList == null || !chapterList.IsModified) return;
             storage.ChapterTable.UpdateByChapterList(chapterList);
         }
+
         /**
          * 再生する動画のチャプターリスト、トリミング情報、無効化範囲リストを準備する。
          */
@@ -85,7 +94,7 @@ namespace ytplayer.player {
 
         private void SetTrimming(object obj) {
             switch (obj as String) {
-                case "Start":   SetTrimming(SetTrimmingStart); break;
+                case "Start": SetTrimming(SetTrimmingStart); break;
                 case "End": SetTrimming(SetTrimmingEnd); break;
                 default: return;
             }
@@ -143,15 +152,37 @@ namespace ytplayer.player {
         }
 
         private void AddChapter() {
+            AddChapter(PlayerPosition);
+        }
+
+        private void AddChapter(ulong pos) {
             var item = PlayList.Current.Value;
             if (item == null) return;
-            var pos = PlayerPosition;
             var chapterList = Chapters.Value;
             if (chapterList == null) return;
-            if(chapterList.AddChapter(new ChapterInfo(pos))) {
+            if (pos > Duration.Value) return;
+            if (chapterList.AddChapter(new ChapterInfo(pos))) {
                 Chapters.Value = chapterList;
                 DisabledRanges.Value = chapterList.GetDisabledRanges(Trimming.Value).ToList();
             }
+        }
+
+        private void AddDisabledChapterRange(PlayRange range) {
+            if (PlayList.Current.Value == null) return;
+            var chapterList = Chapters.Value;
+            if (chapterList == null) return;
+
+            range.AdjustTrueEnd(Duration.Value);
+            var del = chapterList.Values.Where(c => range.Start <= c.Position && c.Position <= range.End).ToList();
+            foreach (var e in del) {    // chapterList.Valuesは ObservableCollection なので、RemoveAll的なやつ使えない。
+                chapterList.Values.Remove(e);
+            }
+            chapterList.AddChapter(new ChapterInfo(range.Start) { Skip = true });
+            if (range.End != Duration.Value) {
+                chapterList.AddChapter(new ChapterInfo(range.End));
+            }
+            Chapters.Value = chapterList;
+            DisabledRanges.Value = chapterList.GetDisabledRanges(Trimming.Value).ToList();
         }
 
         private void NextChapter() {
@@ -161,9 +192,12 @@ namespace ytplayer.player {
                 var c = chapterList.Values[next].Position;
                 if(Trimming.Value.Contains(c)) {
                     Position.Value = c;
+                    return;
                 }
             }
+            GoForwardCommand.Execute();
         }
+
         private void PrevChapter() {
             var chapterList = Chapters.Value;
             var basePosition = PlayerPosition;
@@ -174,10 +208,10 @@ namespace ytplayer.player {
                 var c = chapterList.Values[prev].Position;
                 if (Trimming.Value.Contains(c)) {
                     Position.Value = c;
-                } else {
-                    Position.Value = Trimming.Value.Start;
+                    return;
                 }
             }
+            Position.Value = Trimming.Value.Start;
         }
 
         #endregion
@@ -237,6 +271,7 @@ namespace ytplayer.player {
         public ReactiveCommand PanelPositionCommand { get; } = new ReactiveCommand();
         public ReactiveCommand SetTrimCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ResetTrimCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand TrimmingToChapterCommand { get; } = new ReactiveCommand();
 
         #endregion
 
@@ -284,7 +319,7 @@ namespace ytplayer.player {
             TrimStartText = Trimming.Select((v) => FormatDuration(v.Start)).ToReadOnlyReactivePropertySlim();
             TrimEndText = Trimming.Select((v) => FormatDuration(v.End)).ToReadOnlyReactivePropertySlim();
             HasDisabledRange = DisabledRanges.Select((c) => c != null && c.Count > 0).ToReadOnlyReactivePropertySlim();
-
+            HasTrimming = Trimming.Select(c => c.Start > 0 || c.End > 0).ToReadOnlyReactivePropertySlim();
             IsPlaying = State.Select((v) => v == PlayerState.PLAYING).ToReadOnlyReactivePropertySlim();
             IsReady = State.Select((v) => v == PlayerState.READY || v == PlayerState.PLAYING).ToReadOnlyReactivePropertySlim();
 
@@ -313,13 +348,20 @@ namespace ytplayer.player {
                 if(c) {
                     EditingChapterList.Value = Chapters.Value.Values;
                     PanelVertAlign.Value = VerticalAlignment.Stretch;
+                    PanelHorzAlign.Value = HorizontalAlignment.Right;
+                    PanelWidth.Value = DEF_NORMAL_PANEL_WIDTH;
                 } else {
                     EditingChapterList.Value = null;
+                    PanelWidth.Value = DEF_EDITING_PANEL_WIDTH;
                     PanelHorzAlign.Value = HorizontalAlignment.Right;
                     PanelVertAlign.Value = VerticalAlignment.Bottom;
                     SaveChapterListIfNeeds();
                 }
             });
+
+            NotifyRange.Subscribe(AddDisabledChapterRange);
+            NotifyPosition.Subscribe(AddChapter);
+
 
             string prevId = null;
             ReachRangeEnd.Subscribe((prev) => {
@@ -337,14 +379,32 @@ namespace ytplayer.player {
                 switch(PanelHorzAlign.Value) {
                     default:
                     case HorizontalAlignment.Right:
+                        PanelWidth.Value = double.NaN;
                         PanelHorzAlign.Value = HorizontalAlignment.Stretch;
+                        PanelVertAlign.Value = VerticalAlignment.Bottom;
                         break;
                     case HorizontalAlignment.Stretch:
+                        PanelWidth.Value = DEF_EDITING_PANEL_WIDTH;
                         PanelHorzAlign.Value = HorizontalAlignment.Left;
+                        PanelVertAlign.Value = VerticalAlignment.Stretch;
                         break;
                     case HorizontalAlignment.Left:
+                        PanelWidth.Value = DEF_EDITING_PANEL_WIDTH;
                         PanelHorzAlign.Value = HorizontalAlignment.Right;
+                        PanelVertAlign.Value = VerticalAlignment.Stretch;
                         break;
+                }
+            });
+            TrimmingToChapterCommand.Subscribe(() => {
+                var item = PlayList.Current.Value;
+                if (item == null) return;
+                if (item.TrimStart > 0) {
+                    AddDisabledChapterRange(new PlayRange(0, item.TrimStart));
+                    ResetTrimming(SetTrimmingStart);
+                }
+                if (item.TrimEnd>0) {
+                    AddDisabledChapterRange(new PlayRange(item.TrimEnd, 0));
+                    ResetTrimming(SetTrimmingEnd);
                 }
             });
         }
