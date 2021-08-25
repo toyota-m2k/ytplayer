@@ -170,6 +170,7 @@
     <Compile Include="common\CursorManager.cs" />
     <Compile Include="common\DisposablePool.cs" />
     <Compile Include="common\JsonExt.cs" />
+    <Compile Include="common\MediaInfo.cs" />
     <Compile Include="common\WeakList.cs" />
     <Compile Include="data\ChapterEntry.cs" />
     <Compile Include="data\ChapterInfo.cs" />
