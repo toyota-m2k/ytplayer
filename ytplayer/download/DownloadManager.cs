@@ -113,7 +113,7 @@ namespace ytplayer.download {
                 return;
             }
             lock(this) {
-                foreach(var d in dls) {
+                foreach(var d in dls.ToList()) {
                     SetStatus(d.Entry, Status.WAITING);
                     Queue.Enqueue(d);
                 }
