@@ -52,7 +52,7 @@
         <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding DBPath.Value, Mode=TwoWay}"/>
         <Button Grid.Row="1" Grid.Column="4" Content="…" Command="{Binding CommandDBPath}" Padding="8,0"/>
 
-        <TextBlock Grid.Row="3" Grid.Column="0" Text="youtube-dl.exe in"/>
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="yt-dlp.exe in"/>
         <TextBox Grid.Row="3" Grid.Column="2" Text="{Binding YoutubeDLPath.Value, Mode=TwoWay}" IsEnabled="{Binding UseWSL.Value, Mode=TwoWay, Converter={StaticResource NegBoolConverter}}"/>
         <Button Grid.Row="3" Grid.Column="4" Content="…" Padding="8,0" Command="{Binding CommandYTDLPath}" IsEnabled="{Binding UseWSL.Value, Mode=TwoWay, Converter={StaticResource NegBoolConverter}}"/>
 
@@ -90,7 +90,7 @@
         <StackPanel Grid.Row="17" Grid.Column="0" Grid.ColumnSpan="5" HorizontalAlignment="Center" Orientation="Horizontal">
             <Button Content="OK" Command="{Binding OKCommand}" Width="100"/>
             <Button Content="Cancel" Command="{Binding CancelCommand}" Width="100" Margin="20,0,0,0" Visibility="{Binding Cancellable.Value, Converter={StaticResource BoolVisibilityConverter}}"/>
-            <Button Content="Update youtube-dl" Command="{Binding UpdateCommand}" Width="100" Margin="20,0,0,0" Visibility="{Binding CanUpdateYTD.Value, Converter={StaticResource BoolVisibilityConverter}}"/>
+<!--            <Button Content="Update youtube-dl" Command="{Binding UpdateCommand}" Width="100" Margin="20,0,0,0" Visibility="{Binding CanUpdateYTD.Value, Converter={StaticResource BoolVisibilityConverter}}"/> -->
         </StackPanel>
 
         <TextBlock Grid.Row="19" Grid.Column="0" Grid.ColumnSpan="5" Margin="0,0,0,0" Text="{Binding ErrorMessage.Value}" Height="30" VerticalAlignment="Top"/>

@@ -113,7 +113,7 @@ namespace ytplayer.download.downloader {
 
         protected virtual ProcessStartInfo Prepare() {
             return new ProcessStartInfo() {
-                FileName = "youtube-dl",
+                FileName = YtpDef.YTDLP_EXE,
                 Arguments = $"{BasicArguments} {SpecialArguments} {Entry.Url}",
                 CreateNoWindow = true,
                 UseShellExecute = false,

@@ -57,10 +57,10 @@ namespace ytplayer.dialog {
             ServerPort.Value = src.ServerPort;
             AcceptList.Value = src.AcceptList;
 
-            CanUpdateYTD = YoutubeDLPath.Select((v) => PathUtil.isFile(System.IO.Path.Combine(v, "youtube-dl.exe"))).ToReadOnlyReactivePropertySlim();
+            CanUpdateYTD = YoutubeDLPath.Select((v) => PathUtil.isFile(System.IO.Path.Combine(v, YtpDef.YTDLP_EXE))).ToReadOnlyReactivePropertySlim();
 
             CommandDBPath.Subscribe(() => SelectDBFile(DBPath));
-            CommandYTDLPath.Subscribe(() => SelectFolder("youtube-dl folder", YoutubeDLPath));
+            CommandYTDLPath.Subscribe(() => SelectFolder($"{YtpDef.YTDLP_EXE} folder", YoutubeDLPath));
             CommandFFMpegPath.Subscribe(() => SelectFolder("ffmpeg folder", FFMpegPath));
             CommandVideoPath.Subscribe(() => SelectFolder("Video Folder", VideoPath));
             CommandAudioPath.Subscribe(() => SelectFolder("Audio Folder", AudioPath));
@@ -143,7 +143,7 @@ namespace ytplayer.dialog {
             //}
             if (!UseWSL.Value) {
                 if (!string.IsNullOrEmpty(YoutubeDLPath.Value)) {
-                    if (!PathUtil.isFile(System.IO.Path.Combine(YoutubeDLPath.Value, "youtube-dl.exe"))) return "youtube-dl is not found.";
+                    if (!PathUtil.isFile(System.IO.Path.Combine(YoutubeDLPath.Value, YtpDef.YTDLP_EXE))) return "youtube-dl is not found.";
                 }
                 if (!string.IsNullOrEmpty(FFMpegPath.Value)) {
                     if (!PathUtil.isFile(System.IO.Path.Combine(FFMpegPath.Value, "ffmpeg.exe")) ||
@@ -193,18 +193,21 @@ namespace ytplayer.dialog {
             dst.ApplyEnvironment();
         }
 
+        /**
+         * ToDo: yt-dlp 自動アップデート
+         */
         private async void UpdateYTD(object obj) {
-            Ready.Value = false;
-            try {
-                using (var client = new HttpClient())
-                using (var stream = await client.GetStreamAsync("https://youtube-dl.org/downloads/latest/youtube-dl.exe"))
-                using (var file = System.IO.File.Create(System.IO.Path.Combine(YoutubeDLPath.Value, "youtube-dl.exe"))) {
-                    await stream.CopyToAsync(file);
-                    await file.FlushAsync();
-                }
-            } finally {
-                Ready.Value = true;
-            }
+            //Ready.Value = false;
+            //try {
+            //    using (var client = new HttpClient())
+            //    using (var stream = await client.GetStreamAsync("https://youtube-dl.org/downloads/latest/youtube-dl.exe"))
+            //    using (var file = System.IO.File.Create(System.IO.Path.Combine(YoutubeDLPath.Value, "youtube-dl.exe"))) {
+            //        await stream.CopyToAsync(file);
+            //        await file.FlushAsync();
+            //    }
+            //} finally {
+            //    Ready.Value = true;
+            //}
         }
     }
 

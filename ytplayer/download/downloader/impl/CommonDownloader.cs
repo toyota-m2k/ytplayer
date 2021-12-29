@@ -7,14 +7,14 @@ namespace ytplayer.download.downloader.impl {
         public CommonDownloader(DLEntry entry, IDownloadHost host, bool extractAudio) : base(entry,host,extractAudio) {
 
         }
-        static Regex regName = new Regex(@"(?<name>.*)(?:-.{11})");
+        static Regex regName = new Regex(@"(?<name>.*)(?:\s+\[.*\]\.mp[34])");
         protected override string GetSavedFilePath(DownloadResults.ItemInfo info) {
             string dir = OutputDir;
             string ext = OutputExtension;
-            var f = System.IO.Directory.GetFiles(dir, $"*-{info.Id}.{ext}", System.IO.SearchOption.TopDirectoryOnly);
+            var f = System.IO.Directory.GetFiles(dir, $"*[{info.Id}].{ext}", System.IO.SearchOption.TopDirectoryOnly);
             var path = (null != f && f.Length > 0) ? f[0] : null;
             if(!string.IsNullOrEmpty(path)) {
-                var fname = System.IO.Path.GetFileNameWithoutExtension(path);
+                var fname = System.IO.Path.GetFileName(path);
                 var m = regName.Match(fname);
                 var name = m?.Groups?["name"].Value;
                 if(name!=null) {
@@ -24,8 +24,8 @@ namespace ytplayer.download.downloader.impl {
             return path;
         }
 
-        const string PtnVideoName = @"\[(?:(?:download)|(?:ffmpeg))\]\s+Destination:\s+(?<name>.*)-(?<id>.{11})\.mp4(?!\w)";
-        const string PtnVideoSkipped = @"\[download\]\s+(?<name>.*)-(?<id>.{11})\.mp4\s+has already been downloaded";
+        const string PtnVideoName = @"\[(?:(?:download)|(?:ffmpeg))\]\s+Destination:\s+(?<name>.*)\s+\[(?<id>.*)\]\.mp4(?!\w)";
+        const string PtnVideoSkipped = @"\[download\]\s+(?<name>.*)\s+\[(?<id>.*)\]\.mp4\s+has already been downloaded";
         const string PtnProgress = @"\[download\]\s+(?<progress>[0-9]+)(?:\.[0-9])?%";
         static Regex RegexVideoName = new Regex(PtnVideoName, RegexOptions.IgnoreCase);
         static Regex RegexAudioName = new Regex(PtnVideoName.Replace("mp4", "mp3"), RegexOptions.IgnoreCase);
