@@ -39,6 +39,10 @@ namespace ytplayer.player {
             });
             ViewModel.Volume.Subscribe((volume) => {
                 MediaPlayer.Volume = volume;
+                var item = ViewModel.PlayList.Current.Value;
+                if(item!=null) {
+                    item.Volume = volume;
+                }
             });
             ViewModel.PlayList.Current.Subscribe(OnCurrentItemChanged);
 
