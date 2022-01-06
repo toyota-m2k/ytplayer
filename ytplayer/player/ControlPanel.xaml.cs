@@ -22,11 +22,20 @@ namespace ytplayer.player {
 
         private common.DisposablePool mDisposablePool = new common.DisposablePool();
 
+        IDisposable mChapterEditingObserver = null;
         private void OnLoaded(object sender, RoutedEventArgs e) {
-            mDisposablePool.Add(ViewModel.ChapterEditing.Subscribe(OnChapterEditing));
+            mChapterEditingObserver = ViewModel.ChapterEditing.Subscribe(OnChapterEditing);
         }
 
+        private void OnUnloaded(object sender, RoutedEventArgs e) {
+            mChapterEditingObserver?.Dispose();
+            mChapterEditingObserver = null;
+            OnChapterEditing(false);
+        }
+
+
         private void OnChapterEditing(bool editing) {
+            ViewModel?.KeyCommands?.Pause(editing);
             if(editing) {
                 mDisposablePool.Add(ViewModel.EditingChapterList.Subscribe(c => UpdateChapterLength()));
                 mDisposablePool.Add(ViewModel.Duration.Subscribe(c => UpdateChapterLength()));
@@ -79,10 +88,6 @@ namespace ytplayer.player {
 
         private void OnChapterListChanged(object sender, NotifyCollectionChangedEventArgs e) {
             UpdateChapterLength();
-        }
-
-        private void OnUnloaded(object sender, RoutedEventArgs e) {
-            OnChapterEditing(false);
         }
 
         private void OnSkipChapterButtonClicked(object sender, RoutedEventArgs e) {

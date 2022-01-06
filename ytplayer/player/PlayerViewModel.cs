@@ -323,6 +323,7 @@ namespace ytplayer.player {
         public ReactivePropertySlim<bool> ShowSizePanel { get; } = new ReactivePropertySlim<bool>(false);
         public ReactivePropertySlim<bool> Fullscreen { get; } = new ReactivePropertySlim<bool>(false);
         public ReactiveCommand MaximizeCommand { get; } = new ReactiveCommand();
+        public PlayerCommand KeyCommands { get; }
 
         #endregion
 
@@ -447,6 +448,7 @@ namespace ytplayer.player {
                     ResetTrimming(SetTrimmingEnd);
                 }
             });
+            KeyCommands = new PlayerCommand(this);
         }
 
         public override void Dispose() {

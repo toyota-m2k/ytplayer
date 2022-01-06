@@ -139,6 +139,13 @@ namespace ytplayer.common
         public bool Enabled {
             get => enabled != null;
         }
+
+        private bool PausedTemporary { get; set; } = false;
+        public void Pause(bool pause) {
+            PausedTemporary = pause;
+            Cancel();
+        }
+
         private void OnKeyDown(object sender, KeyEventArgs e) {
             //LoggerEx.debug($"Key={e.Key}, Sys={e.SystemKey}, State={e.KeyStates}, Rep={e.IsRepeat}, Down={e.IsDown}, Up={e.IsUp}, Toggled={e.IsToggled}");
             Down(e.Key);
@@ -223,6 +230,10 @@ namespace ytplayer.common
         }
 
         public void Down(Key key) {
+            if (PausedTemporary) {
+                return;
+            }
+
             //LoggerEx.debug($"{key}");
             if (key == Key.LeftCtrl || key == Key.RightCtrl) {
                 Ctrl.Value = true;

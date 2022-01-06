@@ -26,11 +26,8 @@ namespace ytplayer.player {
             }
         }
 
-        private PlayerCommand Commands;
-
         public PlayerWindow(IStorageSupplier storageSupplier) {
             ViewModel = new PlayerViewModel(storageSupplier);
-            Commands = new PlayerCommand(ViewModel);
             InitializeComponent();
         }
 
@@ -71,7 +68,7 @@ namespace ytplayer.player {
             ViewModel.AutoChapterCommand.Subscribe(OnAutoChapter);
             ViewModel.ClosePlayerCommand.Subscribe(Close);
             LoadCompletion.TrySetResult(true);
-            Commands.Enable(GetWindow(this), true);
+            ViewModel.KeyCommands.Enable(GetWindow(this), true);
         }
 
         private void OnCurrentItemChanged(DLEntry item) {
@@ -81,7 +78,7 @@ namespace ytplayer.player {
 
         protected override void OnClosing(CancelEventArgs e) {
             base.OnClosing(e);
-            Commands.Enable(GetWindow(this), false);
+            ViewModel.KeyCommands.Enable(GetWindow(this), false);
             Settings.Instance.PlayerPlacement.GetPlacementFrom(this);
             ViewModel.SaveChapterListIfNeeds();
             LoadCompletion.TrySetResult(false);
