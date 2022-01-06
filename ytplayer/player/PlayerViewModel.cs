@@ -92,18 +92,45 @@ namespace ytplayer.player {
             }
         }
 
+        public void SetTrimmingStartAtCurrentPos() {
+            SetTrimming(SetTrimmingStart);
+        }
+        public void SetTrimmingEndAtCurrentPos() {
+            SetTrimming(SetTrimmingEnd);
+        }
+
+        public void ResetTrimmingStart() {
+            ResetTrimming(SetTrimmingStart);
+        }
+        //public void ResetTrimmingStart(IPlayItem item) {
+        //    SetTrimmingStart(item, 0);
+        //}
+        public void ResetTrimmingEnd() {
+            ResetTrimming(SetTrimmingEnd);
+        }
+
         private void SetTrimming(object obj) {
             switch (obj as String) {
-                case "Start": SetTrimming(SetTrimmingStart); break;
-                case "End": SetTrimming(SetTrimmingEnd); break;
-                default: return;
+                case "Start":
+                    SetTrimmingStartAtCurrentPos(); 
+                    break;
+                case "End":
+                    SetTrimmingEndAtCurrentPos();
+                    break;
+                default:
+                    return;
             }
         }
         private void ResetTrimming(object obj) {
             switch (obj as String) {
-                case "Start": ResetTrimming(SetTrimmingStart); break;
-                case "End": ResetTrimming(SetTrimmingEnd); break;
-                default: return;
+                case "Start":
+                    ResetTrimmingStart(); 
+                    break;
+                case "End":
+                    ResetTrimmingEnd(); 
+                    break;
+                default: 
+                    return;
             }
         }
 
@@ -214,6 +241,18 @@ namespace ytplayer.player {
             Position.Value = Trimming.Value.Start;
         }
 
+        public void SeekRelative(long delta) {
+            var pos = (ulong)Math.Min((long)Duration.Value, Math.Max(0, (long)Position.Value + delta));
+            Position.Value = pos;
+        }
+
+        public void SetRating(Rating rating) {
+            var item = PlayList.Current.Value;
+            if (item != null) {
+                item.Rating = rating;
+            }
+        }
+
         #endregion
 
         #region Auto Chapter
@@ -272,7 +311,8 @@ namespace ytplayer.player {
         public ReactiveCommand SetTrimCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ResetTrimCommand { get; } = new ReactiveCommand();
         public ReactiveCommand TrimmingToChapterCommand { get; } = new ReactiveCommand();
-
+        public ReactiveCommand ClosePlayerCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand HelpCommand { get; } = new ReactiveCommand();
         #endregion
 
         #region Window Managements

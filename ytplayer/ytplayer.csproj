@@ -170,6 +170,7 @@
     <Compile Include="common\CursorManager.cs" />
     <Compile Include="common\DisposablePool.cs" />
     <Compile Include="common\JsonExt.cs" />
+    <Compile Include="common\KeyCommandManager.cs" />
     <Compile Include="common\MediaInfo.cs" />
     <Compile Include="common\WeakList.cs" />
     <Compile Include="data\ChapterEntry.cs" />
@@ -182,6 +183,7 @@
     <Compile Include="player\ChapterView.xaml.cs">
       <DependentUpon>ChapterView.xaml</DependentUpon>
     </Compile>
+    <Compile Include="player\PlayerCommand.cs" />
     <Compile Include="player\PlayerViewModel.cs" />
     <Compile Include="data\PlayRange.cs" />
     <Compile Include="RequestAcceptor.cs" />

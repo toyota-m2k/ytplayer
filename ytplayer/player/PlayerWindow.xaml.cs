@@ -26,9 +26,11 @@ namespace ytplayer.player {
             }
         }
 
+        private PlayerCommand Commands;
 
         public PlayerWindow(IStorageSupplier storageSupplier) {
             ViewModel = new PlayerViewModel(storageSupplier);
+            Commands = new PlayerCommand(ViewModel);
             InitializeComponent();
         }
 
@@ -67,7 +69,9 @@ namespace ytplayer.player {
             ViewModel.PlayList.Current.Subscribe(OnCurrentItemChanged);
             ViewModel.StorageClosed.Subscribe((_) => Close());
             ViewModel.AutoChapterCommand.Subscribe(OnAutoChapter);
+            ViewModel.ClosePlayerCommand.Subscribe(Close);
             LoadCompletion.TrySetResult(true);
+            Commands.Enable(GetWindow(this), true);
         }
 
         private void OnCurrentItemChanged(DLEntry item) {
@@ -77,6 +81,7 @@ namespace ytplayer.player {
 
         protected override void OnClosing(CancelEventArgs e) {
             base.OnClosing(e);
+            Commands.Enable(GetWindow(this), false);
             Settings.Instance.PlayerPlacement.GetPlacementFrom(this);
             ViewModel.SaveChapterListIfNeeds();
             LoadCompletion.TrySetResult(false);
@@ -109,16 +114,16 @@ namespace ytplayer.player {
             ViewModel.PlayList.Add(item);
         }
 
-        private void OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e) {
-            switch (e.Key) {
-                case Key.Escape:
-                    Close();
-                    break;
-                default:
-                    return;
-            }
-            e.Handled = true;
-        }
+        //private void OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e) {
+        //    switch (e.Key) {
+        //        case Key.Escape:
+        //            Close();
+        //            break;
+        //        default:
+        //            return;
+        //    }
+        //    e.Handled = true;
+        //}
 
         private void AddTextToRichEdit(string text, Brush fg) {
             var p = OutputView.Document.Blocks.FirstBlock as Paragraph;
