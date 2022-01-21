@@ -63,8 +63,8 @@
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.4.4\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
-    <Reference Include="io.github.toyota32k.wpfLittleToolkit, Version=1.0.9.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\io.github.toyota32k.wpfLittleToolkit.1.0.9\lib\net472\io.github.toyota32k.wpfLittleToolkit.dll</HintPath>
+    <Reference Include="io.github.toyota32k.wpfLittleToolkit, Version=1.0.13.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\io.github.toyota32k.wpfLittleToolkit.1.0.13\lib\net472\io.github.toyota32k.wpfLittleToolkit.dll</HintPath>
     </Reference>
     <Reference Include="log4net, Version=2.0.12.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
       <HintPath>..\packages\log4net.2.0.12\lib\net45\log4net.dll</HintPath>

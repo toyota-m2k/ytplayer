@@ -608,12 +608,24 @@ namespace ytplayer {
 
         private void RefreshList() {
             if (Storage == null) return;
+            var orgSelection = SelectedEntries.ToList();
             viewModel.MainList.Value = new ObservableCollection<DLEntry>(Storage.DLTable.List
                 .FilterByRating(viewModel.RatingFilter)
                 .FilterByCategory(viewModel.CurrentCategory.Value)
                 .FilterByName(viewModel.SearchText.Value)
                 .Where((c) => viewModel.ShowBlocked.Value || (c.Status != Status.BLOCKED && c.Status != Status.FAILED))
                 .Sort());
+
+            if(orgSelection.Count>0) {
+                if(MainListView.SelectItems(orgSelection.Intersect(viewModel.MainList.Value))) {
+                    DelayAndDo(100, () => MainListView.ScrollIntoView(MainListView.SelectedItem));
+                }
+            }
+        }
+
+        private async void DelayAndDo(int ms, Action fn) {
+            await Task.Delay(ms);
+            fn();
         }
 
         private void OnSearchBoxLostFocus(object sender, RoutedEventArgs e) {
