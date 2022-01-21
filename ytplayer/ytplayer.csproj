@@ -177,6 +177,9 @@
     <Compile Include="data\ChapterInfo.cs" />
     <Compile Include="data\StorageTable.cs" />
     <Compile Include="data\SyncManager.cs" />
+    <Compile Include="dialog\TextSearchDialog.xaml.cs">
+      <DependentUpon>TextSearchDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="download\downloader\impl\FFMpegConverter.cs" />
     <Compile Include="interop\KeyState.cs" />
     <Compile Include="player\ChapterBar.cs" />
@@ -235,6 +238,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="dialog\SettingDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="dialog\TextSearchDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

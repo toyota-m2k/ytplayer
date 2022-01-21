@@ -14,7 +14,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using ytplayer.common;
 using ytplayer.data;
 using ytplayer.dialog;
 using ytplayer.download;
@@ -64,6 +63,7 @@ namespace ytplayer {
         public ReactivePropertySlim<bool> AutoPlay { get; } = new ReactivePropertySlim<bool>(true);
         public ReactivePropertySlim<bool> IsBusy { get; } = new ReactivePropertySlim<bool>(false);
         public ReactivePropertySlim<bool> ShowFilterEditor { get; } = new ReactivePropertySlim<bool>(false);
+        public ReactivePropertySlim<bool> ShowSearchDialog { get; } = new ReactivePropertySlim<bool>(false);
         public ReactivePropertySlim<bool> ClipboardWatching { get; } = new ReactivePropertySlim<bool>(false);
         public ReactivePropertySlim<string> StatusString { get; } = new ReactivePropertySlim<string>();
         public ObservableCollection<OutputMessage> OutputList { get; } = new ObservableCollection<OutputMessage>();
@@ -72,7 +72,7 @@ namespace ytplayer {
         public ReactivePropertySlim<bool> ShowBlocked { get; } = new ReactivePropertySlim<bool>(false);
         public RatingFilter RatingFilter { get; } = new RatingFilter();
         public ObservableCollection<string> SearchHistory => Settings.Instance.SearchHistories.History;
-        public ReactivePropertySlim<string> SearchText { get; } = new ReactivePropertySlim<string>();
+        public ReactivePropertySlim<string> FilterText { get; } = new ReactivePropertySlim<string>();
 
         public bool BusyWithModal = false;
 
@@ -81,7 +81,7 @@ namespace ytplayer {
         public ReactiveCommand CommandFoldOutput { get; } = new ReactiveCommand();
         public ReactiveCommand CommandPlay { get; } = new ReactiveCommand();
         public ReactiveCommand CommandSearch { get; } = new ReactiveCommand();
-        public ReactiveCommand CommandClearSearchText { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandClearFilterText { get; } = new ReactiveCommand();
         public ReactiveCommand CommandExport { get; } = new ReactiveCommand();
         public ReactiveCommand CommandImport { get; } = new ReactiveCommand();
         public ReactiveCommand CommandSync { get; } = new ReactiveCommand();
@@ -315,7 +315,7 @@ namespace ytplayer {
                     BusyWithModal = false;
                 }
             });
-            CommandClearSearchText.Subscribe(() => SearchText.Value = "");
+            CommandClearFilterText.Subscribe(() => FilterText.Value = "");
         }
     }
 
@@ -371,7 +371,7 @@ namespace ytplayer {
             viewModel.CommandPlay.Subscribe(Play);
             viewModel.CurrentCategory.Subscribe((c) => RefreshList());
             viewModel.RatingFilter.FilterChanged += RefreshList;
-            viewModel.SearchText.Subscribe((s) => RefreshList());
+            viewModel.FilterText.Subscribe((s) => RefreshList());
             viewModel.ShowBlocked.Subscribe((s) => RefreshList());
             viewModel.AutoDownload.Subscribe((v) => {
                 if (!v||Storage==null) return;
@@ -389,11 +389,20 @@ namespace ytplayer {
 
             viewModel.ShowFilterEditor.Subscribe((v) => {
                 if (v) {
-                    GetFilterEditorWindow();
+                    ShowFilterEditorWindow();
                 } else {
                     mFilterEditorWindow?.Close();
                 }
             });
+
+            viewModel.ShowSearchDialog.Subscribe((v) => {
+                if (v) {
+                    ShowTextSearchDialog();
+                } else {
+                    mTextSearchDialog?.Close();
+                }
+            });
+
             viewModel.CommandExport.Subscribe(ExportUrlList);
             viewModel.CommandImport.Subscribe(ImportUrlList);
             viewModel.CommandSync.Subscribe(SyncFrom);
@@ -612,7 +621,7 @@ namespace ytplayer {
             viewModel.MainList.Value = new ObservableCollection<DLEntry>(Storage.DLTable.List
                 .FilterByRating(viewModel.RatingFilter)
                 .FilterByCategory(viewModel.CurrentCategory.Value)
-                .FilterByName(viewModel.SearchText.Value)
+                .FilterByName(viewModel.FilterText.Value)
                 .Where((c) => viewModel.ShowBlocked.Value || (c.Status != Status.BLOCKED && c.Status != Status.FAILED))
                 .Sort());
 
@@ -628,9 +637,9 @@ namespace ytplayer {
             fn();
         }
 
-        private void OnSearchBoxLostFocus(object sender, RoutedEventArgs e) {
+        private void OnFilterBoxLostFocus(object sender, RoutedEventArgs e) {
             if (viewModel != null) {
-                Settings.Instance.SearchHistories.Put(viewModel.SearchText.Value);
+                Settings.Instance.SearchHistories.Put(viewModel.FilterText.Value);
             }
         }
 
@@ -996,7 +1005,7 @@ namespace ytplayer {
         #region Category & Rating Setting Panel
 
         private CategoryRatingDialog mFilterEditorWindow = null;
-        private CategoryRatingDialog GetFilterEditorWindow() {
+        private CategoryRatingDialog ShowFilterEditorWindow() {
             if(mFilterEditorWindow==null) {
                 mFilterEditorWindow = new CategoryRatingDialog();
                 mFilterEditorWindow.EditorWindowClosed += OnEditorWindowClosed;
@@ -1037,6 +1046,58 @@ namespace ytplayer {
                 }
             }
             Storage.DLTable.Update();
+        }
+
+        #endregion
+
+        #region Search Text
+
+        private TextSearchDialog mTextSearchDialog = null;
+        private TextSearchDialog ShowTextSearchDialog() {
+            if (mTextSearchDialog == null) {
+                mTextSearchDialog = new TextSearchDialog();
+                mTextSearchDialog.WindowClosed += OnTextSearchDialogClosed;
+                mTextSearchDialog.SearchText += OnSearchText;
+                mTextSearchDialog.ShowActivated = false;
+                mTextSearchDialog.ShowInTaskbar = false;
+                mTextSearchDialog.Owner = this;
+                if (TextSearchDialog.StartPosition.HasValue) {
+                    mTextSearchDialog.Left = TextSearchDialog.StartPosition.Value.X;
+                    mTextSearchDialog.Top = TextSearchDialog.StartPosition.Value.Y;
+                }
+                else {
+                    mTextSearchDialog.Left = this.Left + this.ActualWidth - 200;
+                    mTextSearchDialog.Top = this.Top + this.ActualHeight - 300;
+                }
+
+                mTextSearchDialog.Show();
+            }
+            return mTextSearchDialog;
+        }
+
+        private void OnSearchText(string text, bool next) {
+            //var xx = next ? "next" : "prev";
+            //LoggerEx.debug($"{text} ({xx})");
+            int index = MainListView.SelectedIndex;
+            Func<DLEntry, bool> filter = (e) => (e.Name?.ContainsIgnoreCase(text) ?? false) || (e.Desc?.ContainsIgnoreCase(text) ?? false);
+
+            DLEntry entry;
+            if (next) {
+                entry = viewModel.MainList.Value.Skip(index + 1).Where(filter).FirstOrDefault();
+            } else {
+                entry= viewModel.MainList.Value.Take(index).Where(filter).LastOrDefault();
+            }
+            if(entry!=null) {
+                MainListView.SelectedItem = entry;
+                MainListView.ScrollIntoView(entry);
+            }
+        }
+
+        private void OnTextSearchDialogClosed(TextSearchDialog obj) {
+            if (obj == mTextSearchDialog) {
+                mTextSearchDialog = null;
+                viewModel.ShowSearchDialog.Value = false;
+            }
         }
 
         #endregion
