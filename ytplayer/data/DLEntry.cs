@@ -4,8 +4,6 @@ using System;
 using System.Data.Linq.Mapping;
 using System.Data.SQLite;
 using System.Linq;
-using System.Text.RegularExpressions;
-using ytplayer.player;
 
 namespace ytplayer.data {
     public enum Status {
@@ -221,7 +219,7 @@ namespace ytplayer.data {
     public class DLEntryTable : StorageTable<DLEntry> {
         public DLEntryTable(SQLiteConnection connection) : base(connection) { }
         public bool Contains(string key) {
-            return Table.Where((c) => c.KEY == key).Any();
+            return Table.Any(c => c.KEY == key);
         }
         public override bool Contains(DLEntry entry) {
             return Contains(entry.KEY);
@@ -233,9 +231,9 @@ namespace ytplayer.data {
             // return Table.Where((c) => c.KEY == key).FirstOrDefault();
             // 驚いたことに、FirstOrDefault()だとエラーになる。Primary Key (or Unique) の一致で検索するから、
             // 複数のエントリが見つかる可能性がないため、FirstOrDefault()は使えないようだ。
-            return Table.Where((c) => c.KEY == key).SingleOrDefault();
+            return Table.SingleOrDefault(c => c.KEY == key);
         }
-        public long LastUpdated { get; }
+        // public long LastUpdated { get; }
     }
 
 
@@ -255,7 +253,7 @@ namespace ytplayer.data {
             get => name;
             set => setProp(callerName(), ref name, value, "NameToDisplay");
         }
-        static readonly private Regex RegName = new Regex(@"(?<name>.*)(?:-[a-z0-9]+)$", RegexOptions.IgnoreCase);
+        // private static readonly Regex RegName = new Regex(@"(?<name>.*)(?:-[a-z0-9]+)$", RegexOptions.IgnoreCase);
         public string NameToDisplay {
             get {
                 if (string.IsNullOrEmpty(name)) {
@@ -302,7 +300,7 @@ namespace ytplayer.data {
         private string category;
         public Category Category {
             get => Settings.Instance.Categories.Get(category);
-            set => setProp(callerName(), ref category, CategoryList.CategoryToDBLabel(value));
+            set => setProp(callerName(), ref category, CategoryList.CategoryToDbLabel(value));
         }
 
         [Column(Name = "media", CanBeNull = true)]
@@ -331,7 +329,7 @@ namespace ytplayer.data {
             return Math.Max(Math.Min(0, r), 100);   // 0<=r<=100
         }
         public double Volume {
-            get => ((double)volume) / VOL_RANGE + 0.5;
+            get => volume / VOL_RANGE + 0.5;
             set => setProp(callerName(), ref volume, dbVolume(value));
         }
 
@@ -351,7 +349,7 @@ namespace ytplayer.data {
 
         private string FormatDuration(ulong durationInSec) {
             var t = TimeSpan.FromSeconds(durationInSec);
-            return string.Format("{0}:{1:00}:{2:00}", t.Hours, t.Minutes, t.Seconds);
+            return $"{t.Hours}:{t.Minutes:00}:{t.Seconds:00}";
         }
 
         public string DurationText => DurationInSec > 0 ? FormatDuration(DurationInSec) : "";
@@ -366,14 +364,14 @@ namespace ytplayer.data {
         [Column(Name = "trim_start", CanBeNull = true)]
         private ulong? trim_start;
         public ulong TrimStart {
-            get => trim_start.HasValue ? trim_start.Value : 0;
-            set => setProp(callerName(), ref trim_start, (ulong)value);
+            get => trim_start ?? 0;
+            set => setProp(callerName(), ref trim_start, value);
         }
         [Column(Name = "trim_end", CanBeNull = true)]
         private ulong? trim_end;
         public ulong TrimEnd {
-            get => trim_end.HasValue ? trim_end.Value : 0;
-            set => setProp(callerName(), ref trim_end, (ulong)value);
+            get => trim_end ?? 0;
+            set => setProp(callerName(), ref trim_end, value);
         }
 
         public string Path => string.IsNullOrEmpty(VPath) ? APath : VPath;
@@ -400,11 +398,12 @@ namespace ytplayer.data {
             category = "";
         }
 
-        public static DLEntry Create(string id, string url_) {
-            return new DLEntry() { KEY=id, url = url_, Date = DateTime.UtcNow };
+        public static DLEntry Create(string id, string url) {
+            return new DLEntry() { KEY=id, url = url, Date = DateTime.UtcNow };
         }
 
         private static readonly DateTime EpochDate = new DateTime(1970, 1, 1, 0, 0, 0);
+
         public static DateTime AsTime(object obj) {
             try {
                 if (obj != null && obj != DBNull.Value) {
@@ -414,6 +413,7 @@ namespace ytplayer.data {
             catch (Exception e) {
                 Logger.error(e);
             }
+
             return EpochDate;
         }
     }

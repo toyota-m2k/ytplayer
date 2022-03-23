@@ -8,12 +8,12 @@ namespace ytplayer.common {
      * 動画再生時にマウスカーソルを非表示にするための管理クラス
      */
     public class CursorManager {
-        private static long WAIT_TIME = 2000;   //3ms
+        private static readonly long WAIT_TIME = 2000;   //3ms
         private Point mPosition;
         private long mCheck = 0;
         private DispatcherTimer mTimer = null;
-        private WeakReference<Window> mWin;
-        private bool Enabled = false;
+        private readonly WeakReference<Window> mWin;
+        private bool mEnabled = false;
 
         public CursorManager(Window owner) {
             mWin = new WeakReference<Window>(owner);
@@ -34,8 +34,8 @@ namespace ytplayer.common {
          * セッターメソッドだと ?.オペレータを使えるので、こういうときはプロパティより使いやすいのだ。
          */
         public void Enable(bool enable) {
-            if (enable!= Enabled) {
-                Enabled = enable;
+            if (enable!= mEnabled) {
+                mEnabled = enable;
                 if (enable) {
                     //Update();
                 } else {
@@ -53,18 +53,18 @@ namespace ytplayer.common {
         }
 
         public void Update(Point pos) {
-            if (!Enabled) {
+            if (!mEnabled) {
                 return;
             }
 
             if (mPosition != pos) {
                 mPosition = pos;
-                mCheck = System.Environment.TickCount;
+                mCheck = Environment.TickCount;
                 CursorOnWin = System.Windows.Input.Cursors.Arrow;
                 if (null == mTimer) {
                     mTimer = new DispatcherTimer();
                     mTimer.Tick += OnTimer;
-                    mTimer.Interval = TimeSpan.FromMilliseconds(WAIT_TIME / 3);
+                    mTimer.Interval = TimeSpan.FromMilliseconds(WAIT_TIME / 3.0);
                     mTimer.Start();
                 }
             }
@@ -74,7 +74,7 @@ namespace ytplayer.common {
             if (null == mTimer) {
                 return;
             }
-            if (System.Environment.TickCount - mCheck > WAIT_TIME) {
+            if (Environment.TickCount - mCheck > WAIT_TIME) {
                 mTimer.Stop();
                 mTimer = null;
                 CursorOnWin = System.Windows.Input.Cursors.None;
@@ -85,7 +85,7 @@ namespace ytplayer.common {
             }
         }
         private void KickOutMouse() {
-            System.Windows.Forms.Cursor.Position = new System.Drawing.Point(0, (int)System.Windows.SystemParameters.PrimaryScreenHeight);
+            System.Windows.Forms.Cursor.Position = new System.Drawing.Point(0, (int)SystemParameters.PrimaryScreenHeight);
         }
     }
 }

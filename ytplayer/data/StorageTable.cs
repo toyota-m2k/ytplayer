@@ -3,20 +3,17 @@ using System;
 using System.Collections.Generic;
 using System.Data.Linq;
 using System.Data.SQLite;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ytplayer.common;
 
 namespace ytplayer.data {
-    public delegate void NotificationProc<T>(T entry) where T : class;
+    public delegate void NotificationProc<in T>(T entry) where T : class;
 
     public abstract class StorageTable<T> : IDisposable where T : class {
         public DataContext Context;
         public Table<T> Table { get; private set; }
         public event NotificationProc<T> AddEvent;
         public event NotificationProc<T> DelEvent;
-        public StorageTable(SQLiteConnection connection) {
+
+        protected StorageTable(SQLiteConnection connection) {
             Context = new DataContext(connection);
             Table = Context.GetTable<T>();
         }
@@ -102,13 +99,13 @@ namespace ytplayer.data {
             }
             DelEvent?.Invoke(del);
         }
-        public void Delete(IEnumerable<T> dels, bool update) {
-            Table.DeleteAllOnSubmit(dels);
+        public void Delete(T[] targets, bool update) {
+            Table.DeleteAllOnSubmit(targets);
             if (update) {
                 Update();
             }
             if (DelEvent != null) {
-                foreach (var d in dels) {
+                foreach (var d in targets) {
                     DelEvent(d);
                 }
             }

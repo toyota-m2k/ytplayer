@@ -51,7 +51,7 @@ namespace ytplayer.player {
 
         private void SyncChapter() {
             var pos = ViewModel.PlayerPosition;
-            if (ViewModel.Chapters.Value.GetNeighbourChapterIndex(pos, out var prev, out var next)) {
+            if (ViewModel.Chapters.Value.GetNeighborChapterIndex(pos, out var prev, out var next)) {
                 prev++;
             } 
             if(prev>=0) {

@@ -11,37 +11,37 @@ using System.Windows.Input;
 namespace ytplayer.common
 {
     public class Command {
-        public int ID { get; private set; }
-        public string Name { get; private set; }
+        public int ID { get; }
+        public string Name { get; }
         public string Description { get; private set; } = null;
         public Action BreakAction { get; private set; } = null;
         public bool Repeatable { get; private set; } = false;
 
-        private object Executable;
+        private readonly object mExecutable;
 
         private Command() {
-            Executable = null;
+            mExecutable = null;
             ID = 0;
             Name = "NOP";
         }
 
         public Command(int id, string name, Action fn) {
-            Executable = fn;
+            mExecutable = fn;
             Name = name;
             ID = id;
         }
         public Command(int id, string name, Action<int> fn) {
-            Executable = fn;
+            mExecutable = fn;
             Name = name;
             ID = id;
         }
         public Command(int id, string name, ReactiveCommand fn) {
-            Executable = fn;
+            mExecutable = fn;
             Name = name;
             ID = id;
         }
         public Command(int id, string name, ReactiveCommand<int> fn) {
-            Executable = fn;
+            mExecutable = fn;
             Name = name;
             ID = id;
         }
@@ -60,24 +60,23 @@ namespace ytplayer.common
         }
 
         public void Invoke(int count) {
-            if (Executable == null) return;
-            var action = Executable as Action;
-            if(action!=null) {
+            if (mExecutable == null) return;
+            if(mExecutable is Action action) {
                 action();
                 return;
             }
-            var action1 = Executable as Action<int>;
-            if(action!=null) {
+
+            if(mExecutable is Action<int> action1) {
                 action1(count);
             }
-            var command = Executable as ReactiveCommand;
-            if (command != null) {
+
+            if (mExecutable is ReactiveCommand command) {
                 command.Execute();
                 return;
             }
-            var command1 = Executable as ReactiveCommand<int>;
-            if (command != null) {
-                command.Execute(count);
+
+            if (mExecutable is ReactiveCommand<int> command1) {
+                command1.Execute(count);
                 return;
             }
             Logger.error("invalid executable");
@@ -103,42 +102,40 @@ namespace ytplayer.common
 
 
     public class KeyCommandManager : ViewModelBase {
-        private Dictionary<int, Command> CommandMap = new Dictionary<int, Command>();
-        private Dictionary<Key, Command> SingleKeyCommands = new Dictionary<Key, Command>();
-        private Dictionary<Key, Command> ControlKeyCommands = new Dictionary<Key, Command>();
-        private Dictionary<Key, Command> ShiftKeyCommands = new Dictionary<Key, Command>();
-        private Dictionary<Key, Command> ControlShiftKeyCommands = new Dictionary<Key, Command>();
+        private readonly Dictionary<int, Command> mCommandMap = new Dictionary<int, Command>();
+        private readonly Dictionary<Key, Command> mSingleKeyCommands = new Dictionary<Key, Command>();
+        private readonly Dictionary<Key, Command> mControlKeyCommands = new Dictionary<Key, Command>();
+        private readonly Dictionary<Key, Command> mShiftKeyCommands = new Dictionary<Key, Command>();
+        private readonly Dictionary<Key, Command> mControlShiftKeyCommands = new Dictionary<Key, Command>();
 
         private ReactiveProperty<Key> ActiveKey { get; } = new ReactiveProperty<Key>(Key.None, ReactivePropertyMode.None);
         private ReactiveProperty<bool> Ctrl { get; } = new ReactiveProperty<bool>(false, ReactivePropertyMode.None);
         private ReactiveProperty<bool> Shift { get; } = new ReactiveProperty<bool>(false, ReactivePropertyMode.None);
-        private IDisposable enabled { get; set; } = null;
-        private int RepeatCount = 0;
+        private IDisposable Enabled { get; set; } = null;
+        private int mRepeatCount = 0;
 
         private ReadOnlyReactiveProperty<Command> CommandFlow { get; }
-        private Command CurrentCommand = Command.NOP;
+        private Command mCurrentCommand = Command.NOP;
 
         public KeyCommandManager() : base(disposeNonPublic: true) {
             CommandFlow = ActiveKey.CombineLatest(Ctrl, Shift, (k, c, s) => {
                 //LoggerEx.debug($"key changed:{k}");
                 if (c && s) {
-                    return ControlShiftKeyCommands.GetValue(k, Command.NOP);
+                    return mControlShiftKeyCommands.GetValue(k, Command.NOP);
                 }
                 else if (c) {
-                    return ControlKeyCommands.GetValue(k, Command.NOP);
+                    return mControlKeyCommands.GetValue(k, Command.NOP);
                 }
                 else if (s) {
-                    return ShiftKeyCommands.GetValue(k, Command.NOP);
+                    return mShiftKeyCommands.GetValue(k, Command.NOP);
                 }
                 else {
-                    return SingleKeyCommands.GetValue(k, Command.NOP);
+                    return mSingleKeyCommands.GetValue(k, Command.NOP);
                 }
             }).ToReadOnlyReactiveProperty(Command.NOP, ReactivePropertyMode.None);
         }
 
-        public bool Enabled {
-            get => enabled != null;
-        }
+        public bool IsEnabled => Enabled != null;
 
         private bool PausedTemporary { get; set; } = false;
         public void Pause(bool pause) {
@@ -157,36 +154,34 @@ namespace ytplayer.common
 
         public void Enable(Window owner, bool enable) {
             if (enable) {
-                if (null == enabled) {
+                if (null == Enabled) {
                     Cancel();
                     owner.AddHandler(Keyboard.PreviewKeyDownEvent, (KeyEventHandler)OnKeyDown);
                     owner.AddHandler(Keyboard.PreviewKeyUpEvent, (KeyEventHandler)OnKeyUp);
-                    enabled = CommandFlow.Subscribe(c => {
-                        Execute(c);
-                    });
+                    Enabled = CommandFlow.Subscribe(Execute);
                 }
             } else {
-                if (null != enabled) {
+                if (null != Enabled) {
                     owner.RemoveHandler(Keyboard.PreviewKeyDownEvent, (KeyEventHandler)OnKeyDown);
                     owner.RemoveHandler(Keyboard.PreviewKeyUpEvent, (KeyEventHandler)OnKeyUp);
-                    enabled.Dispose();
-                    enabled = null;
+                    Enabled.Dispose();
+                    Enabled = null;
                     Cancel();
                 }
             }
         }
 
         private void Execute(Command nextCommand) {
-            if(CurrentCommand.ID != nextCommand.ID) {
-                RepeatCount = 0;
-                CurrentCommand?.BreakAction?.Invoke();
-                CurrentCommand = nextCommand;
+            if(mCurrentCommand.ID != nextCommand.ID) {
+                mRepeatCount = 0;
+                mCurrentCommand?.BreakAction?.Invoke();
+                mCurrentCommand = nextCommand;
             }
-            else if(!CurrentCommand.Repeatable) {
+            else if(!mCurrentCommand.Repeatable) {
                 return;
             }
             //LoggerEx.debug($"{CurrentCommand.Name}");
-            CurrentCommand.Invoke(RepeatCount++);
+            mCurrentCommand.Invoke(mRepeatCount++);
 
             // Key.Media* の場合、Upイベントが来ないので、ここでリセットしないといけない。
             var key = ActiveKey.Value;
@@ -196,36 +191,34 @@ namespace ytplayer.common
         }
 
         public void AssignSingleKeyCommand(int id, Key key) {
-            SingleKeyCommands.Add(key, this[id]);
+            mSingleKeyCommands.Add(key, this[id]);
         }
         public void AssignControlKeyCommand(int id, Key key) {
-            ControlKeyCommands.Add(key, this[id]);
+            mControlKeyCommands.Add(key, this[id]);
         }
         public void AssignShiftKeyCommand(int id, Key key) {
-            ShiftKeyCommands.Add(key, this[id]);
+            mShiftKeyCommands.Add(key, this[id]);
         }
         public void AssignControlShiftKeyCommand(int id, Key key) {
-            ControlShiftKeyCommands.Add(key, this[id]);
+            mControlShiftKeyCommands.Add(key, this[id]);
         }
 
         public Command CommandOf(string name) {
-            return CommandMap.Values.Where(c => c.Name == name).FirstOrDefault();
+            return mCommandMap.Values.FirstOrDefault(c => c.Name == name);
         }
         public Command CommandOf(int id) {
-            return CommandMap.GetValue(id);
+            return mCommandMap.GetValue(id);
         }
-        public Command this[int id] {
-            get => CommandOf(id);
-        }
-        public Command this[string name] {
-            get => CommandOf(name);
-        }
+        public Command this[int id] => CommandOf(id);
+
+        public Command this[string name] => CommandOf(name);
+
         public void RegisterCommand(Command command) {
-            CommandMap[command.ID] = command;
+            mCommandMap[command.ID] = command;
         }
         public void RegisterCommand(params Command[] commands) {
             foreach(var cmd in commands) {
-                CommandMap[cmd.ID] = cmd;
+                mCommandMap[cmd.ID] = cmd;
             }
         }
 
@@ -273,16 +266,16 @@ namespace ytplayer.common
         }
 
         public IEnumerable<KeyMapHelpItem> MakeHelpMessage() {
-            return SingleKeyCommands.Select(p => new KeyMapHelpItem(p.Key, p.Value))
-                    .Concat(ControlKeyCommands.Select(p => new KeyMapHelpItem(p.Key, p.Value, "Ctrl+")))
-                    .Concat(ShiftKeyCommands.Select(p => new KeyMapHelpItem(p.Key, p.Value, "Shift+")))
-                    .Concat(ControlShiftKeyCommands.Select(p => new KeyMapHelpItem(p.Key, p.Value, "Ctrl+Shift+")))
+            return mSingleKeyCommands.Select(p => new KeyMapHelpItem(p.Key, p.Value))
+                    .Concat(mControlKeyCommands.Select(p => new KeyMapHelpItem(p.Key, p.Value, "Ctrl+")))
+                    .Concat(mShiftKeyCommands.Select(p => new KeyMapHelpItem(p.Key, p.Value, "Shift+")))
+                    .Concat(mControlShiftKeyCommands.Select(p => new KeyMapHelpItem(p.Key, p.Value, "Ctrl+Shift+")))
                     .OrderBy(t => t.ID);
         }
 
-        public override void Dispose() {
-            base.Dispose();
-        }
+        // public override void Dispose() {
+        //     base.Dispose();
+        // }
     }
 
 }
