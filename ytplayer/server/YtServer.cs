@@ -209,7 +209,10 @@ namespace ytplayer.server {
                                         {"name", v.Name },
                                         {"start", $"{v.TrimStart}"},
                                         {"end", $"{v.TrimEnd}" },
-                                        {"volume",$"{v.Volume}" }
+                                        {"volume",$"{v.Volume}" },
+                                        //{"rating", $"{(int)v.Rating}" },
+                                        //{"mark", $"{(int)v.Mark}" },
+                                        //{"category", $"{v.Category.Label}" }
                                     })));
                             }
 
@@ -326,6 +329,70 @@ namespace ytplayer.server {
                                 var id = json.GetString("id");
                                 Source.CurrentId = id;
                                 return new TextHttpResponse(json.ToString(), "application/json");
+                            } catch(Exception e) {
+                                Logger.error(e);
+                                return HttpBuilder.InternalServerError();
+                            }
+                        }
+                    },
+
+                    new Route {
+                        Name = "ytPlayer Get Reputation",
+                        UrlRegex = @"/ytplayer/reputation\?\w+",
+                        Method = "GET",
+                        Callable = (HttpRequest request) => {
+                            try {
+                                var id = QueryParser.Parse(request.Url)["id"];
+                                var entry = Source?.AllEntries.SingleOrDefault(e => e.Id == id);
+                                if(entry != null) {
+                                    var json = new JsonObject(new Dictionary<string, JsonValue>() {
+                                        { "cmd", "reputation"},
+                                        { "id", $"{id}" },
+                                        { "rating", $"{(int)entry.Rating}" },
+                                        { "mark", $"{(int)entry.Mark}" },
+                                        { "category", $"{entry.Category.Label}" }
+                                    });
+                                    return new TextHttpResponse(json.ToString(), "application/json");
+                                }
+                            } catch(Exception e) {
+                                Logger.error(e);
+                            }
+                            return HttpBuilder.InternalServerError();
+                        }
+                    },
+
+                    new Route {
+                        Name = "ytPlayer Set Reputation",
+                        UrlRegex = @"/ytplayer/reputation",
+                        Method = "PUT",
+                        Callable = (HttpRequest request) => {
+                            Logger.debug("YtServer: Reputation");
+                            if(!request.Headers.TryGetValue("Content-Type", out string type)) {
+                                return HttpBuilder.BadRequest();
+                            }
+                            try {
+                                var json = new JsonHelper(request.Content);
+                                var id = json.GetString("id");
+                                var iRating = json.GetInt("rating",-1);
+                                var iMark = json.GetInt("mark", -1);
+                                var category = json.GetString("category", null);
+                                var entry = Source?.AllEntries.SingleOrDefault(e => e.Id == id);
+                                if(entry != null) {
+                                    if(iRating>=0) {
+                                        entry.Rating = (Rating)iRating;
+                                    }
+                                    if(iMark>=0) {
+                                        entry.Mark = (Mark)iMark;
+                                    }
+                                    if(category!=null) {
+                                        entry.Category = Settings.Instance.Categories.Get(category);
+                                    }
+                                }
+                                var jsonR = new JsonObject(new Dictionary<string, JsonValue>() {
+                                    { "cmd", "reputation"},
+                                    { "id", $"{id}" },
+                                });
+                                return new TextHttpResponse(jsonR.ToString(), "application/json");
                             } catch(Exception e) {
                                 Logger.error(e);
                                 return HttpBuilder.InternalServerError();
