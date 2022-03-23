@@ -88,8 +88,8 @@ namespace ytplayer.data {
             if(ReferenceEquals(this,obj)) {
                 return true;
             }
-            var c = obj as Category;
-            return c.Label == Label;
+
+            return obj is Category c && c.Label == Label;
         }
 
         public override int GetHashCode() {
@@ -141,8 +141,8 @@ namespace ytplayer.data {
         [System.Xml.Serialization.XmlIgnore]
         public IEnumerable<Category> FilterList => Dic.Values.OrderBy((c) => c.SortIndex);
 
-        private static Lazy<Category> _lazyCategory = new Lazy<Category>(() => new Category("Unknown", Colors.Gray, -1, "M11,18H13V16H11V18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,6A4,4 0 0,0 8,10H10A2,2 0 0,1 12,8A2,2 0 0,1 14,10C14,12 11,11.75 11,15H13C13,12.75 16,12.5 16,10A4,4 0 0,0 12,6Z"));
-        public static Category Unknown => _lazyCategory.Value;
+        private static readonly Lazy<Category> lazyCategory = new Lazy<Category>(() => new Category("Unknown", Colors.Gray, -1, "M11,18H13V16H11V18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,6A4,4 0 0,0 8,10H10A2,2 0 0,1 12,8A2,2 0 0,1 14,10C14,12 11,11.75 11,15H13C13,12.75 16,12.5 16,10A4,4 0 0,0 12,6Z"));
+        public static Category Unknown => lazyCategory.Value;
 
         public void Initialize() {
             Create("All", Colors.Blue, 0,               "M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z");
@@ -161,7 +161,7 @@ namespace ytplayer.data {
             Create("Other", Colors.Navy, 100,         "M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z");
         }
 
-        public static string CategoryToDBLabel(Category c) {
+        public static string CategoryToDbLabel(Category c) {
             switch(c.Label) {
                 case "All":
                 case "Unchecked":

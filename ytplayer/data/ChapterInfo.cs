@@ -68,8 +68,8 @@ namespace ytplayer.data {
 
         private bool mIsModified = false;
         public bool IsModified {
-            get { return mIsModified || Values.Where((c) => c.IsModified).Any(); }
-            private set { mIsModified = value; }
+            get { return mIsModified || Values.Any(c => c.IsModified); }
+            private set => mIsModified = value;
         }
         public ChapterList(string owner, IEnumerable<ChapterInfo> src) {
             Owner = owner;
@@ -86,7 +86,7 @@ namespace ytplayer.data {
         }
 
         public bool CanAddChapter(ulong pos) {
-            if (GetNeighbourChapterIndex(pos, out var prev, out var next)) {
+            if (GetNeighborChapterIndex(pos, out var prev, out var next)) {
                 return false;
             }
             return CanAddChapter(pos, prev, next);
@@ -105,8 +105,7 @@ namespace ytplayer.data {
         }
 
         public bool AddChapter(ChapterInfo chapter) {
-            int prev, next;
-            if(GetNeighbourChapterIndex(chapter.Position, out prev, out next)) {
+            if(GetNeighborChapterIndex(chapter.Position, out _, out var next)) {
                 return false;
             }
             if (!CanAddChapter(chapter.Position)) {
@@ -122,8 +121,7 @@ namespace ytplayer.data {
         }
 
         public bool RemoveChapter(ChapterInfo chapter) {
-            int prev, next;
-            if (!GetNeighbourChapterIndex(chapter.Position, out prev, out next)) {
+            if (!GetNeighborChapterIndex(chapter.Position, out var prev, out _)) {
                 return false;
             }
             Values.RemoveAt(prev + 1);
@@ -147,7 +145,7 @@ namespace ytplayer.data {
             * @return true: currentがマーカー位置にヒット（prevとnextにひとつ前/後のindexがセットされる）
             *         false: ヒットしていない
             */
-        public bool GetNeighbourChapterIndex(ulong current, out int prev, out int next) {
+        public bool GetNeighborChapterIndex(ulong current, out int prev, out int next) {
             int count = Values.Count;
             int clipIndex(int index) {
                 return (0 <= index && index < count) ? index : -1;
@@ -169,27 +167,27 @@ namespace ytplayer.data {
             return false;
         }
 
-        private IEnumerable<PlayRange> GetDisabledChapterRanges() {
-            bool skip = false;
-            ulong skipStart = 0;
-
-            foreach (var c in Values) {
-                if (c.Skip) {
-                    if (!skip) {
-                        skip = true;
-                        skipStart = c.Position;
-                    }
-                } else {
-                    if (skip) {
-                        skip = false;
-                        yield return new PlayRange(skipStart, c.Position);
-                    }
-                }
-            }
-            if(skip) {
-                yield return new PlayRange(skipStart, 0);
-            }
-        }
+        // private IEnumerable<PlayRange> GetDisabledChapterRanges() {
+        //     bool skip = false;
+        //     ulong skipStart = 0;
+        //
+        //     foreach (var c in Values) {
+        //         if (c.Skip) {
+        //             if (!skip) {
+        //                 skip = true;
+        //                 skipStart = c.Position;
+        //             }
+        //         } else {
+        //             if (skip) {
+        //                 skip = false;
+        //                 yield return new PlayRange(skipStart, c.Position);
+        //             }
+        //         }
+        //     }
+        //     if(skip) {
+        //         yield return new PlayRange(skipStart);
+        //     }
+        // }
 
         public IEnumerable<(ulong,bool)> GetChapterPositionAwareOfTrimming(PlayRange trimming) {
             var trimStart = trimming.Start;

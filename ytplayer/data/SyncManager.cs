@@ -1,7 +1,6 @@
 ﻿using io.github.toyota32k.toolkit.utils;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Json;
 using System.Linq;
@@ -12,10 +11,10 @@ using ytplayer.common;
 
 namespace ytplayer.data {
     public class SyncManager {
-        static LoggerEx logger = new LoggerEx("SYNC");
+        private static readonly LoggerEx logger = new LoggerEx("SYNC");
 
         //public static Guid guid = Guid.NewGuid();
-        public static bool busy = false;
+        private static bool busy = false;
 
         public interface ISyncProgress {
             void OnMessage(string msg);
@@ -25,7 +24,7 @@ namespace ytplayer.data {
 
         class DLEntryComparator : IEqualityComparer<DLEntry> {
             public bool Equals(DLEntry x, DLEntry y) {
-                return x.KEY == y.KEY;
+                return y != null && x != null && x.KEY == y.KEY;
             }
 
             public int GetHashCode(DLEntry obj) {
@@ -165,7 +164,7 @@ namespace ytplayer.data {
                         }
                         output.StandardOutput($"Removed: {dl.Name}");
                         logger.info($"OK, delete my chapters.");
-                        storage.ChapterTable.Delete(myChapters, true);
+                        storage.ChapterTable.Delete(myChapters.ToArray(), true);
                         //foreach (var x in myChapters) { logger.info($"--- deleted: {x.Owner}, {x.Position}, {x.Skip}, {x.Label}"); }
                     }
                     logger.info($"let's import thier chapters.");

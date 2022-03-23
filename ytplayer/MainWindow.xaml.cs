@@ -28,8 +28,8 @@ namespace ytplayer {
      * アウトプットリストに出力する文字列エントリクラス
      */
     public class OutputMessage {
-        static Brush ErrorColor = new SolidColorBrush(Colors.Red);
-        static Brush StandardColor = new SolidColorBrush(Colors.Black);
+        private static readonly Brush ErrorColor = new SolidColorBrush(Colors.Red);
+        private static readonly Brush StandardColor = new SolidColorBrush(Colors.Black);
         public string Message { get; }
         public bool Error { get; }
         public Brush Color => Error ? ErrorColor : StandardColor;

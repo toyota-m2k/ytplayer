@@ -83,17 +83,17 @@ namespace ytplayer.data.Tests {
             KVEntry entry;
             entry = table.Table.Single((e) => e.KEY == "b");
             //Assert.AreEqual(2, entry.id); 
-            Assert.AreEqual(0, entry.iValue);
-            Assert.AreEqual("xyz", entry.sValue);
+            Assert.AreEqual(0, entry.IntValue);
+            Assert.AreEqual("xyz", entry.StringValue);
             entry = table.Table.Single((e) => e.KEY == "c");
-            Assert.AreEqual(999, entry.iValue);
-            Assert.IsNull(entry.sValue);
+            Assert.AreEqual(999, entry.IntValue);
+            Assert.IsNull(entry.StringValue);
 
             entry = table.Table.Single((e) => e.KEY == "d");
-            Assert.AreEqual(888, entry.iValue);
-            Assert.IsNull(entry.sValue);
+            Assert.AreEqual(888, entry.IntValue);
+            Assert.IsNull(entry.StringValue);
 
-            entry.iValue = 2000;
+            entry.IntValue = 2000;
             table.Update();
             Assert.IsTrue(true);
         }

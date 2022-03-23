@@ -22,7 +22,7 @@ namespace ytplayer.data {
         private int skip { get; set; }
         public bool Skip {
             get => skip!=0;
-            set { skip = value ? 1 : 0; }
+            set => skip = value ? 1 : 0;
         }
 
         public ChapterEntry() {
@@ -32,10 +32,10 @@ namespace ytplayer.data {
             skip = 0;
         }
 
-        static public ChapterEntry Create(string owner, ulong pos, bool skip=false, string label=null) {
+        public static ChapterEntry Create(string owner, ulong pos, bool skip=false, string label=null) {
             return new ChapterEntry() { Owner = owner, Position = pos, Skip = skip, Label = label };
         }
-        static public ChapterEntry Create(string owner, ChapterInfo info) {
+        public static ChapterEntry Create(string owner, ChapterInfo info) {
             return new ChapterEntry() { Owner = owner, Position = info.Position, Skip = info.Skip, Label = info.Label };
         }
 
@@ -47,18 +47,18 @@ namespace ytplayer.data {
     public class ChapterTable : StorageTable<ChapterEntry> {
         public ChapterTable(SQLiteConnection connection) : base(connection) { }
         public override bool Contains(ChapterEntry entry) {
-            return Table.Where((c) => c.Owner == entry.Owner && c.Position == entry.Position).Any();
+            return Table.Any(c => c.Owner == entry.Owner && c.Position == entry.Position);
         }
 
-        class ChapterGroup {
-            public string Owner { get; }
-            public List<ChapterEntry> Chapters { get; }
-
-            public ChapterGroup(string owner, List<ChapterEntry> list) {
-                Owner = owner;
-                Chapters = list;
-            }
-        };
+        // private class ChapterGroup {
+        //     public string Owner { get; }
+        //     public List<ChapterEntry> Chapters { get; }
+        //
+        //     public ChapterGroup(string owner, List<ChapterEntry> list) {
+        //         Owner = owner;
+        //         Chapters = list;
+        //     }
+        // };
 
         public IEnumerable<ChapterEntry> GetChapterEntries(string owner) {
             return Table.Where((c) => c.Owner == owner);
@@ -70,7 +70,7 @@ namespace ytplayer.data {
 
         private class PositionComparator : IEqualityComparer<ChapterInfo> {
             public bool Equals(ChapterInfo x, ChapterInfo y) {
-                return x.Position == y.Position;
+                return y != null && x != null && x.Position == y.Position;
             }
 
             public int GetHashCode(ChapterInfo obj) {
@@ -97,9 +97,11 @@ namespace ytplayer.data {
             var modified = updated.Values.Where((c)=>c.IsModified).Intersect(current.Values, PComp);
 
             foreach(var m in modified) {
-                var entry = Table.Where((c) => c.Position == m.Position && c.Owner == current.Owner).SingleOrDefault();
-                entry.Skip = m.Skip;
-                entry.Label = m.Label;
+                var entry = Table.SingleOrDefault(c => c.Position == m.Position && c.Owner == current.Owner);
+                if (entry != null) {
+                    entry.Skip = m.Skip;
+                    entry.Label = m.Label;
+                }
             }
 
             foreach(var a in appended) {
@@ -110,8 +112,10 @@ namespace ytplayer.data {
             //Table.InsertAllOnSubmit(appended);
             // Table.DeleteAllOnSubmit(deleted);
             foreach (var d in deleted) {
-                var entry = Table.Where((c) => c.Position == d.Position && c.Owner == current.Owner).SingleOrDefault();
-                Table.DeleteOnSubmit(entry);
+                var entry = Table.SingleOrDefault(c => c.Position == d.Position && c.Owner == current.Owner);
+                if (entry != null) {
+                    Table.DeleteOnSubmit(entry);
+                }
             }
 
             Update();

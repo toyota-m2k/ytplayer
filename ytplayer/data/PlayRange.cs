@@ -9,7 +9,7 @@
         public ulong Start { get; private set; }
         public ulong End { get; private set; }
 
-        static public PlayRange Empty => new PlayRange(0,0);
+        public static PlayRange Empty => new PlayRange(0,0);
 
         public PlayRange(ulong start, ulong end=0) {
             if (end == 0) {

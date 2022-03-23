@@ -14,10 +14,10 @@ namespace ytplayer.data {
 
         public event Action FilterChanged;
 
-        private ReactiveProperty<bool>[] Filters;
+        private readonly ReactiveProperty<bool>[] mFilters;
 
         public RatingFilter() {
-            Filters = new ReactiveProperty<bool>[] { Dreadful, Bad, Normal, Good, Excellent };
+            mFilters = new [] { Dreadful, Bad, Normal, Good, Excellent };
             FromArray(Settings.Instance.Ratings);
             Normal.Subscribe(OnChanged);
             Bad.Subscribe(OnChanged);
@@ -30,22 +30,22 @@ namespace ytplayer.data {
         }
 
         private bool this[int i] {
-            get => Filters[i].Value;
-            set => Filters[i].Value = value;
+            get => mFilters[i].Value;
+            set => mFilters[i].Value = value;
         }
 
         public bool this[Rating i] {
-            get => Filters[(int)i-1].Value;
-            set => Filters[(int)i-1].Value = value;
+            get => mFilters[(int)i-1].Value;
+            set => mFilters[(int)i-1].Value = value;
         }
 
         public bool[] ToArray() {
-            return Filters.Select((p) => p.Value).ToArray();
+            return mFilters.Select((p) => p.Value).ToArray();
         }
-        public void FromArray(bool[] vals) {
-            if (vals == null) return;
-            for (int i = 0, ci = vals.Length; i < ci; i++) {
-                this[i] = vals[i];
+        public void FromArray(bool[] values) {
+            if (values == null) return;
+            for (int i = 0, ci = values.Length; i < ci; i++) {
+                this[i] = values[i];
             }
         }
 
