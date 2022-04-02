@@ -78,7 +78,7 @@ namespace ytplayer.data {
             }
         }
 
-        private static PositionComparator PComp = new PositionComparator();
+        private static readonly PositionComparator pComp = new PositionComparator();
 
         // Autoincrementのprimary keyのせいで、DuplicateKeyExceptionが出る問題対策
         public void AddAll(IEnumerable<ChapterEntry> source) {
@@ -92,9 +92,9 @@ namespace ytplayer.data {
         public void UpdateByChapterList(ChapterList updated) {
             var current = GetChapterList(updated.Owner);
 
-            var appended = updated.Values.Except(current.Values, PComp).Select((c)=>ChapterEntry.Create(updated.Owner, c)).ToList();
-            var deleted = current.Values.Except(updated.Values, PComp).Select((c) => ChapterEntry.Create(updated.Owner, c)).ToList();
-            var modified = updated.Values.Where((c)=>c.IsModified).Intersect(current.Values, PComp);
+            var appended = updated.Values.Except(current.Values, pComp).Select((c)=>ChapterEntry.Create(updated.Owner, c)).ToList();
+            var deleted = current.Values.Except(updated.Values, pComp).Select((c) => ChapterEntry.Create(updated.Owner, c)).ToList();
+            var modified = updated.Values.Where((c)=>c.IsModified).Intersect(current.Values, pComp);
 
             foreach(var m in modified) {
                 var entry = Table.SingleOrDefault(c => c.Position == m.Position && c.Owner == current.Owner);

@@ -9,7 +9,7 @@ namespace ytplayer.download.downloader.impl {
         }
 
         public override string GetIDStringFromURL(Uri uri) {
-            return YoutubeDownloaderFactory.GetIDStringFromURL(uri.ToString());
+            return YoutubeDownloaderFactory.GetIDStringFromUrl(uri.ToString());
         }
 
         public override string NormalizeUrlForKey(Uri uri) {
@@ -20,7 +20,7 @@ namespace ytplayer.download.downloader.impl {
 
         public override string NormalizeSubUrlForKey(Uri uri, int index, string id) {
             if (id == null) {
-                return base.NormalizeSubUrlForKey(uri, index, id);
+                return base.NormalizeSubUrlForKey(uri, index, null);
             }
             return $"{uri.Scheme}://{uri.Host}{uri.LocalPath}?v={id}";
         }
@@ -36,36 +36,36 @@ namespace ytplayer.download.downloader.impl {
         // https://www.youtube.com/watch?v=NhKEBTz2N28&list=RDNhKEBTz2N28&start_radio=1
         // https://youtu.be/UF9PWHDJ-AE
         // https://www.youtube.com/embed/23GcaWtbVdQ?rel=0
-        static Regex regexId = new Regex(@"(?:[?&]v=|youtu.be/|embed/)(?<id>[^?&=\r\n \t]+)(?:[?&]list=(?<list>[^&=\r\n \t]+))?");
+        private static readonly Regex regexId = new Regex(@"(?:[?&]v=|youtu.be/|embed/)(?<id>[^?&=\r\n \t]+)(?:[?&]list=(?<list>[^&=\r\n \t]+))?");
 
-        public static (string id, string list) GetIdsStringFromURL(string url) {
+        public static (string id, string list) GetIdsStringFromUrl(string url) {
             var m = regexId.Match(url);
-            return (m?.Groups?["id"]?.Value, m?.Groups?["list"]?.Value);
+            return (m.Groups["id"]?.Value, m.Groups["list"]?.Value);
         }
 
-        public static string GetIDStringFromURL(string url) {
-            return GetIdsStringFromURL(url).id;
+        public static string GetIDStringFromUrl(string url) {
+            return GetIdsStringFromUrl(url).id;
         }
 
-        public static string GetListIDStringFromURL(string url) {
-            return GetIdsStringFromURL(url).list;
+        public static string GetListIDStringFromUrl(string url) {
+            return GetIdsStringFromUrl(url).list;
         }
 
         public bool IsAcceptableUrl(Uri uri) {
-            return (uri.Host.Contains("youtube.com")||uri.Host.Contains("youtu.be")) && GetIDStringFromURL(uri.ToString()) != null;
+            return (uri.Host.Contains("youtube.com")||uri.Host.Contains("youtu.be")) && GetIDStringFromUrl(uri.ToString()) != null;
         }
 
         public string IdFromUri(Uri uri) {
-            return GetIDStringFromURL(uri.ToString());
+            return GetIDStringFromUrl(uri.ToString());
         }
 
         public string StripListIdFromUrl(Uri uri) {
-            var id = GetIDStringFromURL(uri.ToString());
+            var id = GetIDStringFromUrl(uri.ToString());
             return $"{uri.Scheme}://{uri.Host}{uri.LocalPath}?v={id}";
         }
 
         public bool IsList(Uri uri) {
-            var list = GetListIDStringFromURL(uri.ToString());
+            var list = GetListIDStringFromUrl(uri.ToString());
             return !string.IsNullOrEmpty(list);
         }
     }

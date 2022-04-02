@@ -12,7 +12,7 @@ namespace ytplayer.data {
         public bool IsModified { get; private set; } = false;
         public void ResetModifiedFlag() { IsModified = false; }
 
-        public ulong Position { get; private set; }
+        public ulong Position { get; }
 
         public string Label {
             get => mLabel;

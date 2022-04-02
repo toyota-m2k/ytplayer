@@ -297,25 +297,25 @@ namespace ytplayer.data {
         }
 
         [Column(Name = "category", CanBeNull = true)]
-        private string category;
+        private string mCategory;
         public Category Category {
-            get => Settings.Instance.Categories.Get(category);
-            set => setProp(callerName(), ref category, CategoryList.CategoryToDbLabel(value));
+            get => Settings.Instance.Categories.Get(mCategory);
+            set => setProp(callerName(), ref mCategory, CategoryList.CategoryToDbLabel(value));
         }
 
         [Column(Name = "media", CanBeNull = true)]
-        private int media;
+        private int mMedia;
         public MediaFlag Media {
-            get => (MediaFlag)media;
-            set => setProp(callerName(), ref media, (int)value);
+            get => (MediaFlag)mMedia;
+            set => setProp(callerName(), ref mMedia, (int)value);
         }
         [Column(Name = "date", CanBeNull = true)]
-        private long date;
+        private long mDate;
         public DateTime Date {
-            get => AsTime(date);
-            set => setProp(callerName(), ref date, value.ToFileTimeUtc());
+            get => AsTime(mDate);
+            set => setProp(callerName(), ref mDate, value.ToFileTimeUtc());
         }
-        public long LongDate => date;
+        public long LongDate => mDate;
 
         [Column(Name = "volume", CanBeNull = true)]
         private long volume;
@@ -395,14 +395,14 @@ namespace ytplayer.data {
             apath = "";
             status = (int)Status.INITIAL;
             rating = (int)Rating.NORMAL;
-            category = "";
+            mCategory = "";
         }
 
         public static DLEntry Create(string id, string url) {
             return new DLEntry() { KEY=id, url = url, Date = DateTime.UtcNow };
         }
 
-        private static readonly DateTime EpochDate = new DateTime(1970, 1, 1, 0, 0, 0);
+        private static readonly DateTime epochDate = new DateTime(1970, 1, 1, 0, 0, 0);
 
         public static DateTime AsTime(object obj) {
             try {
@@ -414,7 +414,7 @@ namespace ytplayer.data {
                 Logger.error(e);
             }
 
-            return EpochDate;
+            return epochDate;
         }
     }
 
