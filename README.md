@@ -7,7 +7,7 @@ BooTube is a GUI application to download videos from youtube. This program depen
 BooTube can be used to:
 
 - download videos from youtube.
-- play downloaded videos on built-in player
+- play downloaded videos on the built-in player
 - or play on the remote player :[BooDroid](https://github.com/toyota-m2k/boodroid).
 - put some additional information like category, mark, rating, comment to videos.
 - sort and filter by these information
