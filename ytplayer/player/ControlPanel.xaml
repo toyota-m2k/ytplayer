@@ -425,6 +425,7 @@
             <!-- Category -->
             <ComboBox 
                 FocusVisualStyle="{x:Null}"
+                MaxDropDownHeight="Auto"
                 MinWidth="150" Margin="10,2" ItemsSource="{Binding Categories}"
                 SelectedItem="{Binding PlayList.Current.Value.Category, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>

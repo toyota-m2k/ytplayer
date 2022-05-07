@@ -193,17 +193,20 @@ namespace ytplayer.server {
                             if(null==source) {
                                 return HttpBuilder.ServiceUnavailable();
                             }
+                            if(sourceType==0) {
+                                source = source
+                                        .Where((c) => c.Status==Status.COMPLETED && c.Media.HasVideo())
+                                        .Where((c) => string.IsNullOrEmpty(category) || category=="All" || c.Category.Label == category)
+                                        .Where((c) => (int)c.Rating >= rating)
+                                        .Where((c) => (marks.Count==1&&marks[0]==0) || marks.IndexOf((int)c.Mark)>=0)
+                                        .Where((e) => string.IsNullOrEmpty(search) || (e.Name?.ContainsIgnoreCase(search) ?? false)|| (e.Desc?.ContainsIgnoreCase(search) ?? false))
+                                        .Where((e) => e.LongDate>date);
+                            }
 
                             var list = new JsonArray();
                             if(date==0 || date<Storage.LastUpdated) {
                                 list.AddRange(
                                     source
-                                    .Where((c) => c.Status==Status.COMPLETED && c.Media.HasVideo())
-                                    .Where((c) => string.IsNullOrEmpty(category) || category=="All" || c.Category.Label == category)
-                                    .Where((c) => (int)c.Rating >= rating)
-                                    .Where((c) => (marks.Count==1&&marks[0]==0) || marks.IndexOf((int)c.Mark)>=0)
-                                    .Where((e) => string.IsNullOrEmpty(search) || (e.Name?.ContainsIgnoreCase(search) ?? false)|| (e.Desc?.ContainsIgnoreCase(search) ?? false))
-                                    .Where((e) => e.LongDate>date)
                                     .Select((v) => new JsonObject(new Dictionary<string,JsonValue>() {
                                         {"id", v.KEY },
                                         {"name", v.Name },
