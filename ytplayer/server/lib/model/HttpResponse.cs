@@ -159,7 +159,7 @@ namespace SimpleHttpServer.Models {
         protected override void Prepare() {
             if (Start == 0 && End == 0) {
                 StatusCode = 200;
-                Headers["Accept-Range"] = "bytes";
+                Headers["Accept-Ranges"] = "bytes";
                 base.Prepare();
             } else {
                 var fileLength = FileLength;
@@ -168,7 +168,7 @@ namespace SimpleHttpServer.Models {
                 }
                 StatusCode = 206;
                 Headers["Content-Range"] = $"bytes {Start}-{End}/{fileLength}";
-                Headers["Accept-Range"] = "bytes";
+                Headers["Accept-Ranges"] = "bytes";
                 ContentLength = End - Start + 1;
             }
         }
