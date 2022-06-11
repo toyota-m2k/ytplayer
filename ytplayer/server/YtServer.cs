@@ -105,6 +105,25 @@ namespace ytplayer.server {
                 Routes = new List<Route>
                 {
                     new Route {
+                        Name = "ytplayer capability",
+                        UrlRegex = @"/ytplayer/capability",
+                        Method = "GET",
+                        Callable = (HttpRequest request) => {
+                            var json = new JsonObject(new Dictionary<string, JsonValue> {
+                                {"cmd", "capability"},
+                                {"serverName", "BooTube"},
+                                {"version", 1},
+                                {"category", true},
+                                {"rating", true},
+                                {"mark", true},
+                                {"acceptRequest", true},
+                                {"hasView", true},
+                            });
+                            //LoggerEx.debug(json.ToString());
+                            return new TextHttpResponse(json.ToString(), "application/json");
+                        }
+                    },
+                    new Route {
                         Name = "ytplayer sync chapters",
                         UrlRegex = @"/ytplayer/sync.chapter",
                         Method="GET",
@@ -167,7 +186,7 @@ namespace ytplayer.server {
                     },
                     // list: プレイリスト要求
                     new Route {
-                        /**
+                        /*
                          * リスト要求
                          * list?c=(category)
                          *      &r=(rating)
@@ -195,12 +214,12 @@ namespace ytplayer.server {
                             }
                             if(sourceType==0) {
                                 source = source
-                                        .Where((c) => c.Status==Status.COMPLETED && c.Media.HasVideo())
-                                        .Where((c) => string.IsNullOrEmpty(category) || category=="All" || c.Category.Label == category)
-                                        .Where((c) => (int)c.Rating >= rating)
-                                        .Where((c) => (marks.Count==1&&marks[0]==0) || marks.IndexOf((int)c.Mark)>=0)
-                                        .Where((e) => string.IsNullOrEmpty(search) || (e.Name?.ContainsIgnoreCase(search) ?? false)|| (e.Desc?.ContainsIgnoreCase(search) ?? false))
-                                        .Where((e) => e.LongDate>date);
+                                        .Where(c => c.Status==Status.COMPLETED && c.Media.HasVideo())
+                                        .Where(c => string.IsNullOrEmpty(category) || category=="All" || c.Category.Label == category)
+                                        .Where(c => (int)c.Rating >= rating)
+                                        .Where(c => (marks.Count==1&&marks[0]==0) || marks.IndexOf((int)c.Mark)>=0)
+                                        .Where(e => string.IsNullOrEmpty(search) || (e.Name?.ContainsIgnoreCase(search) ?? false)|| (e.Desc?.ContainsIgnoreCase(search) ?? false))
+                                        .Where(e => e.LongDate>date);
                             }
 
                             var list = new JsonArray();
@@ -213,6 +232,7 @@ namespace ytplayer.server {
                                         {"start", $"{v.TrimStart}"},
                                         {"end", $"{v.TrimEnd}" },
                                         {"volume",$"{v.Volume}" },
+                                        {"type", v.BooType},
                                         //{"rating", $"{(int)v.Rating}" },
                                         //{"mark", $"{(int)v.Mark}" },
                                         //{"category", $"{v.Category.Label}" }
@@ -256,19 +276,19 @@ namespace ytplayer.server {
                             }
 
                             var id = QueryParser.Parse(request.Url)["id"];
-                            var entry = source.Where((e)=>e.KEY==id).Single();
+                            var entry = source.Single(e => e.KEY==id);
                             var range = request.Headers.GetValue("Range");
                             if(null==range) {
                                 //Source?.StandardOutput($"BooServer: cmd=video({id})");
-                                return new StreamingHttpResponse(entry.VPath,"video/mp4", 0, 0);
-                            } else {
-                                var m = RegRange.Match(range);
-                                var s = m.Groups["start"];
-                                var e = m.Groups["end"];
-                                var start = s.Success ? Convert.ToInt64(s.Value) : 0;
-                                var end = e.Success ? Convert.ToInt64(s.Value) : 0;
-                                return new StreamingHttpResponse(entry.VPath,"video/mp4", start, end);
-                            }
+                                return new StreamingHttpResponse(entry.Path,entry.ContentType, 0, 0);
+                            } 
+                            
+                            var match = RegRange.Match(range);
+                            var ms = match.Groups["start"];
+                            var me = match.Groups["end"];
+                            var start = ms.Success ? Convert.ToInt64(ms.Value) : 0;
+                            var end = me.Success ? Convert.ToInt64(me.Value) : 0;
+                            return new StreamingHttpResponse(entry.Path,entry.ContentType, start, end);
                         }
                     },
 
@@ -289,7 +309,7 @@ namespace ytplayer.server {
                                 { "cmd", "chapter"},
                                 { "id", $"{id}" },
                                 { "chapters", new JsonArray(
-                                    chapters.Select((c) => new JsonObject(new Dictionary<string,JsonValue>(){
+                                    chapters.Select(c => new JsonObject(new Dictionary<string,JsonValue>(){
                                             { "position", c.Position },
                                             { "label", c.Label },
                                             { "skip", c.Skip }
@@ -305,7 +325,7 @@ namespace ytplayer.server {
                         Name = "ytPlayer Current Item",
                         UrlRegex = @"/ytplayer/current",
                         Method = "GET",
-                        Callable = (HttpRequest request) => {
+                        Callable = request => {
                             //Source?.StandardOutput("BooServer: cmd=current (get)");
                             Logger.debug("YtServer: Current (Get)");
                             var id = Source.CurrentId ?? "";
@@ -321,12 +341,12 @@ namespace ytplayer.server {
                         Name = "ytPlayer Current Item",
                         UrlRegex = @"/ytplayer/current",
                         Method = "PUT",
-                        Callable = (HttpRequest request) => {
+                        Callable = request => {
                             //Source?.StandardOutput("BooServer: cmd=current (put)");
                             Logger.debug("YtServer: Current (Put)");
-                            if(!request.Headers.TryGetValue("Content-Type", out string type)) {
-                                return HttpBuilder.BadRequest();
-                            }
+                            // if(!request.Headers.TryGetValue("Content-Type", out string type)) {
+                            //     return HttpBuilder.BadRequest();
+                            // }
                             try {
                                 var json = new JsonHelper(request.Content);
                                 var id = json.GetString("id");
@@ -343,7 +363,7 @@ namespace ytplayer.server {
                         Name = "ytPlayer Get Reputation",
                         UrlRegex = @"/ytplayer/reputation\?\w+",
                         Method = "GET",
-                        Callable = (HttpRequest request) => {
+                        Callable = request => {
                             try {
                                 var id = QueryParser.Parse(request.Url)["id"];
                                 var entry = Source?.AllEntries.SingleOrDefault(e => e.Id == id);
@@ -368,11 +388,11 @@ namespace ytplayer.server {
                         Name = "ytPlayer Set Reputation",
                         UrlRegex = @"/ytplayer/reputation",
                         Method = "PUT",
-                        Callable = (HttpRequest request) => {
+                        Callable = request => {
                             Logger.debug("YtServer: Reputation");
-                            if(!request.Headers.TryGetValue("Content-Type", out string type)) {
-                                return HttpBuilder.BadRequest();
-                            }
+                            // if(!request.Headers.TryGetValue("Content-Type", out _)) {
+                            //     return HttpBuilder.BadRequest();
+                            // }
                             try {
                                 var json = new JsonHelper(request.Content);
                                 var id = json.GetString("id");
@@ -408,7 +428,7 @@ namespace ytplayer.server {
                         Name = "ytPlayer Categories",
                         UrlRegex = @"/ytplayer/category",
                         Method = "GET",
-                        Callable = (HttpRequest request) => {
+                        Callable = request => {
                             //Source?.StandardOutput("BooServer: cmd=category");
                             Logger.debug("YtServer: Category");
                             var list = Settings.Instance.Categories.SerializableList;
