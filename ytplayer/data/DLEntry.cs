@@ -347,6 +347,14 @@ namespace ytplayer.data {
             set => setProp(callerName(), ref duration, value, "DurationText");
         }
 
+        [Column(Name = "size", CanBeNull = true)]
+        private ulong? size;
+
+        public ulong Size {
+            get => size ?? 0;
+            set => setProp(callerName(), ref size, value, "Size");
+        }
+
         private string FormatDuration(ulong durationInSec) {
             var t = TimeSpan.FromSeconds(durationInSec);
             return $"{t.Hours}:{t.Minutes:00}:{t.Seconds:00}";

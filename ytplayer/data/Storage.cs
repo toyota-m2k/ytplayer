@@ -9,7 +9,7 @@ namespace ytplayer.data {
 
     public class Storage : IDisposable {
         private const string APP_NAME = "YTPlayer";
-        private const int DB_VERSION = 5;
+        private const int DB_VERSION = 6;
 
         private SQLiteConnection Connection { get; set; }
         public static long LastUpdated { get; set; } = 0;
@@ -39,12 +39,15 @@ namespace ytplayer.data {
                         throw new FormatException($"Newer DB version. ({version})");
                     }
                 }
-                InitTables();
+                var originalVersion = InitTables();
 
                 DLTable = new DLEntryTable(Connection);
                 KVTable = new KVEntryTable(Connection);
                 ChapterTable = new ChapterTable(Connection);
 
+                if (originalVersion < 5) {
+                    setSizeAndDuration();
+                }
                 // DLTable.Context.Log = Console.Out;
             } catch(Exception e) {
                 LoggerEx.error(e);
@@ -162,8 +165,9 @@ namespace ytplayer.data {
         }
 
 
-        private void InitTables() {
-            if(getVersion()==4) {
+        private int InitTables() {
+            int originalVersion = getVersion();
+            if(originalVersion == 4) {
                 executeSql(@"drop table t_chapter");
             }
             executeSql(
@@ -195,6 +199,7 @@ namespace ytplayer.data {
                     category TEXT,
                     volume INTEGER DEFAULT '0',
                     duration INTEGER DEFAULT '0',
+                    size: INTEGER DEFAULT '0',
                     mark INTEGER DEFAULT '0',
                     trim_start INTEGER DEFAULT '0',
                     trim_end INTEGER DEFAULT '0',
@@ -225,16 +230,19 @@ namespace ytplayer.data {
             //    executeSql(@"ALTER TABLE t_download ADD COLUMN mark INTEGER DEFAULT '0'");
             //    setVersion(2);
             //}
-            var ver = getVersion();
-            if(ver<3) {
+            if(originalVersion < 3) {
                 //executeSql(@"ALTER TABLE t_download_ex ADD COLUMN trim_start INTEGER DEFAULT '0' after mark");
                 //executeSql(@"ALTER TABLE t_download_ex ADD COLUMN trim_end INTEGER DEFAULT '0' after trim_start");
                 setAppName();
             }
-            if(ver<DB_VERSION) {
+
+            if (originalVersion < 6) {
+                executeSql(@"ALTER TABLE t_download_ex ADD COLUMN size INTEGER DEFAULT '0' after duration");
+            }
+            if(originalVersion < DB_VERSION) {
                 setVersion(DB_VERSION);
             }
-
+            return originalVersion;
         }
     }
 }
