@@ -3,7 +3,10 @@ using io.github.toyota32k.toolkit.view;
 using System;
 using System.Data.Linq.Mapping;
 using System.Data.SQLite;
+using System.IO;
 using System.Linq;
+using System.Windows;
+using ytplayer.common;
 
 namespace ytplayer.data {
     public enum Status {
@@ -426,6 +429,42 @@ namespace ytplayer.data {
             }
 
             return epochDate;
+        }
+
+        private ulong getFileSize() {
+            if (Path == null) return 0;
+            try {
+                var info = new FileInfo(Path);
+                if (!info.Exists) {
+                    return 0;
+                }
+                return (ulong)info.Length;
+            }
+            catch (Exception e) {
+                LoggerEx.error(e);
+                return 0;
+            }
+
+        }
+
+        private ulong getMediaDuration() {
+            if (Path == null) return 0;
+            var d = MediaInfo.GetDuration(Path);
+            return (ulong)(d?.TotalSeconds ?? 0);
+        }
+
+        public void ComplementSizeAndDuration() {
+            if (Size == 0) {
+                Size = getFileSize();
+            }
+
+            if (DurationInSec == 0) {
+                DurationInSec = getMediaDuration();
+            }
+        }
+        public void UpdateSizeAndDuration() {
+            Size = getFileSize();
+            DurationInSec = getMediaDuration();
         }
     }
 

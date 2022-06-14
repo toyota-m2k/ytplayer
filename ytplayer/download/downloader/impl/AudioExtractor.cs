@@ -28,6 +28,7 @@ namespace ytplayer.download.downloader.impl {
                 if (PathUtil.safeDeleteFile(Entry.VPath)) {
                     Entry.Media = Entry.Media.MinusVideo();
                     Entry.VPath = null;
+                    Entry.UpdateSizeAndDuration();
                 }
             }
             if (OrgStatus == Status.COMPLETED) {

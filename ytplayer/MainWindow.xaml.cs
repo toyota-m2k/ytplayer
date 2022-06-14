@@ -14,6 +14,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using ytplayer.common;
 using ytplayer.data;
 using ytplayer.dialog;
 using ytplayer.download;
@@ -806,6 +807,7 @@ namespace ytplayer {
                             entry.Date = fi.CreationTime;
                             entry.Media = MediaFlag.VIDEO;
                             entry.Name = name;
+                            entry.UpdateSizeAndDuration();
                             Storage.DLTable.Add(entry);
                             ((IReportOutput)this).StandardOutput($"regisgered: {name}");
                             count++;
@@ -940,6 +942,7 @@ namespace ytplayer {
                             e.APath = null;
                             e.Media = e.Media.MinusAudio();
                         }
+                        e.UpdateSizeAndDuration();
                         if (block) {
                             e.Delete();
                         }

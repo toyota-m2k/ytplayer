@@ -1,6 +1,8 @@
 ﻿using io.github.toyota32k.toolkit.utils;
 using System;
 using System.Data.SQLite;
+using System.IO;
+using ytplayer.common;
 
 namespace ytplayer.data {
     //public interface IEntry {
@@ -243,6 +245,13 @@ namespace ytplayer.data {
                 setVersion(DB_VERSION);
             }
             return originalVersion;
+        }
+
+        private void setSizeAndDuration() {
+            foreach (var e in DLTable.List) {
+                e.ComplementSizeAndDuration();
+            }
+            DLTable.Update();
         }
     }
 }
