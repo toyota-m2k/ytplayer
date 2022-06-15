@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using ytplayer.common;
 using ytplayer.data;
 
 namespace ytplayer.download.downloader {
@@ -265,6 +266,7 @@ namespace ytplayer.download.downloader {
                         entry.APath = fname;
                         entry.Media = entry.Media.PlusAudio();
                     }
+                    entry.UpdateSizeAndDuration();
                     return true;
                 } else {
                     entry.Status = (Alive) ? Status.FAILED : Status.CANCELLED;

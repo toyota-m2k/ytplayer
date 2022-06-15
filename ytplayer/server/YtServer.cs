@@ -174,7 +174,9 @@ namespace ytplayer.server {
                                             {"Desc", c.Desc },
                                             {"Duration", c.DurationInSec },
                                             {"TrimStart", c.TrimStart},
-                                            {"TrimEnd", c.TrimEnd}
+                                            {"TrimEnd", c.TrimEnd},
+                                            {"Size", c.Size},
+                                            {"Duration", c.DurationInSec},
                                         });
                                     });
                             var json = new JsonObject(new Dictionary<string, JsonValue>() {
@@ -233,6 +235,8 @@ namespace ytplayer.server {
                                         {"end", $"{v.TrimEnd}" },
                                         {"volume",$"{v.Volume}" },
                                         {"type", v.BooType},
+                                        {"size", v.Size},
+                                        {"duration", v.DurationInSec},
                                         //{"rating", $"{(int)v.Rating}" },
                                         //{"mark", $"{(int)v.Mark}" },
                                         //{"category", $"{v.Category.Label}" }

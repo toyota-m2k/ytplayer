@@ -65,6 +65,8 @@ namespace ytplayer.data {
                             x.TrimStart = c["TrimStart"];
                             x.TrimEnd = c["TrimEnd"];
                             x.VPath = System.IO.Path.Combine(Settings.Instance.VideoPath, c["Filename"]);
+                            x.Size = c["Size"];
+                            x.DurationInSec = c["Duration"];
                         });
                     }).Except(storage.DLTable.List, new DLEntryComparator()).ToList(); // Where(v => !storage.DLTable.Contains(v.KEY));
 
