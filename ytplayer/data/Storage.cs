@@ -47,7 +47,7 @@ namespace ytplayer.data {
                 KVTable = new KVEntryTable(Connection);
                 ChapterTable = new ChapterTable(Connection);
 
-                if (originalVersion < 5) {
+                if (originalVersion == 5) {
                     setSizeAndDuration();
                 }
                 // DLTable.Context.Log = Console.Out;
