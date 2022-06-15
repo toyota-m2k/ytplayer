@@ -172,57 +172,44 @@ namespace ytplayer.data {
             if(originalVersion == 4) {
                 executeSql(@"drop table t_chapter");
             }
-            executeSql(
-                //@"CREATE TABLE IF NOT EXISTS t_download (
-                //    url TEXT NOT NULL PRIMARY KEY,
-                //    name TEXT,
-                //    vpath TEXT,
-                //    apath TEXT,
-                //    date INTEGER DEFAULT '0',
-                //    media INTEGER DEFAULT '0',
-                //    status INTEGER DEFAULT '0',
-                //    rating INTEGER DEFAULT '0',
-                //    category TEXT,
-                //    volume INTEGER DEFAULT '0',
-                //    duration INTEGER DEFAULT '0',
-                //    mark INTEGER DEFAULT '0',
-                //    desc TEXT
-                //)",
-                @"CREATE TABLE IF NOT EXISTS t_download_ex (
-                    id TEXT NOT NULL PRIMARY KEY,
-                    url TEXT NOT NULL,
-                    name TEXT,
-                    vpath TEXT,
-                    apath TEXT,
-                    date INTEGER DEFAULT '0',
-                    media INTEGER DEFAULT '0',
-                    status INTEGER DEFAULT '0',
-                    rating INTEGER DEFAULT '0',
-                    category TEXT,
-                    volume INTEGER DEFAULT '0',
-                    duration INTEGER DEFAULT '0',
-                    size: INTEGER DEFAULT '0',
-                    mark INTEGER DEFAULT '0',
-                    trim_start INTEGER DEFAULT '0',
-                    trim_end INTEGER DEFAULT '0',
-                    desc TEXT
-                )",
-                @"CREATE INDEX IF NOT EXISTS idx_category ON t_download_ex(category)",
-                @"CREATE TABLE IF NOT EXISTS t_map (
-                    name TEXT NOT NULL PRIMARY KEY,
-                    ivalue INTEGER DEFAULT '0',
-                    svalue TEXT
-                )",
-                @"CREATE TABLE IF NOT EXISTS t_chapter (
-	                id	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                    owner TEXT NOT NULL,
-                    position  INTEGER NOT NULL,
-                    label TEXT,
-                    skip INTEGER NOT NULL DEFAULT 0,
-                    FOREIGN KEY(owner) REFERENCES t_download_ex(id),
-                    UNIQUE(owner,position)
-                )"
-            );
+            if (originalVersion <= 4) {
+                executeSql(
+                    @"CREATE TABLE IF NOT EXISTS t_download_ex (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        url TEXT NOT NULL,
+                        name TEXT,
+                        vpath TEXT,
+                        apath TEXT,
+                        date INTEGER DEFAULT '0',
+                        media INTEGER DEFAULT '0',
+                        status INTEGER DEFAULT '0',
+                        rating INTEGER DEFAULT '0',
+                        category TEXT,
+                        volume INTEGER DEFAULT '0',
+                        duration INTEGER DEFAULT '0',
+                        mark INTEGER DEFAULT '0',
+                        trim_start INTEGER DEFAULT '0',
+                        trim_end INTEGER DEFAULT '0',
+                        desc TEXT,
+                        size: INTEGER DEFAULT '0'
+                    )",
+                    @"CREATE INDEX IF NOT EXISTS idx_category ON t_download_ex(category)",
+                    @"CREATE TABLE IF NOT EXISTS t_map (
+                        name TEXT NOT NULL PRIMARY KEY,
+                        ivalue INTEGER DEFAULT '0',
+                        svalue TEXT
+                    )",
+                    @"CREATE TABLE IF NOT EXISTS t_chapter (
+	                    id	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        owner TEXT NOT NULL,
+                        position  INTEGER NOT NULL,
+                        label TEXT,
+                        skip INTEGER NOT NULL DEFAULT 0,
+                        FOREIGN KEY(owner) REFERENCES t_download_ex(id),
+                        UNIQUE(owner,position)
+                    )"
+                );
+            }
 
             //if(getVersion()==0) {
             //    executeSql(@"ALTER TABLE t_download ADD COLUMN duration INTEGER DEFAULT '0'");
@@ -239,7 +226,8 @@ namespace ytplayer.data {
             }
 
             if (originalVersion < 6) {
-                executeSql(@"ALTER TABLE t_download_ex ADD COLUMN size INTEGER DEFAULT '0' after duration");
+                // なんと！ SQLite では、after column を指定するとエラーになる。常にカラムの最後に追加されるらしい。まぁええけど。。。
+                executeSql(@"ALTER TABLE t_download_ex ADD COLUMN size INTEGER DEFAULT '0'");
             }
             if(originalVersion < DB_VERSION) {
                 setVersion(DB_VERSION);
