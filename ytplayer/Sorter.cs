@@ -13,6 +13,7 @@ namespace ytplayer {
         CATEGORY,
         DATE,
         DURATION,
+        SIZE,
         DESC,
     }
 
@@ -62,6 +63,12 @@ namespace ytplayer {
             return r * (int)Order;
         }
 
+        private static int Compare(ulong x, ulong y) {
+            if (x == y) return 0;
+            if (x < y) return -1;
+            return 1;
+        }
+
 
         private int Compare(DLEntry x, DLEntry y, SortKey key) {
             switch (Key) {
@@ -70,7 +77,9 @@ namespace ytplayer {
                 case SortKey.DESC:
                     return string.Compare(x.Desc, y.Desc);
                 case SortKey.DURATION:
-                    return (int)(x.DurationInSec - y.DurationInSec);
+                    return Compare(x.DurationInSec , y.DurationInSec);
+                case SortKey.SIZE:
+                    return Compare(x.Size, y.Size);
                 case SortKey.MARK:
                     return (int)x.Mark - (int)y.Mark;
                 case SortKey.MEDIA:
