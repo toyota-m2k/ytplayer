@@ -98,7 +98,7 @@ namespace SimpleHttpServer {
                 return HttpBuilder.NotFound();
             }
 
-            Route route = routes.SingleOrDefault(x => x.Method == request.Method);
+            Route route = routes.FirstOrDefault(x => x.Method == request.Method);
 
             if (route == null) {
                 return HttpBuilder.MethodNotAllowed();

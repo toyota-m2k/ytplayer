@@ -22,6 +22,7 @@ namespace ytplayer.dialog {
         public ReactivePropertySlim<string> AudioPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> WorkPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<bool> EnableServer { get; } = new ReactivePropertySlim<bool>();
+        public ReactivePropertySlim<string> WebPageRoot { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<int> ServerPort { get; } = new ReactivePropertySlim<int>();
         public ReactivePropertySlim<bool> AcceptList { get; } = new ReactivePropertySlim<bool>();
 
@@ -54,6 +55,7 @@ namespace ytplayer.dialog {
             AudioPath.Value = src.AudioPath;
             WorkPath.Value = src.WorkPath;
             EnableServer.Value = src.EnableServer;
+            WebPageRoot.Value = src.WebPageRoot;
             ServerPort.Value = src.ServerPort;
             AcceptList.Value = src.AcceptList;
 
@@ -189,6 +191,7 @@ namespace ytplayer.dialog {
             dst.EnableServer = EnableServer.Value;
             dst.ServerPort = ServerPort.Value;
             dst.AcceptList = AcceptList.Value;
+            dst.WebPageRoot = WebPageRoot.Value;
             dst.Serialize();
             dst.ApplyEnvironment();
         }

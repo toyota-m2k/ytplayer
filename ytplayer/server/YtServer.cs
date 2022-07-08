@@ -120,7 +120,7 @@ namespace ytplayer.server {
                                 {"hasView", true},
                             });
                             //LoggerEx.debug(json.ToString());
-                            return new TextHttpResponse(json.ToString(), "application/json");
+                            return new TextHttpResponse(request, json.ToString(), "application/json");
                         }
                     },
                     new Route {
@@ -144,7 +144,7 @@ namespace ytplayer.server {
                                 })))},
                             });
                             //LoggerEx.debug(json.ToString());
-                            return new TextHttpResponse(json.ToString(), "application/json");
+                            return new TextHttpResponse(request, json.ToString(), "application/json");
                         }
                     },
 
@@ -183,7 +183,7 @@ namespace ytplayer.server {
                                 {"cmd", "sync"},
                                 {"list", new JsonArray(list) }
                             });
-                            return new TextHttpResponse(json.ToString(), "application/json");
+                            return new TextHttpResponse(request, json.ToString(), "application/json");
                         }
                     },
                     // list: プレイリスト要求
@@ -248,7 +248,7 @@ namespace ytplayer.server {
                                 {"date", $"{current}" },
                                 {"list",  list}
                             });
-                            return new TextHttpResponse(json.ToString(), "application/json");
+                            return new TextHttpResponse(request, json.ToString(), "application/json");
                          }
                     },
                     // CHECK: 前回のプレイリストから変更されたかどうかのチェック
@@ -265,7 +265,7 @@ namespace ytplayer.server {
                                 {"cmd", "check"},
                                 {"update", $"{f}" }
                             });
-                            return new TextHttpResponse(json.ToString(), "application/json");
+                            return new TextHttpResponse(request, json.ToString(), "application/json");
                         }
                     },
                     // VIDEO:ビデオストリーム要求
@@ -284,7 +284,7 @@ namespace ytplayer.server {
                             var range = request.Headers.GetValue("Range");
                             if(null==range) {
                                 //Source?.StandardOutput($"BooServer: cmd=video({id})");
-                                return new StreamingHttpResponse(entry.Path,entry.ContentType, 0, 0);
+                                return new StreamingHttpResponse(request, entry.Path,entry.ContentType, 0, 0);
                             } 
                             
                             var match = RegRange.Match(range);
@@ -292,7 +292,7 @@ namespace ytplayer.server {
                             var me = match.Groups["end"];
                             var start = ms.Success ? Convert.ToInt64(ms.Value) : 0;
                             var end = me.Success ? Convert.ToInt64(me.Value) : 0;
-                            return new StreamingHttpResponse(entry.Path,entry.ContentType, start, end);
+                            return new StreamingHttpResponse(request, entry.Path,entry.ContentType, start, end);
                         }
                     },
 
@@ -320,7 +320,7 @@ namespace ytplayer.server {
                                     }))) },
                                 }
                             );
-                            return new TextHttpResponse(json.ToString(), "application/json");
+                            return new TextHttpResponse(request, json.ToString(), "application/json");
                         }
                     },
 
@@ -337,7 +337,7 @@ namespace ytplayer.server {
                                 { "cmd", "current"},
                                 { "id", $"{id}" },
                             });
-                            return new TextHttpResponse(json.ToString(), "application/json");
+                            return new TextHttpResponse(request, json.ToString(), "application/json");
                         }
                     },
 
@@ -355,7 +355,7 @@ namespace ytplayer.server {
                                 var json = new JsonHelper(request.Content);
                                 var id = json.GetString("id");
                                 Source.CurrentId = id;
-                                return new TextHttpResponse(json.ToString(), "application/json");
+                                return new TextHttpResponse(request, json.ToString(), "application/json");
                             } catch(Exception e) {
                                 Logger.error(e);
                                 return HttpBuilder.InternalServerError();
@@ -379,7 +379,7 @@ namespace ytplayer.server {
                                         { "mark", $"{(int)entry.Mark}" },
                                         { "category", $"{entry.Category.Label}" }
                                     });
-                                    return new TextHttpResponse(json.ToString(), "application/json");
+                                    return new TextHttpResponse(request, json.ToString(), "application/json");
                                 }
                             } catch(Exception e) {
                                 Logger.error(e);
@@ -419,7 +419,7 @@ namespace ytplayer.server {
                                     { "cmd", "reputation"},
                                     { "id", $"{id}" },
                                 });
-                                return new TextHttpResponse(jsonR.ToString(), "application/json");
+                                return new TextHttpResponse(request, jsonR.ToString(), "application/json");
                             } catch(Exception e) {
                                 Logger.error(e);
                                 return HttpBuilder.InternalServerError();
@@ -444,7 +444,7 @@ namespace ytplayer.server {
                                         {"color", $"{v.Color}"},
                                         {"sort", $"{v.SortIndex}"}})).ToArray())},
                             });
-                            return new TextHttpResponse(json.ToString(), "application/json");
+                            return new TextHttpResponse(request, json.ToString(), "application/json");
                         }
                     },
                     // REGISTER: urlの登録/DL要求
@@ -464,7 +464,7 @@ namespace ytplayer.server {
                                 {"cmd", "register" },
                                 {"result", $"{result}" },
                             });
-                            return new TextHttpResponse(json.ToString(), "application/json");
+                            return new TextHttpResponse(request, json.ToString(), "application/json");
                         }
                     },
                     // SEQ: PlayListを使わない、シーケンシャルアクセス用(next/prev)
@@ -508,24 +508,49 @@ namespace ytplayer.server {
                                 {"end", entry?.TrimEnd?? null },
                                 {"volume", entry?.Volume?? null },
                             });
-                            return new TextHttpResponse(json.ToString(), "application/json");
+                            return new TextHttpResponse(request, json.ToString(), "application/json");
                         }
                     },
 
                     new Route {
-                        Name = "ytPlayer TestPage",
-                        UrlRegex = @"/ytplayer/test",
+                        Name = "ytPlayer Web Page",
+                        UrlRegex = @"/ytplayer/?$",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
-                            return new TextHttpResponse(
-@"<!doctype html><html>
-<head><title>Test Page</title></head>
-<body>
-Test Page.<br>
-<video id='videoPlayer' controls>
-  <source src='http://localhost:3500/ytplayer/video?id=1B4pZBmI_gU' type='video/mp4'/>
-</video>
-</body></html>"                 ,"text/html");
+                            var wpRoot = Settings.Instance.WebPageRoot;
+                            if(string.IsNullOrEmpty(wpRoot)) {
+                                return HttpBuilder.InternalServerError();
+                            }
+                            return new FileHttpResponse(request, Path.Combine(wpRoot, "index.html"), "text/html");
+                        }
+                    },
+                    new Route {
+                        Name = "ytPlayer Web Page",
+                        UrlRegex = @"/*",
+                        Method = "GET",
+                        Callable = (HttpRequest request) => {
+                            var wpRoot = Settings.Instance.WebPageRoot;
+                            if(string.IsNullOrEmpty(wpRoot)) {
+                                return HttpBuilder.InternalServerError();
+                            }
+                            var itemPath = request.Url.Substring(1).Replace('/', '\\');
+                            var ext = Path.GetExtension(itemPath);
+                            var type = "text/plain";
+                            switch(ext.ToLower()) {
+                                case ".css":
+                                    type = "text/css";
+                                    break;
+                                case ".js":
+                                    type = "text/javascript";
+                                    break;
+                                case ".htm":
+                                case ".html":
+                                    type = "text/html";
+                                    break;
+                                default:
+                                    break;
+                            }
+                            return new FileHttpResponse(request, Path.Combine(wpRoot, itemPath), type);
                         }
                     },
                 };

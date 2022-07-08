@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 // NOTE: two consequences of this simplified response model are:
 //
@@ -41,6 +42,24 @@ namespace SimpleHttpServer.Models {
     }
 
     public abstract class AbstractHttpResponse : IHttpResponse {
+        private static Regex refererForCors = new Regex(@"(?<target>http://localhost(?::\d+)?)/");
+
+        protected AbstractHttpResponse(HttpRequest req) {
+            // ローカルホストからの要求に対してはCross-Origin Resource Shareingを許可する
+            if (req != null && req.Headers.TryGetValue("Referer", out var referer)) {
+                var m = refererForCors.Match(referer);
+                if(m.Success) {
+                    var r = m.Groups["target"]?.Value;
+                    if (!string.IsNullOrEmpty(r)) {
+                        Headers["Access-Control-Allow-Origin"] = r;
+                        Headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE";
+                        Headers["Access-Control-Allow-Headers"] = "Content-Type,Content-Length,Accept";
+                    }
+                }
+            }
+        }
+
+
         public int StatusCode { get; set; }
         public string ReasonPhrase { get; set; }
 
@@ -53,7 +72,17 @@ namespace SimpleHttpServer.Models {
             set => Headers["Content-Length"] = $"{value}";
         }
 
-        public Dictionary<string, string> Headers { get; } = new Dictionary<string, string>();
+        // Access-Control-Allow-Origin: https://127.0.0.1:3001
+        // Access-Control-Max-Age:86400
+        // Access-Control-Allow-Methods: GET,POST,PUT,PATCH,DELETE,HEAD,OPTIONS
+        // Access-Control-Allow-Headers: Content-type,Accept,X-Custom-Header
+        public Dictionary<string, string> Headers { get; } = new Dictionary<string, string>() {
+#if DEBUG
+            //{ "Access-Control-Allow-Origin", "http://localhost:5501"},
+            //{ "Access-Control-Allow-Methods", "GET,POST,PUT,DELETE"},
+            //{ "Access-Control-Allow-Headers", "Content-Type,Content-Length,Accept" },
+#endif
+        };
 
         protected abstract void Prepare();
 
@@ -82,12 +111,12 @@ namespace SimpleHttpServer.Models {
         public string Content { get; set; }
         private byte[] Buffer = null;
 
-        public TextHttpResponse() {
+        public TextHttpResponse(HttpRequest req):base(req) {
             StatusCode = 200;
             ReasonPhrase = "OK";
         }
 
-        public TextHttpResponse(string content, string contentType, int code=200, string reason="OK") {
+        public TextHttpResponse(HttpRequest req, string content, string contentType, int code=200, string reason="OK") :base(req) {
             StatusCode = code;
             ReasonPhrase = reason;
             Content = content;
@@ -112,10 +141,10 @@ namespace SimpleHttpServer.Models {
     public class FileHttpResponse : AbstractHttpResponse {
         public string ContentFilePath { get; set; }
 
-        public FileHttpResponse() {
+        public FileHttpResponse(HttpRequest req) : base(req) {
         }
 
-        public FileHttpResponse(string path, string contentType) {
+        public FileHttpResponse(HttpRequest req, string path, string contentType) : base(req) {
             ContentFilePath = path;
             StatusCode = 200;
             ReasonPhrase = "OK";
@@ -145,13 +174,13 @@ namespace SimpleHttpServer.Models {
     }
 
     public class StreamingHttpResponse : FileHttpResponse {
-        public StreamingHttpResponse() { }
+        public StreamingHttpResponse(HttpRequest req) : base(req) { }
 
         public long Start { get; set; } = 0;
         public long End { get; set; } = 0;
 
-        public StreamingHttpResponse(string path, string contentType, long start, long end) 
-            : base(path, contentType) {
+        public StreamingHttpResponse(HttpRequest req, string path, string contentType, long start, long end)
+            : base(req, path, contentType) {
             Start = start;
             End = end;
         }

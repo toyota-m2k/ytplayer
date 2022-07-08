@@ -15,6 +15,7 @@ namespace ytplayer {
         public string AudioPath { get; set; } = "";
         public string WorkPath { get; set; } = "";          // 無音抽出用Wavファイル作成先
         public bool EnableServer { get; set; } = false;
+        public string WebPageRoot { get; set; } = "";
         public int ServerPort { get; set; } = 3500;
         public string SyncPeer { get; set; } = "";
 
