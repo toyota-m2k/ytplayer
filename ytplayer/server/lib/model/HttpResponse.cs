@@ -42,7 +42,7 @@ namespace SimpleHttpServer.Models {
     }
 
     public abstract class AbstractHttpResponse : IHttpResponse {
-        private static Regex refererForCors = new Regex(@"(?<target>http://localhost(?::\d+)?)/");
+        private static Regex refererForCors = new Regex(@"(?<target>http://(?:localhost|127.0.0.1)(?::\d+)?)/");
 
         protected AbstractHttpResponse(HttpRequest req) {
             // ローカルホストからの要求に対してはCross-Origin Resource Shareingを許可する
