@@ -512,28 +512,32 @@ namespace ytplayer.server {
                         }
                     },
 
-                    new Route {
-                        Name = "ytPlayer Web Page",
-                        UrlRegex = @"/ytplayer/?$",
-                        Method = "GET",
-                        Callable = (HttpRequest request) => {
-                            var wpRoot = Settings.Instance.WebPageRoot;
-                            if(string.IsNullOrEmpty(wpRoot)) {
-                                return HttpBuilder.InternalServerError();
-                            }
-                            return new FileHttpResponse(request, Path.Combine(wpRoot, "index.html"), "text/html");
-                        }
-                    },
+                    //new Route {
+                    //    Name = "ytPlayer Web Page",
+                    //    UrlRegex = @"/ytplayer/?$",
+                    //    Method = "GET",
+                    //    Callable = (HttpRequest request) => {
+                    //        var wpRoot = Settings.Instance.WebPageRoot;
+                    //        if(string.IsNullOrEmpty(wpRoot)) {
+                    //            return HttpBuilder.InternalServerError();
+                    //        }
+                    //        return new FileHttpResponse(request, Path.Combine(wpRoot, "index.html"), "text/html");
+                    //    }
+                    //},
                     new Route {
                         Name = "ytPlayer Web Page",
                         UrlRegex = @"/*",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
+                            LoggerEx.debug(request.Url);
                             var wpRoot = Settings.Instance.WebPageRoot;
                             if(string.IsNullOrEmpty(wpRoot)) {
                                 return HttpBuilder.InternalServerError();
                             }
-                            var itemPath = request.Url.Substring(1).Replace('/', '\\');
+                            var itemPath = request.Url.Substring(1).Replace('/', '\\').Split('?').First();
+                            if(itemPath.IsEmpty()) {
+                                itemPath = "index.html";
+                            }
                             var ext = Path.GetExtension(itemPath);
                             var type = "text/plain";
                             switch(ext.ToLower()) {

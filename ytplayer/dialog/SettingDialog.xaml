@@ -9,7 +9,7 @@
         Title="Settings" 
         Background="#EFEFEF"
         IsEnabled="{Binding Ready.Value}"
-        Height="310" Width="600">
+        Height="325" Width="600">
     <Window.Resources>
         <ResourceDictionary Source="../res/YtpResource.xaml"/>
     </Window.Resources>
