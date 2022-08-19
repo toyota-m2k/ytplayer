@@ -36,6 +36,8 @@ namespace ytplayer {
 
         public static Settings Instance => sInstance;
 
+        public static string AppPath => sOrgCurrentPath;
+
         public static void Initialize() {
             if (sInstance == null) {
                 sOrgCurrentPath = Environment.CurrentDirectory;

@@ -198,6 +198,7 @@ namespace ytplayer.dialog {
 
         /**
          * ToDo: yt-dlp 自動アップデート
+         * yt-dlp --update でいけそう。
          */
         private async void UpdateYTD(object obj) {
             //Ready.Value = false;
