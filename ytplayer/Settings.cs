@@ -8,6 +8,8 @@ namespace ytplayer {
     public class Settings {
         public WinPlacement Placement { get; set; } = new WinPlacement();
         public WinPlacement PlayerPlacement { get; set; } = new WinPlacement();
+        public WinPlacement BrowserPlacement { get; set; } = new WinPlacement();
+
         public string DBPath { get; set; } = "";
         public string YoutubeDLPath { get; set; } = "";
         public string FFMpegPath { get; set; } = "";

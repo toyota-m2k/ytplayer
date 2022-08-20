@@ -20,6 +20,9 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
 namespace ytplayer.browser {
+    /**
+     * ブラウザ画面用ビューモデル
+     */
     class BrowserViewModel : ViewModelBase {
         public ReactiveProperty<Bookmarks> Bookmarks { get; } = new ReactiveProperty<Bookmarks>();
         //public ReactiveProperty<bool> ShowBookmark { get; } = new ReactiveProperty<bool>(false);
@@ -43,6 +46,8 @@ namespace ytplayer.browser {
         //public ReactiveCommand ShowBookmarkCommand { get; } = new ReactiveCommand();
         public ReactiveCommand CopyToClipboardCommand { get; } = new ReactiveCommand();
         public ReactiveCommand<string> NavigateCommand { get; } = new ReactiveCommand<string>();
+        public ReactiveCommand<string> RegisterCommand { get; } = new ReactiveCommand<string>();
+
         public BrowserViewModel() {
             Bookmarks.Value = browser.Bookmarks.CreateInstance();
             ClearURLCommand.Subscribe(() => {
@@ -52,14 +57,28 @@ namespace ytplayer.browser {
                 return IsBookmarkedUrl(url);
             }).ToReadOnlyReactiveProperty();
             Loading = LoadingCount.Select((count) => { return count > 0; }).ToReadOnlyReactiveProperty();
+
+            BookmarkCommand.Subscribe(() => {
+                var url = Url.Value;
+                if (string.IsNullOrEmpty(url)) return;
+
+                if (!IsBookmarkedUrl(url)) {
+                    Bookmarks.Value.AddBookmark(Title.Value, url);
+                }
+                else {
+                    Bookmarks.Value.RemoveBookmark(url);
+                    Url.ForceNotify();
+                }
+            });
         }
 
-        public bool IsBookmarkedUrl(string url) {
+        private bool IsBookmarkedUrl(string url) {
             return Bookmarks.Value?.FindBookmark(url) != null;
         }
 
+
         public override void Dispose() {
-            Bookmarks.Value?.Dispose();
+            Bookmarks.Value?.Dispose(); // Disposeでブックマークリストを保存する。
             base.Dispose();
         }
     }
@@ -67,20 +86,13 @@ namespace ytplayer.browser {
     /// Browser.xaml の相互作用ロジック
     /// </summary>
     public partial class Browser : Window {
-        BrowserViewModel ViewModel {
-            get => DataContext as BrowserViewModel;
-            set => DataContext = value;
-        }
-
-        public Browser() {
-            ViewModel = new BrowserViewModel();
-            InitializeComponent();
-        }
+        #region 公開API・・・ブラウザを開く/閉じる
 
         private static Browser theBrowser = null;
-        public static void ShowBrowser() {
+        public static void ShowBrowser(Action<string> registerUri) {
             if (theBrowser == null) {
                 theBrowser = new Browser();
+                theBrowser.ViewModel.RegisterCommand.Subscribe(registerUri);
                 theBrowser.Show();
             }
         }
@@ -90,6 +102,52 @@ namespace ytplayer.browser {
                 theBrowser = null;
             }
         }
+
+        #endregion
+
+        #region プロパティ：ビューモデル
+
+        BrowserViewModel ViewModel {
+            get => DataContext as BrowserViewModel;
+            set => DataContext = value;
+        }
+
+        #endregion
+
+        #region コンストラクション / ライフサイクル
+
+        public Browser() {
+            ViewModel = new BrowserViewModel();
+            InitializeComponent();
+        }
+
+        protected override void OnSourceInitialized(EventArgs e) {
+            base.OnSourceInitialized(e);
+            Settings.Instance.BrowserPlacement.ApplyPlacementTo(this);
+        }
+
+        private void OnLoaded(object sender, RoutedEventArgs e) {
+            ViewModel.NavigateCommand.Subscribe(Navigate);
+            ViewModel.GoBackCommand.Subscribe(webView.GoBack);
+            ViewModel.GoForwardCommand.Subscribe(webView.GoForward);
+            ViewModel.ReloadCommand.Subscribe(webView.Reload);
+            ViewModel.StopCommand.Subscribe(webView.Stop);
+            ViewModel.CopyToClipboardCommand.Subscribe(() => RequestDownload(ViewModel.Url.Value));
+        }
+
+        private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
+            Settings.Instance.BrowserPlacement.GetPlacementFrom(this);
+        }
+
+        protected override void OnClosed(EventArgs e) {
+            theBrowser = null;
+            ViewModel.Dispose();
+            base.OnClosed(e);
+        }
+
+        #endregion
+
+        #region Navigation Helper
 
         private static Uri FixUpUrl(string url) {
             if (string.IsNullOrEmpty(url)) {
@@ -119,45 +177,9 @@ namespace ytplayer.browser {
             webView.Source = uri;
         }
 
-        private void OnLoaded(object sender, RoutedEventArgs e) {
-            ViewModel.NavigateCommand.Subscribe(Navigate);
-            ViewModel.GoBackCommand.Subscribe(webView.GoBack);
-            ViewModel.GoForwardCommand.Subscribe(webView.GoForward);
-            ViewModel.ReloadCommand.Subscribe(webView.Reload);
-            ViewModel.StopCommand.Subscribe(webView.Stop);
-            ViewModel.BookmarkCommand.Subscribe(() => {
-                var url = ViewModel.Url.Value;
-                if (!ViewModel.IsBookmarkedUrl(url)) {
-                    AddBookmark(webView.CoreWebView2.DocumentTitle, url);
-                }
-                else {
-                    DelBookmark(url);
-                }
-            });
-            //ViewModel.ShowBookmarkCommand.Subscribe(ShowBookmarks);
-            ViewModel.CopyToClipboardCommand.Subscribe(() => RequestDownload(ViewModel.Url.Value));
-        }
+        #endregion
 
-        protected override void OnClosed(EventArgs e) {
-            theBrowser = null;
-            ViewModel.Dispose();
-            base.OnClosed(e);
-        }
-
-        //private void ShowBookmarks() {
-        //    ViewModel.ShowBookmark.Value = !ViewModel.ShowBookmark.Value;
-        //}
-
-        private void DelBookmark(string value) {
-            ViewModel.Bookmarks.Value.RemoveBookmark(value);
-            ViewModel.Url.ForceNotify();
-        }
-
-        private void AddBookmark(string name, string value) {
-            ViewModel.Bookmarks.Value.AddBookmark(name, value);
-            ViewModel.Url.ForceNotify();
-        }
-
+        #region WebView2 Event Handlers
 
         private void WV2CoreWebView2InitializationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2InitializationCompletedEventArgs e) {
             webView.NavigationStarting += WebView_NavigationStarting;
@@ -190,15 +212,7 @@ namespace ytplayer.browser {
         }
 
         private void RequestDownload(string uri) {
-            // ########### IMPORTANT!!!! ###############
-            // ########### IMPORTANT!!!! ###############
-            // ########### IMPORTANT!!!! ###############
-            // ########### IMPORTANT!!!! ###############
-            // ToDo: register url
-            // ########### IMPORTANT!!!! ###############
-            // ########### IMPORTANT!!!! ###############
-            // ########### IMPORTANT!!!! ###############
-            // ########### IMPORTANT!!!! ###############
+            ViewModel.RegisterCommand.Execute(uri);
         }
 
         //private class NavigationMap {
@@ -288,5 +302,7 @@ namespace ytplayer.browser {
             //UpdateHistory();
             ViewModel.LoadingCount.Value--;
         }
+
+        #endregion WebView2 Event Handlers
     }
 }

@@ -421,7 +421,7 @@ namespace ytplayer {
         }
 
         private void ShowBrowser(object obj) {
-            Browser.ShowBrowser();
+            Browser.ShowBrowser((url) => RegisterUrl(url));
         }
 
         YtServer mServer = null;
@@ -505,8 +505,8 @@ namespace ytplayer {
                 }
                 mDownloadManager.Cancel();
             }
-            if(!ReadyToClose) {
-                Browser.CloseBrowser(); 
+            Browser.CloseBrowser();
+            if (!ReadyToClose) {
                 e.Cancel = true;
                 await CloseAndWait();
                 Close();
