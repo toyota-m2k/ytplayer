@@ -14,6 +14,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using ytplayer.browser;
 using ytplayer.common;
 using ytplayer.data;
 using ytplayer.dialog;
@@ -410,13 +411,17 @@ namespace ytplayer {
             viewModel.CommandMoveItems.Subscribe(MoveItems);
             viewModel.CommandRepairDB.Subscribe(RepairDB);
             viewModel.CommandImportFiles.Subscribe(ImportVideoFiles);
-            viewModel.CommandBrowser.Subscribe(() => Process.Start("btytbrs:"));
+            viewModel.CommandBrowser.Subscribe(ShowBrowser);
             //viewModel.ClipboardWatching.Subscribe((v) => {
             //    if (v) {
             //        Process.Start("btytbrs:");
             //    }
             //});
             InitializeComponent();
+        }
+
+        private void ShowBrowser(object obj) {
+            Browser.ShowBrowser((url) => RegisterUrl(url));
         }
 
         YtServer mServer = null;
@@ -500,7 +505,8 @@ namespace ytplayer {
                 }
                 mDownloadManager.Cancel();
             }
-            if(!ReadyToClose) {
+            Browser.CloseBrowser();
+            if (!ReadyToClose) {
                 e.Cancel = true;
                 await CloseAndWait();
                 Close();
