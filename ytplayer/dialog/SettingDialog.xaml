@@ -96,7 +96,7 @@
         <StackPanel Grid.Row="19" Grid.Column="0" Grid.ColumnSpan="5" HorizontalAlignment="Center" Orientation="Horizontal">
             <Button Content="OK" Command="{Binding OKCommand}" Width="100"/>
             <Button Content="Cancel" Command="{Binding CancelCommand}" Width="100" Margin="20,0,0,0" Visibility="{Binding Cancellable.Value, Converter={StaticResource BoolVisibilityConverter}}"/>
-<!--            <Button Content="Update youtube-dl" Command="{Binding UpdateCommand}" Width="100" Margin="20,0,0,0" Visibility="{Binding CanUpdateYTD.Value, Converter={StaticResource BoolVisibilityConverter}}"/> -->
+            <Button Content="Update yt-dlp" Command="{Binding UpdateCommand}" Width="100" Margin="20,0,0,0" Visibility="{Binding CanUpdateYTD.Value, Converter={StaticResource BoolVisibilityConverter}}"/>
         </StackPanel>
 
         <TextBlock Grid.Row="21" Grid.Column="0" Grid.ColumnSpan="5" Margin="0,0,0,0" Text="{Binding ErrorMessage.Value}" Height="30" VerticalAlignment="Top"/>

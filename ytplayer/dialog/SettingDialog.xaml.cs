@@ -3,9 +3,11 @@ using io.github.toyota32k.toolkit.view;
 using Reactive.Bindings;
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Reactive.Linq;
+using System.Text;
 using System.Windows;
 using ytplayer.data;
 
@@ -212,7 +214,50 @@ namespace ytplayer.dialog {
             //} finally {
             //    Ready.Value = true;
             //}
+            var psi = new ProcessStartInfo() {
+                FileName = YtpDef.YTDLP_EXE,
+                Arguments = $"--update",
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                //StandardOutputEncoding = System.Text.Encoding.UTF8,
+                //StandardErrorEncoding = System.Text.Encoding.UTF8,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
+            try {
+                var sb = new StringBuilder();
+                var error = false;
+                using (WaitCursor.Start(Owner)) {
+                    var process = Process.Start(psi);
+                    if (process == null) {
+                        throw new InvalidOperationException("start process error");
+                    }
+                    while (true) {
+                        var s = await process.StandardOutput.ReadLineAsync();
+                        if (s == null) break;
+                        sb.AppendLine(s);
+                    }
+                    while (true) {
+                        var s = await process.StandardError.ReadLineAsync();
+                        if (s == null) break;
+                        sb.AppendLine(s);
+                        error = true;
+                    }
+                }
+
+                MessageBox.Show(sb.ToString(), "Update yt-dlp", MessageBoxButton.OK
+                    , error ? MessageBoxImage.Error : MessageBoxImage.Information);
+            }
+            catch (Exception ex) {
+                LoggerEx.error(ex);
+                MessageBox.Show("Something wrong...", "Update yt-dlp", MessageBoxButton.OK
+                    , MessageBoxImage.Error);
+            }
+
+
+
         }
+
     }
 
     /// <summary>
