@@ -2,6 +2,7 @@
 using System;
 using System.Data.SQLite;
 using System.IO;
+using System.Linq;
 using ytplayer.common;
 
 namespace ytplayer.data {
@@ -191,7 +192,7 @@ namespace ytplayer.data {
                         trim_start INTEGER DEFAULT '0',
                         trim_end INTEGER DEFAULT '0',
                         desc TEXT,
-                        size: INTEGER DEFAULT '0'
+                        size INTEGER DEFAULT '0'
                     )",
                     @"CREATE INDEX IF NOT EXISTS idx_category ON t_download_ex(category)",
                     @"CREATE TABLE IF NOT EXISTS t_map (
@@ -225,7 +226,7 @@ namespace ytplayer.data {
                 setAppName();
             }
 
-            if (originalVersion < 6) {
+            if (originalVersion ==5) {
                 // なんと！ SQLite では、after column を指定するとエラーになる。常にカラムの最後に追加されるらしい。まぁええけど。。。
                 executeSql(@"ALTER TABLE t_download_ex ADD COLUMN size INTEGER DEFAULT '0'");
             }
