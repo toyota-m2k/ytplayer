@@ -176,7 +176,6 @@ namespace ytplayer.server {
                                             {"TrimStart", c.TrimStart},
                                             {"TrimEnd", c.TrimEnd},
                                             {"Size", c.Size},
-                                            {"Duration", c.DurationInSec},
                                         });
                                     });
                             var json = new JsonObject(new Dictionary<string, JsonValue>() {
