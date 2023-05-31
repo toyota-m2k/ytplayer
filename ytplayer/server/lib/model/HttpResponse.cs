@@ -210,7 +210,7 @@ namespace SimpleHttpServer.Models {
                 long remain = chunkLength;
                 int read=0;
                 using (var input = OpenFile()) {
-                    byte[] buffer = new byte[Math.Max(chunkLength, 1*1024*1024)];
+                    byte[] buffer = new byte[Math.Min(chunkLength, 1*1024*1024)];
                     input.Seek(Start, SeekOrigin.Begin);
                     while (remain > 0) {
                         read = input.Read(buffer, 0, Math.Min(buffer.Length, (int)remain));
