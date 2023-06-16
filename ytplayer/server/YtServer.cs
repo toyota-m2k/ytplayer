@@ -106,18 +106,22 @@ namespace ytplayer.server {
                 {
                     new Route {
                         Name = "ytplayer capability",
-                        UrlRegex = @"/ytplayer/capability",
+                        UrlRegex = @"/capability",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
                             var json = new JsonObject(new Dictionary<string, JsonValue> {
                                 {"cmd", "capability"},
                                 {"serverName", "BooTube"},
                                 {"version", 1},
+                                {"root", "/" },
                                 {"category", true},
                                 {"rating", true},
                                 {"mark", true},
+                                {"chapter", true},
+                                {"sync", false },
                                 {"acceptRequest", true},
                                 {"hasView", true},
+                                {"authentication", false},
                             });
                             //LoggerEx.debug(json.ToString());
                             return new TextHttpResponse(request, json.ToString(), "application/json");
@@ -125,7 +129,7 @@ namespace ytplayer.server {
                     },
                     new Route {
                         Name = "ytplayer sync chapters",
-                        UrlRegex = @"/ytplayer/sync.chapter",
+                        UrlRegex = @"/sync.chapter",
                         Method="GET",
                         Callable = (HttpRequest request) => {
                             //Source?.StandardOutput("BooServer: cmd=sync.chapters");
@@ -151,7 +155,7 @@ namespace ytplayer.server {
                     // SYNC: 端末間同期のために全リストを要求
                     new Route {
                         Name = "ytplayer sync",
-                        UrlRegex = @"/ytplayer/sync/?$",
+                        UrlRegex = @"/sync/?$",
                         Method="GET",
                         Callable = (HttpRequest request) => {
                             //Source?.StandardOutput("BooServer: cmd=sync");
@@ -197,7 +201,7 @@ namespace ytplayer.server {
                          *      &d=(last downloaded time)
                          */
                         Name = "ytPlayer list",
-                        UrlRegex = @"/ytplayer/list(?:\?.*)?",
+                        UrlRegex = @"/list(?:\?.*)?",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
                             //Source?.StandardOutput("BooServer: cmd=list");
@@ -253,7 +257,7 @@ namespace ytplayer.server {
                     // CHECK: 前回のプレイリストから変更されたかどうかのチェック
                     new Route {
                         Name = "ytPlayer check update",
-                        UrlRegex = @"/ytplayer/check(?:\?\w+)?",
+                        UrlRegex = @"/check(?:\?\w+)?",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
                             //Source?.StandardOutput($"BooServer: cmd=check");
@@ -270,7 +274,7 @@ namespace ytplayer.server {
                     // VIDEO:ビデオストリーム要求
                     new Route {
                         Name = "ytPlayer video",
-                        UrlRegex = @"/ytplayer/video\?\w+",
+                        UrlRegex = @"/video\?\w+",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
                             var source = Source?.AllEntries;
@@ -298,7 +302,7 @@ namespace ytplayer.server {
                     // chapter: チャプターリスト要求
                     new Route {
                         Name = "ytPlayer chapters",
-                        UrlRegex = @"/ytplayer/chapter\?\w+",
+                        UrlRegex = @"/chapter\?\w+",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
                             var id = QueryParser.Parse(request.Url)["id"];
@@ -326,7 +330,7 @@ namespace ytplayer.server {
                     // current: カレントアイテムのget/set
                     new Route {
                         Name = "ytPlayer Current Item",
-                        UrlRegex = @"/ytplayer/current",
+                        UrlRegex = @"/current",
                         Method = "GET",
                         Callable = request => {
                             //Source?.StandardOutput("BooServer: cmd=current (get)");
@@ -342,7 +346,7 @@ namespace ytplayer.server {
 
                     new Route {
                         Name = "ytPlayer Current Item",
-                        UrlRegex = @"/ytplayer/current",
+                        UrlRegex = @"/current",
                         Method = "PUT",
                         Callable = request => {
                             //Source?.StandardOutput("BooServer: cmd=current (put)");
@@ -364,7 +368,7 @@ namespace ytplayer.server {
 
                     new Route {
                         Name = "ytPlayer Get Reputation",
-                        UrlRegex = @"/ytplayer/reputation\?\w+",
+                        UrlRegex = @"/reputation\?\w+",
                         Method = "GET",
                         Callable = request => {
                             try {
@@ -389,7 +393,7 @@ namespace ytplayer.server {
 
                     new Route {
                         Name = "ytPlayer Set Reputation",
-                        UrlRegex = @"/ytplayer/reputation",
+                        UrlRegex = @"/reputation",
                         Method = "PUT",
                         Callable = request => {
                             Logger.debug("YtServer: Reputation");
@@ -429,7 +433,7 @@ namespace ytplayer.server {
                     // category：全カテゴリリストの要求
                     new Route {
                         Name = "ytPlayer Categories",
-                        UrlRegex = @"/ytplayer/category",
+                        UrlRegex = @"/category",
                         Method = "GET",
                         Callable = request => {
                             //Source?.StandardOutput("BooServer: cmd=category");
@@ -449,7 +453,7 @@ namespace ytplayer.server {
                     // REGISTER: urlの登録/DL要求
                     new Route {
                         Name = "ytPlayer Request Download",
-                        UrlRegex = @"/ytplayer/register",
+                        UrlRegex = @"/bootube/register",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
                             var url = QueryParser.Parse(request.Url)["url"];
@@ -469,7 +473,7 @@ namespace ytplayer.server {
                     // SEQ: PlayListを使わない、シーケンシャルアクセス用(next/prev)
                     new Route {
                         Name = "ytPlayer sequential operation.",
-                        UrlRegex = @"/ytplayer/seq(?:\?w+)?",
+                        UrlRegex = @"/seq(?:\?w+)?",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
                             var p = QueryParser.Parse(request.Url);
@@ -525,7 +529,7 @@ namespace ytplayer.server {
                     //},
                     new Route {
                         Name = "ytPlayer Web Page",
-                        UrlRegex = @"/*",
+                        UrlRegex = @"/web/*",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
                             LoggerEx.debug(request.Url);
@@ -533,7 +537,7 @@ namespace ytplayer.server {
                             if(string.IsNullOrEmpty(wpRoot)) {
                                 return HttpBuilder.InternalServerError();
                             }
-                            var itemPath = request.Url.Substring(1).Replace('/', '\\').Split('?').First();
+                            var itemPath = request.Url.Substring(5).Replace('/', '\\').Split('?').First();
                             if(itemPath.IsEmpty()) {
                                 itemPath = "index.html";
                             }
