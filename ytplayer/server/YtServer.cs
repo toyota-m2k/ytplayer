@@ -91,9 +91,9 @@ namespace ytplayer.server {
         public IEnumerable<DLEntry> SourceOf(int type) {
             switch(type) {
                 case (int)SourceType.DB:
-                default:
                     return Source?.AllEntries;
                 case (int)SourceType.Listed:
+                default:
                     return Source?.ListedEntries;
                 case (int)SourceType.Selected:
                     return Source?.SelectedEntries;
