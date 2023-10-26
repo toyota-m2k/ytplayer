@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
 using ytplayer.browser;
@@ -91,6 +92,7 @@ namespace ytplayer {
         public ReactiveCommand CommandBrowser { get; } = new ReactiveCommand();
         public ReactiveCommand CommandRepairDB { get; } = new ReactiveCommand();
         public ReactiveCommand CommandImportFiles { get; } = new ReactiveCommand();
+        public ReactiveCommand<string> CommandExportMediaFiles { get; } = new ReactiveCommand<string>();
 
         // Context Menu
         public ReactiveCommand OpenInWebBrowserCommand { get; } = new ReactiveCommand();
@@ -411,6 +413,7 @@ namespace ytplayer {
             viewModel.CommandMoveItems.Subscribe(MoveItems);
             viewModel.CommandRepairDB.Subscribe(RepairDB);
             viewModel.CommandImportFiles.Subscribe(ImportVideoFiles);
+            viewModel.CommandExportMediaFiles.Subscribe(ExportMediaFiles);
             viewModel.CommandBrowser.Subscribe(ShowBrowser);
             //viewModel.ClipboardWatching.Subscribe((v) => {
             //    if (v) {
@@ -742,10 +745,98 @@ namespace ytplayer {
             var targetPath = FolderDialogBuilder.Create()
                 .title("Select Folder")
                 .GetFilePath(GetWindow(this));
+            if(targetPath == null) {
+                return;
+            }
             using (WaitCursor.Start(this)) {
                 int count = await ImportVideoFiles(targetPath, ImportFileMode.MOVE_FILE);
                 ((IReportOutput)this).StandardOutput($"Finished: {count} files imported.");
             }
+        }
+
+        private async void ExportMediaFiles(string type) {
+            var entries = SelectedEntries;
+            if (Utils.IsNullOrEmpty(entries)) {
+                return;
+            }
+            var targetPath = FolderDialogBuilder.Create()
+                .title("Select Folder")
+                .GetFilePath(GetWindow(this));
+            if(targetPath == null) {
+                return;
+            }
+
+            using (WaitCursor.Start(this)) {
+                foreach(var entry in entries) {
+                    try {
+                        if (type == "V") {
+                            if (!string.IsNullOrEmpty(entry.VPath) && File.Exists(entry.VPath)) {
+                                var dstPath = Path.Combine(targetPath, Path.GetFileName(entry.VPath));
+                                File.Copy(entry.VPath, dstPath);
+                                ((IReportOutput)this).StandardOutput("OK: " + entry.Name);
+                            }
+                            else {
+                                ((IReportOutput)this).StandardOutput("No Data: " + entry.Name);
+                            }
+                        }
+                        else {
+                            var srcPath = entry.APath;
+                            if (!string.IsNullOrEmpty(entry.APath) && File.Exists(entry.APath)) {
+                                var dstPath = Path.Combine(targetPath, Path.GetFileName(entry.APath));
+                                File.Copy(entry.APath, dstPath);
+                                ((IReportOutput)this).StandardOutput("OK: " + entry.Name);
+                            }
+                            else if(!string.IsNullOrEmpty(entry.VPath) && File.Exists(entry.VPath)) {
+                                extractAudioFromVideo(entry, targetPath);
+                            } else {
+                                ((IReportOutput)this).StandardOutput("No Data: " + entry.Name);
+                            }
+                        }
+                    }
+                    catch (Exception ex) {
+                        ((IReportOutput)this).ErrorOutput("NG: " + entry.Name);
+                    }
+                }
+            }
+
+        }
+
+        private async Task<bool> extractAudioFromVideo(DLEntry entry, string targetPath) {
+            return await Task.Run(() => {
+                var dstName = Path.GetFileNameWithoutExtension(entry.VPath) + ".mp3";
+                var dstPath = Path.Combine(targetPath, dstName);
+                var pi = new ProcessStartInfo() {
+                    FileName = "ffmpeg",
+                    Arguments = $"-i \"{entry.VPath}\" -y -f mp3 -vn \"{dstPath}\"",
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    //StandardOutputEncoding = System.Text.Encoding.UTF8,
+                    //StandardErrorEncoding = System.Text.Encoding.UTF8,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                };
+                using (var process = Process.Start(pi)) {
+                    if (process == null) {
+                        return false;
+                    }
+
+                    // ffmpeg は、stdoutには何も出力しない
+                    //while(true) {
+                    //    var msg = process.StandardOutput.ReadLine();
+                    //    if (msg == null) break;
+                    //    LoggerEx.info(msg);
+                    //}
+
+                    ((IReportOutput)this).StandardOutput("Extracting Audio from " + entry.Name);
+                    while (true) {
+                        var msg = process.StandardError.ReadLine();
+                        if (msg == null) break;
+                        ((IReportOutput)this).StandardOutput(msg);
+                    }
+                    process.WaitForExit();
+                }
+                return true;
+            });
         }
 
         private enum ImportFileMode {
