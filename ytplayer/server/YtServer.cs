@@ -207,7 +207,7 @@ namespace ytplayer.server {
                             //Source?.StandardOutput("BooServer: cmd=list");
                             var p = QueryParser.Parse(request.Url);
                             var category = p.GetValue("c");
-                            var rating = Convert.ToInt32(p.GetValue("r")??"3");
+                            var rating = Convert.ToInt32(p.GetValue("r")??"0");
                             var marks = (p.GetValue("m")??"0").Split('.').Select((v)=>Convert.ToInt32(v)).ToList();
                             var sourceType = Convert.ToInt32(p.GetValue("s")??"0");
                             var search = p.GetValue("t");
@@ -430,26 +430,76 @@ namespace ytplayer.server {
                         }
                     },
 
-                    // category：全カテゴリリストの要求
+                    // categories：全カテゴリリストの要求
                     new Route {
                         Name = "ytPlayer Categories",
-                        UrlRegex = @"/category",
+                        UrlRegex = @"/categories",
                         Method = "GET",
                         Callable = request => {
                             //Source?.StandardOutput("BooServer: cmd=category");
-                            Logger.debug("YtServer: Category");
+                            Logger.debug("YtServer: Categories");
                             var list = Settings.Instance.Categories.SerializableList;
                             var json = new JsonObject(new Dictionary<string, JsonValue>() {
-                                {"cmd", "category"},
+                                {"cmd", "categories"},
+                                {"unchecked", "Unchecked" },
                                 {"categories", new JsonArray(
                                     list.Select((v)=> new JsonObject(new Dictionary<string,JsonValue>(){
                                         {"label",v.Label},
                                         {"color", $"{v.Color}"},
-                                        {"sort", $"{v.SortIndex}"}})).ToArray())},
+                                        {"sort", $"{v.SortIndex}"},
+                                        {"svg", $"{v.SvgPath}" },
+                                    })).ToArray())
+                                },
                             });
                             return new TextHttpResponse(request, json.ToString(), "application/json");
                         }
                     },
+
+                    // marks: 全マークリストの要求
+                    new Route {
+                        Name = "ytPlayer Marks",
+                        UrlRegex = @"/marks",
+                        Method = "GET",
+                        Callable = request => {
+                            //Source?.StandardOutput("BooServer: cmd=mark");
+                            Logger.debug("YtServer: Marks");
+                            var list = MarkInfo.List;
+                            var json = new JsonObject(new Dictionary<string, JsonValue>() {
+                                {"cmd", "marks"},
+                                {"marks", new JsonArray(
+                                    list.Select((v)=> new JsonObject(new Dictionary<string, JsonValue>() {
+                                        {"mark", (int)v.mark },
+                                        {"label",v.label},
+                                        {"svg", $"{v.svgPath}" },
+                                    })).ToArray()) },
+                            });
+                            return new TextHttpResponse(request, json.ToString(), "application/json");
+                        }
+                    },
+
+                    // ratings: 全レーティングリストの要求
+                    new Route {
+                        Name = "ytPlayer Ratings",
+                        UrlRegex = @"/ratings",
+                        Method = "GET",
+                        Callable = request => {
+                            //Source?.StandardOutput("BooServer: cmd=rating");
+                            Logger.debug("YtServer: Ratings");
+                            var list = RatingInfo.List;
+                            var json = new JsonObject(new Dictionary<string, JsonValue>() {
+                                {"cmd", "ratings"},
+                                {"default",  3 },
+                                {"ratings", new JsonArray(
+                                    list.Select((v)=> new JsonObject(new Dictionary<string, JsonValue>() {
+                                        {"rating", (int)v.rating },
+                                        {"label",v.label},
+                                        {"svg", $"{v.svgPath}" },
+                                    })).ToArray()) },
+                            });
+                            return new TextHttpResponse(request, json.ToString(), "application/json");
+                        }
+                    },
+
                     // REGISTER: urlの登録/DL要求
                     new Route {
                         Name = "ytPlayer Request Download",
