@@ -47,7 +47,7 @@ namespace ytplayer.data {
                 List<DLEntry> list;
                 try {
                     output.StandardOutput("Start synchronizing items ...");
-                    var res = await client.GetStringAsync($"http://{host}/ytplayer/sync");
+                    var res = await client.GetStringAsync($"http://{host}/ytplayer/sync?boo");
                     var json = JsonObject.Parse(res);
                     list = (json["list"] as JsonArray)?.Select(v => {
                         var c = v as JsonObject;

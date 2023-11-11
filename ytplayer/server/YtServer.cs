@@ -118,9 +118,11 @@ namespace ytplayer.server {
                                 {"rating", true},
                                 {"mark", true},
                                 {"chapter", true},
-                                {"sync", false },
-                                {"acceptRequest", true},
-                                {"hasView", true},
+                                {"reputation", 2 },             // reputation (category/mark/rating) コマンド対応 1:RO /2:RW
+                                {"diff", true },                // date以降の更新チェック(check)、差分リスト取得に対応
+                                {"sync", true },                // 端末間同期（serverNameが一致することが条件）
+                                {"acceptRequest", true},        // register command をサポートする
+                                {"hasView", true},              // current get/set をサポートする
                                 {"authentication", false},
                             });
                             //LoggerEx.debug(json.ToString());
@@ -155,7 +157,7 @@ namespace ytplayer.server {
                     // SYNC: 端末間同期のために全リストを要求
                     new Route {
                         Name = "ytplayer sync",
-                        UrlRegex = @"/sync/?$",
+                        UrlRegex = @"/sync\?boo",
                         Method="GET",
                         Callable = (HttpRequest request) => {
                             //Source?.StandardOutput("BooServer: cmd=sync");
@@ -503,7 +505,7 @@ namespace ytplayer.server {
                     // REGISTER: urlの登録/DL要求
                     new Route {
                         Name = "ytPlayer Request Download",
-                        UrlRegex = @"/bootube/register",
+                        UrlRegex = @"/register",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
                             var url = QueryParser.Parse(request.Url)["url"];
