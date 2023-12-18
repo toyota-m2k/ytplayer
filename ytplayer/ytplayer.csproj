@@ -181,6 +181,7 @@
     <Compile Include="browser\Browser.xaml.cs">
       <DependentUpon>Browser.xaml</DependentUpon>
     </Compile>
+    <Compile Include="common\CommandProcessor.cs" />
     <Compile Include="common\CursorManager.cs" />
     <Compile Include="common\DisposablePool.cs" />
     <Compile Include="common\JsonExt.cs" />
@@ -195,6 +196,11 @@
       <DependentUpon>TextSearchDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="download\downloader\impl\FFMpegConverter.cs" />
+    <Compile Include="export\IExportOption.cs" />
+    <Compile Include="export\ExtractExporter.cs" />
+    <Compile Include="export\IExporter.cs" />
+    <Compile Include="export\MergeExporter.cs" />
+    <Compile Include="export\SplitExporter.cs" />
     <Compile Include="interop\KeyState.cs" />
     <Compile Include="player\ChapterBar.cs" />
     <Compile Include="player\ChapterView.xaml.cs">
