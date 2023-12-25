@@ -307,6 +307,7 @@ namespace ytplayer.player {
         public ReactiveCommand PrevChapterCommand { get; } = new ReactiveCommand();
         public ReactiveCommand NextChapterCommand { get; } = new ReactiveCommand();
         public ReactiveCommand SyncChapterCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand ExportCommand { get; } = new ReactiveCommand();
         public ReactiveCommand PanelPositionCommand { get; } = new ReactiveCommand();
         public ReactiveCommand SetTrimCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ResetTrimCommand { get; } = new ReactiveCommand();
