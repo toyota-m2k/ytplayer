@@ -92,7 +92,7 @@ namespace ytplayer {
         public ReactiveCommand CommandBrowser { get; } = new ReactiveCommand();
         public ReactiveCommand CommandRepairDB { get; } = new ReactiveCommand();
         public ReactiveCommand CommandImportFiles { get; } = new ReactiveCommand();
-        public ReactiveCommand<string> CommandExportMediaFiles { get; } = new ReactiveCommand<string>();
+        //public ReactiveCommand<string> CommandExportMediaFiles { get; } = new ReactiveCommand<string>();
 
         // Context Menu
         public ReactiveCommand OpenInWebBrowserCommand { get; } = new ReactiveCommand();
@@ -413,7 +413,7 @@ namespace ytplayer {
             viewModel.CommandMoveItems.Subscribe(MoveItems);
             viewModel.CommandRepairDB.Subscribe(RepairDB);
             viewModel.CommandImportFiles.Subscribe(ImportVideoFiles);
-            viewModel.CommandExportMediaFiles.Subscribe(ExportMediaFiles);
+            //viewModel.CommandExportMediaFiles.Subscribe(ExportMediaFiles);
             viewModel.CommandBrowser.Subscribe(ShowBrowser);
             //viewModel.ClipboardWatching.Subscribe((v) => {
             //    if (v) {
@@ -754,52 +754,51 @@ namespace ytplayer {
             }
         }
 
-        private async void ExportMediaFiles(string type) {
-            var entries = SelectedEntries;
-            if (Utils.IsNullOrEmpty(entries)) {
-                return;
-            }
-            var targetPath = FolderDialogBuilder.Create()
-                .title("Select Folder")
-                .GetFilePath(GetWindow(this));
-            if(targetPath == null) {
-                return;
-            }
+        //private async void ExportMediaFiles(string type) {
+        //    var entries = SelectedEntries;
+        //    if (Utils.IsNullOrEmpty(entries)) {
+        //        return;
+        //    }
+        //    var targetPath = FolderDialogBuilder.Create()
+        //        .title("Select Folder")
+        //        .GetFilePath(GetWindow(this));
+        //    if(targetPath == null) {
+        //        return;
+        //    }
 
-            using (WaitCursor.Start(this)) {
-                foreach(var entry in entries) {
-                    try {
-                        if (type == "V") {
-                            if (!string.IsNullOrEmpty(entry.VPath) && File.Exists(entry.VPath)) {
-                                var dstPath = Path.Combine(targetPath, Path.GetFileName(entry.VPath));
-                                File.Copy(entry.VPath, dstPath);
-                                ((IReportOutput)this).StandardOutput("OK: " + entry.Name);
-                            }
-                            else {
-                                ((IReportOutput)this).StandardOutput("No Data: " + entry.Name);
-                            }
-                        }
-                        else {
-                            var srcPath = entry.APath;
-                            if (!string.IsNullOrEmpty(entry.APath) && File.Exists(entry.APath)) {
-                                var dstPath = Path.Combine(targetPath, Path.GetFileName(entry.APath));
-                                File.Copy(entry.APath, dstPath);
-                                ((IReportOutput)this).StandardOutput("OK: " + entry.Name);
-                            }
-                            else if(!string.IsNullOrEmpty(entry.VPath) && File.Exists(entry.VPath)) {
-                                extractAudioFromVideo(entry, targetPath);
-                            } else {
-                                ((IReportOutput)this).StandardOutput("No Data: " + entry.Name);
-                            }
-                        }
-                    }
-                    catch (Exception ex) {
-                        ((IReportOutput)this).ErrorOutput("NG: " + entry.Name);
-                    }
-                }
-            }
-
-        }
+        //    using (WaitCursor.Start(this)) {
+        //        foreach(var entry in entries) {
+        //            try {
+        //                if (type == "V") {
+        //                    if (!string.IsNullOrEmpty(entry.VPath) && File.Exists(entry.VPath)) {
+        //                        var dstPath = Path.Combine(targetPath, Path.GetFileName(entry.VPath));
+        //                        File.Copy(entry.VPath, dstPath);
+        //                        ((IReportOutput)this).StandardOutput("OK: " + entry.Name);
+        //                    }
+        //                    else {
+        //                        ((IReportOutput)this).StandardOutput("No Data: " + entry.Name);
+        //                    }
+        //                }
+        //                else {
+        //                    var srcPath = entry.APath;
+        //                    if (!string.IsNullOrEmpty(entry.APath) && File.Exists(entry.APath)) {
+        //                        var dstPath = Path.Combine(targetPath, Path.GetFileName(entry.APath));
+        //                        File.Copy(entry.APath, dstPath);
+        //                        ((IReportOutput)this).StandardOutput("OK: " + entry.Name);
+        //                    }
+        //                    else if(!string.IsNullOrEmpty(entry.VPath) && File.Exists(entry.VPath)) {
+        //                        extractAudioFromVideo(entry, targetPath);
+        //                    } else {
+        //                        ((IReportOutput)this).StandardOutput("No Data: " + entry.Name);
+        //                    }
+        //                }
+        //            }
+        //            catch (Exception ex) {
+        //                ((IReportOutput)this).ErrorOutput("NG: " + entry.Name);
+        //            }
+        //        }
+        //    }
+        //}
 
         private async Task<bool> extractAudioFromVideo(DLEntry entry, string targetPath) {
             return await Task.Run(() => {

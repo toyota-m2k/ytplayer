@@ -115,8 +115,10 @@
                             <MenuItem Header="Import URL List" Command="{Binding CommandImport}"/>
                             <MenuItem Header="Sync" Command="{Binding CommandSync}"/>
                             <MenuItem Header="Rapair" Command="{Binding CommandRepairDB}"/>
+                            <!--
                             <MenuItem Header="Export Video Files" Command="{Binding CommandExportMediaFiles}" CommandParameter="V"/>
                             <MenuItem Header="Export Audio Files" Command="{Binding CommandExportMediaFiles}" CommandParameter="A"/>
+                            -->
                             <MenuItem Header="Import Video Files" Command="{Binding CommandImportFiles}"/>
                             <MenuItem Header="Move Files" Command="{Binding CommandMoveItems}"/>
                         </ContextMenu>
