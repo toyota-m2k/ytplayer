@@ -146,25 +146,52 @@ namespace ytplayer.data {
             *         false: ヒットしていない
             */
         public bool GetNeighborChapterIndex(ulong current, out int prev, out int next) {
+            return GetNeighborChapterIndexEx(current, out prev, out next) >= 0;
+
+            //int count = Values.Count;
+            //int clipIndex(int index) {
+            //    return (0 <= index && index < count) ? index : -1;
+            //}
+            //for (int i=0; i<count; i++) {
+            //    if(current == Values[i].Position) {
+            //        prev = i - 1;
+            //        next = clipIndex(i + 1);
+            //        return true;
+            //    }
+            //    if(current<Values[i].Position) {
+            //        prev = i - 1;
+            //        next = i;
+            //        return false;
+            //    }
+            //}
+            //prev = count - 1;
+            //next = -1;
+            //return false;
+        }
+
+        /**
+         * currentがヒットすればそのindex、ヒットしなければ-1を返す。
+         */
+        public int GetNeighborChapterIndexEx(ulong current, out int prev, out int next) {
             int count = Values.Count;
             int clipIndex(int index) {
                 return (0 <= index && index < count) ? index : -1;
             }
-            for (int i=0; i<count; i++) {
-                if(current == Values[i].Position) {
+            for (int i = 0; i < count; i++) {
+                if (current == Values[i].Position) {
                     prev = i - 1;
                     next = clipIndex(i + 1);
-                    return true;
+                    return i;
                 }
-                if(current<Values[i].Position) {
+                if (current < Values[i].Position) {
                     prev = i - 1;
                     next = i;
-                    return false;
+                    return -1;
                 }
             }
             prev = count - 1;
             next = -1;
-            return false;
+            return -1;
         }
 
         // private IEnumerable<PlayRange> GetDisabledChapterRanges() {
@@ -288,5 +315,61 @@ namespace ytplayer.data {
             //}
         }
 
+        NamedPlayRange namedPlayRange(ulong start, ulong end) {
+            string name = Values.FirstOrDefault(c => c.Position == start)?.Label?.Trim();
+            return new NamedPlayRange(start, end, name);
+        }
+
+
+        public IEnumerable<PlayRange> GetEnabledRanges(PlayRange trimming, ulong duration = 0) {
+            var chap = GetChapterPositionAwareOfTrimming(trimming);
+            ulong prev = 0;
+            foreach (var (pos, skip) in chap) {
+                if (!skip) {
+                    prev = pos;
+                }
+                else if(prev!=pos) {
+                    string name = Values.FirstOrDefault(c => c.Position == prev)?.Label?.Trim();
+                    yield return new PlayRange(prev, pos);
+                    prev = 0;
+                }
+            }
+            if (prev > 0) {
+                yield return new PlayRange(prev, duration);
+            }
+        }
+
+        /**
+         * ファイル分割用
+         * すべての有効なチャプター区間を（結合しないで）名前付き区間として返す。
+         */
+        public IEnumerable<NamedPlayRange> GetEnabledChaptersAsNamedRanges(PlayRange trimming, ulong duration = 0) {
+            ulong prev = 0;
+            bool skip = false;
+            if(trimming.Start>0) {
+                prev = trimming.Start;
+            }
+            foreach(var r in Values) {
+                if(r.Position　< trimming.Start) continue;
+                if (trimming.End > 0 && r.Position >= trimming.End) {
+                    if(!skip) {
+                        yield return namedPlayRange(prev, trimming.End);
+                        skip = true;
+                    }
+                    break;
+                }
+                if(!skip && prev<r.Position) {
+                    yield return namedPlayRange(prev, r.Position);
+                }
+                prev = r.Position;
+                skip = r.Skip;
+            }
+            if(!skip) {
+                yield return namedPlayRange(prev, duration);
+            }
+        }
+
     }
+
+
 }

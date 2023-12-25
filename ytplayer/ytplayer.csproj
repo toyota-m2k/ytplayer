@@ -190,21 +190,29 @@
     <Compile Include="common\WeakList.cs" />
     <Compile Include="data\ChapterEntry.cs" />
     <Compile Include="data\ChapterInfo.cs" />
+    <Compile Include="data\NamedPlayRange.cs" />
     <Compile Include="data\StorageTable.cs" />
     <Compile Include="data\SyncManager.cs" />
     <Compile Include="dialog\TextSearchDialog.xaml.cs">
       <DependentUpon>TextSearchDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="download\downloader\impl\FFMpegConverter.cs" />
-    <Compile Include="export\IExportOption.cs" />
+    <Compile Include="export\CopyExporter.cs" />
+    <Compile Include="export\ExportOption.cs" />
     <Compile Include="export\ExtractExporter.cs" />
+    <Compile Include="data\ExportProcessor.cs" />
     <Compile Include="export\IExporter.cs" />
     <Compile Include="export\MergeExporter.cs" />
     <Compile Include="export\SplitExporter.cs" />
+    <Compile Include="export\StraightExporter.cs" />
+    <Compile Include="export\TrimExporter.cs" />
     <Compile Include="interop\KeyState.cs" />
     <Compile Include="player\ChapterBar.cs" />
     <Compile Include="player\ChapterView.xaml.cs">
       <DependentUpon>ChapterView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="player\ExportWindow.xaml.cs">
+      <DependentUpon>ExportWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="player\PlayerCommand.cs" />
     <Compile Include="player\PlayerViewModel.cs" />
@@ -290,6 +298,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="player\ControlPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="player\ExportWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

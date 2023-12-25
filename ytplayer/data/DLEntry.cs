@@ -396,7 +396,7 @@ namespace ytplayer.data {
         }
 
 
-        private string FormatDuration(ulong durationInSec) {
+        public static string FormatDuration(ulong durationInSec) {
             var t = TimeSpan.FromSeconds(durationInSec);
             return $"{t.Hours}:{t.Minutes:00}:{t.Seconds:00}";
         }

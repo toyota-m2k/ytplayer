@@ -1,11 +1,6 @@
 ﻿using io.github.toyota32k.toolkit.utils;
 using System;
-using System.Collections.Generic;
-using System.Data;
 using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace ytplayer.common {
@@ -13,6 +8,7 @@ namespace ytplayer.common {
         public string Arguments { get; set; }
         public string Command;
         public bool ShowCommandPrompt = false;
+        public int ExitCode = -1;
 
         public Func<string,bool> HandleStandardOutput;
         public Func<string,bool> HandleStandardError;
@@ -27,6 +23,7 @@ namespace ytplayer.common {
         }
 
         protected virtual bool OnPreExecute() { return true; }
+        protected virtual bool OnPostExecute(int exitCode) { return true; }
 
         protected virtual ProcessStartInfo MakeParams() {
             if (ShowCommandPrompt) {
@@ -52,44 +49,65 @@ namespace ytplayer.common {
                 };
             };
         }
+        private Process CommandProcess = null;
 
-        public Task<bool> Execute() {
-            return Task.Run(() => {
-                if (!OnPreExecute()) return false;
-                Process proc = null;
-                try {
+        public async Task<bool> Execute() {
+            if (!OnPreExecute()) return false;
+
+            Task stdoutTask = Task.CompletedTask;
+            Task stderrTask = Task.CompletedTask;
+
+            Process proc = null;
+            try {
+                lock (this) {
                     proc = Process.Start(MakeParams());
                     if (proc == null) {
                         LoggerEx.error("no process.");
                         return false;
                     }
-                    string std;
-                    if (!ShowCommandPrompt && HandleStandardOutput != null) {
-                        while ((std = proc.StandardOutput.ReadLine()) != null) {
-                            if(!HandleStandardOutput.Invoke(std)) {
+                    CommandProcess = proc;
+                }
+                if (!ShowCommandPrompt && HandleStandardOutput != null) {
+                    stdoutTask = Task.Run(() => {
+                        while (!proc.StandardOutput.EndOfStream) {
+                            var line = proc.StandardOutput.ReadLine();
+                            if (!HandleStandardOutput.Invoke(line)) {
                                 throw new Exception("cancelled on handling stardard output");
                             }
                         }
-                    }
-                    if (!ShowCommandPrompt && HandleStandardError!= null) {
-                        while ((std = proc.StandardError.ReadLine()) != null) {
-                            if (!HandleStandardError.Invoke(std)) {
+                    });
+                }
+                if (!ShowCommandPrompt && HandleStandardError != null) {
+                    stderrTask = Task.Run(() => {
+                        while (!proc.StandardError.EndOfStream) {
+                            var line = proc.StandardError.ReadLine();
+                            if (!HandleStandardError.Invoke(line)) {
                                 throw new Exception("cancelled on handling stardard error");
                             }
                         }
-                    }
-                    proc.WaitForExit();
-                    LoggerEx.info($"Proc exit: {proc.ExitCode}");
-                    return true;
+                    });
                 }
-                catch (Exception e) {
-                    LoggerEx.error(e);
-                    return false;
-                }
-                finally {
-                    proc?.Close();
-                }
-            });
+                await Task.WhenAll(stdoutTask, stderrTask);
+                proc.WaitForExit();
+                ExitCode = proc.ExitCode;
+                LoggerEx.info($"Proc exit: {proc.ExitCode}");
+                return OnPostExecute(ExitCode);
+            }
+            catch (Exception e) {
+                LoggerEx.error(e);
+                return false;
+            }
+            finally {
+                proc?.Close();
+            }
+        }
+
+        public void Cancel() {
+            CommandProcess?.Kill();
+            CommandProcess?.StandardOutput?.Close();
+            CommandProcess?.StandardError?.Close();
+            CommandProcess?.Close();
+            CommandProcess = null;
         }
     }
 }

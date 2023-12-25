@@ -1,43 +1,65 @@
-﻿using System;
+﻿using io.github.toyota32k.toolkit.utils;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ytplayer.common;
+using ytplayer.data;
 
 namespace ytplayer.export {
-    internal class ExtractExporter {
-        public IExportOption Option { get; set; }
-        public bool IsExtracted => DstFile != null && System.IO.File.Exists(DstFile);
+    /**
+     * いちばんプリミティブな、メディアファイルから、指定区間を１つだけ抜き出すエクスポータークラス
+     */
+    public class ExtractExporter : StraightExporter {
+        private ulong StartMs;
+        private ulong EndMs;
         
-        public ExtractExporter(IExportOption option) {
-            Option = option;
+        public ExtractExporter(ExportOption option, ulong startMs, ulong endMs) : base(option) {
+            StartMs = startMs;
+            EndMs = endMs;
         }
 
-        public ExtractTo(string dstFile, long startMs, long endMs) {
+        private string TimeInSec(ulong ms) {
+            return $"{ms / 1000}.{ms % 1000}";
+        }
+
+        public override async Task<bool> Export() {
+            var stdOutProc = Option.StdOutProc;
+            if (stdOutProc == null) {
+                stdOutProc($"Extracting: {DLEntry.FormatDuration(StartMs / 1000)} - {DLEntry.FormatDuration(EndMs / 1000)} from {Path.GetFileName(Option.SrcFile)}");
+            }
+
             var args = new List<string>();
-            args.Add("-ss");
-            args.Add(startMs.ToString());
-            args.Add("-to");
-            args.Add(endMs.ToString());
+            if (StartMs > 0) {
+                args.Add("-ss");
+                args.Add(TimeInSec(StartMs));
+            }
+            if (EndMs > 0) {
+                args.Add("-to");
+                args.Add(TimeInSec(EndMs));
+            }
             args.Add("-i");
-            args.Add(Option.SrcFile);
-            if(Option.OnlyAudio) {
+            args.Add($"\"{Option.SrcFile}\"");
+            if (Option.Overwrite) {
+                args.Add("-y");
+            }
+            else {
+                args.Add("-n");
+            }
+            if (Option.OnlyAudio) {
                 args.Add("-vn");
                 args.Add("-f");
                 args.Add("mp3");
             }
-            if(Option.NoTranscode) {
+            if (Option.NoTranscode) {
                 args.Add("-c");
                 args.Add("copy");
             }
-            args.Add(dstFile);
+            args.Add($"\"{Option.DstFile}\"");
             var arguments = string.Join(" ", args);
-
-            var processor = new CommandProcessor("ffmpeg", arguments, Option.StdOutProc, Option.StdErrProc, Option.ShowCommandPromptOnConverting);
-            if(await processor.Execute()) {
-                DstFile
-            }
+            return await Convert(arguments);
         }
     }
 }

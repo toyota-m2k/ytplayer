@@ -67,6 +67,7 @@ namespace ytplayer.player {
             ViewModel.StorageClosed.Subscribe((_) => Close());
             ViewModel.AutoChapterCommand.Subscribe(OnAutoChapter);
             ViewModel.ClosePlayerCommand.Subscribe(Close);
+            ViewModel.ExportCommand.Subscribe(OnExportFile);
             LoadCompletion.TrySetResult(true);
             ViewModel.KeyCommands.Enable(GetWindow(this), true);
         }
@@ -231,6 +232,15 @@ namespace ytplayer.player {
                 OutputView.Visibility = Visibility.Hidden;
                 OutputView.Document.Blocks.Clear();
             }
+        }
+
+        private void OnExportFile() {
+            var item = ViewModel.PlayList.Current.Value;
+            if (item == null) return;
+            var chapterList = ViewModel.Chapters.Value;
+            var exportWindow = new ExportWindow(item, chapterList);
+            exportWindow.Owner = this;
+            exportWindow.Show();
         }
     }
 }
