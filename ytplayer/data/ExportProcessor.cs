@@ -59,13 +59,6 @@ namespace ytplayer.export {
             AvailableOperation = GetAvailableOperation(entry, chapterList);
         }
 
-        /**
-         * 出力ファイル名を生成する
-         */
-        private string safeFileName(string name) {
-            return Path.GetInvalidFileNameChars().Aggregate(name, (current, c) => current.Replace(c.ToString(), string.Empty));
-        }
-
         private IExporter _exporter = null;
         private IExporter Exporter { 
             get { 
@@ -97,7 +90,7 @@ namespace ytplayer.export {
             if(string.IsNullOrEmpty(fileName)) {
                 fileName = Path.GetFileNameWithoutExtension(srcFile);
             } else {
-                fileName = safeFileName(fileName);
+                fileName = ExportOption.SafeFileName(fileName);
             }
             string dstFile = Path.Combine(OutputDir, $"{fileName}{ext}");
 

@@ -1,8 +1,11 @@
 ﻿using io.github.toyota32k.toolkit.utils;
 using System;
 using System.Diagnostics;
+using System.Linq;
+using System.Text;
 using ytplayer.data;
 using ytplayer.download;
+using static io.github.toyota32k.toolkit.utils.PathUtil;
 
 namespace ytplayer {
     public class Settings {
@@ -105,8 +108,26 @@ namespace ytplayer {
 
         public string EnsureDBPath => ComplementDBPath(DBPath);
 
+        public static string appendPathString(string orgPath, params string[] appendPaths) {
+            bool modified = false;
+            var source = orgPath.Split(';').Where(it=>!string.IsNullOrWhiteSpace(it)).ToList();
+            foreach (string item in appendPaths.Distinct(directoryPathComparer)) {
+                string path = normalizeDirname(item);
+                if (!source.Where((string p) => isEqualDirectoryName(path, p)).Any()) {
+                    source.Add(path);
+                    modified = true;
+                }
+            }
+            if(modified) {
+                return string.Join(";", source);
+            } else {
+                return orgPath;
+            }
+        }
+
+
         public void ApplyEnvironment() {
-            var path = PathUtil.appendPathString(sOrgPath, YoutubeDLPath, FFMpegPath);
+            var path = appendPathString(sOrgPath, YoutubeDLPath, FFMpegPath);
             if (path != sOrgPath) {
                 Environment.SetEnvironmentVariable("path", path);
             }

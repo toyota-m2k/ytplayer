@@ -13,7 +13,7 @@ namespace ytplayer.wav {
         public string Args;
 
         public MediaConvert() {
-            Command = "ffmpeg";
+            Command = "ffmpeg.exe";
         }
         public MediaConvert(string inFile, string outFile, string args) : this() {
             InFilePath = inFile;

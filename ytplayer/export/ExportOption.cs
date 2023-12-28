@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -50,6 +51,14 @@ namespace ytplayer.export {
          */
         public static ExportOption ChainFrom(ExportOption src, string dstFile) {
             return new ExportOption(src.DstFile, dstFile, src.OnlyAudio, src.NoTranscode, src.Overwrite, src.StdOutProc, src.StdErrProc, src.ShowCommandPromptOnConverting);
+        }
+
+        /**
+         * 安全なファイル名を生成する
+         * 使えない文字は、replaceに置き換える（デフォルトは空文字。。。つまり削除する）
+         */
+        public static string SafeFileName(string name, string replace="") {
+            return Path.GetInvalidFileNameChars().Aggregate(name, (current, c) => current.Replace(c.ToString(),replace));
         }
     }
 }

@@ -22,7 +22,7 @@ namespace ytplayer.export {
 
             foreach(NamedPlayRange r in ranges) {
                 var dstName = string.IsNullOrEmpty(r.Name) ? $"{baseName}-({index++})" : $"{r.Name}-{baseName}";
-                var dstFile = Path.Combine(dstDir, $"{dstName}{ext}");
+                var dstFile = Path.Combine(dstDir, $"{ExportOption.SafeFileName(dstName)}{ext}");
                 var option = ExportOption.DeriveFrom(rootOption, dstFile);
                 yield return new ExtractExporter(option, r.Start, r.End);
             }
