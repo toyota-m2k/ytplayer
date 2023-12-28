@@ -46,7 +46,10 @@ namespace ytplayer.player {
             Source = entry;
             ChapterList = list;
             TargetFolder.Value = Settings.Instance.ExportPath;
-            FileName.Value = System.IO.Path.GetFileNameWithoutExtension(entry.Path);
+            FileName.Value = ExportOption.SafeFileName(entry.Name);
+            if (string.IsNullOrWhiteSpace(FileName.Value)) {
+                System.IO.Path.GetFileNameWithoutExtension(entry.Path);
+            }
 
             //OnlyAudio.Value = entry.Media.HasFlag(MediaFlag.VIDEO);
             var av = ExportProcessor.GetAvailableOperation(entry, list);

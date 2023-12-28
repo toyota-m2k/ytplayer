@@ -58,6 +58,9 @@ namespace ytplayer.export {
          * 使えない文字は、replaceに置き換える（デフォルトは空文字。。。つまり削除する）
          */
         public static string SafeFileName(string name, string replace="") {
+            if(string.IsNullOrWhiteSpace(name)) {
+                return "";
+            }
             return Path.GetInvalidFileNameChars().Aggregate(name, (current, c) => current.Replace(c.ToString(),replace));
         }
     }
