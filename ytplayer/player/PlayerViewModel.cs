@@ -300,6 +300,9 @@ namespace ytplayer.player {
         //public ReactiveCommand StopCommand { get; } = new ReactiveCommand();
         public ReactiveCommand GoBackCommand { get; } = new ReactiveCommand();
         public ReactiveCommand GoForwardCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand SmallSeekBackCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand SmallSeekForwardCommand { get; } = new ReactiveCommand();
+
         public ReactiveCommand TrashCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ResetSpeedCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ResetVolumeCommand { get; } = new ReactiveCommand();
@@ -373,6 +376,16 @@ namespace ytplayer.player {
             GoBackCommand.Subscribe(() => {
                 if (!ChapterEditing.Value) {
                     PlayList.Prev();
+                }
+            });
+            SmallSeekBackCommand.Subscribe(() => {
+                if (!ChapterEditing.Value) {
+                    SeekRelative(-100);
+                }
+            });
+            SmallSeekForwardCommand.Subscribe(() => {
+                if (!ChapterEditing.Value) {
+                    SeekRelative(100);
                 }
             });
             TrashCommand.Subscribe(PlayList.DeleteCurrent);

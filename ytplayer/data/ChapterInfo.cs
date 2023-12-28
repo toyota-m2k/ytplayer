@@ -31,6 +31,7 @@ namespace ytplayer.data {
                 }
             }
         }
+
         public ChapterInfo(ulong pos, bool skip = false, string label=null) {
             Position = pos;
             mSkip = skip;
@@ -314,9 +315,13 @@ namespace ytplayer.data {
             //    yield return new PlayRange(trimEnd, 0);
             //}
         }
+        public ChapterInfo GetChapterAt(ulong pos) {
+            return Values.Where(c => c.Position == pos).FirstOrDefault();
+        }
 
         NamedPlayRange namedPlayRange(ulong start, ulong end) {
-            string name = Values.FirstOrDefault(c => c.Position == start)?.Label?.Trim();
+            //string name = Values.FirstOrDefault(c => c.Position == start)?.Label?.Trim();
+            string name = GetChapterAt(start)?.Label?.Trim();
             return new NamedPlayRange(start, end, name);
         }
 
@@ -329,7 +334,8 @@ namespace ytplayer.data {
                     prev = pos;
                 }
                 else if(prev!=pos) {
-                    string name = Values.FirstOrDefault(c => c.Position == prev)?.Label?.Trim();
+                    //string name = Values.FirstOrDefault(c => c.Position == prev)?.Label?.Trim();
+                    string name = GetChapterAt(prev)?.Label?.Trim();
                     yield return new PlayRange(prev, pos);
                     prev = 0;
                 }

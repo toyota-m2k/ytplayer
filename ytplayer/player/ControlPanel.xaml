@@ -45,6 +45,9 @@
             <Path x:Key="PathSync" Data="M9,3L5,7H8V14H10V7H13M16,17V10H14V17H11L15,21L19,17H16Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
             <Path x:Key="PathExpand" Data="M9,11H15V8L19,12L15,16V13H9V16L5,12L9,8V11M2,20V4H4V20H2M20,20V4H22V20H20Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
             <Path x:Key="PathExport" Data="M23,12L19,8V11H10V13H19V16M1,18V6C1,4.89 1.9,4 3,4H15A2,2 0 0,1 17,6V9H15V6H3V18H15V15H17V18A2,2 0 0,1 15,20H3A2,2 0 0,1 1,18Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
+            
+            <Path x:Key="PathSeekForwardS" Data="M10,17L15,12L10,7V17Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
+            <Path x:Key="PathSeekBackS" Data="M14,7L9,12L14,17V7Z" Stretch="Fill" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
 
         </Grid.Resources>
         <!-- Row:0 再生関連ボタン類 -->
@@ -65,6 +68,20 @@
                         Visibility="{Binding IsPlaying.Value, Converter={StaticResource BoolVisibilityConverter}}"
                         Command="{Binding PauseCommand}"
                         Content="{StaticResource PathPause}" Style="{StaticResource IconButtonStyle}"/>
+                <Button IsEnabled="{Binding IsReady.Value}"
+                        Focusable="False"
+                        Visibility="{Binding ChapterEditing.Value, Converter={StaticResource BoolVisibilityConverter}}"
+                        Command="{Binding SmallSeekBackCommand}"
+                        Content="{StaticResource PathSeekBackS}" Style="{StaticResource IconButtonStyle}" Padding="9,6">
+                </Button>
+                
+                <Button IsEnabled="{Binding IsReady.Value}"
+                        Focusable="False"
+                        Visibility="{Binding ChapterEditing.Value, Converter={StaticResource BoolVisibilityConverter}}"
+                        Command="{Binding SmallSeekForwardCommand}"
+                        Content="{StaticResource PathSeekForwardS}" Style="{StaticResource IconButtonStyle}" Padding="9,6">
+                </Button>
+
                 <Button IsEnabled="{Binding PlayList.HasPrev.Value}" Margin="8,0,0,0"
                         Focusable="False"
                         Visibility="{Binding ChapterEditing.Value, Converter={StaticResource NegBoolVisibilityConverter}}"
