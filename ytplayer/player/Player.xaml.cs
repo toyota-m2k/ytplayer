@@ -55,6 +55,7 @@ namespace ytplayer.player {
             MediaPlayer.Stop();
             MediaPlayer.Source = null;
             ViewModel.SaveChapterListIfNeeds();
+            ViewModel.ChapterEditing.Value = false;
             ViewModel.State.Value = PlayerState.UNAVAILABLE;
             ViewModel.Trimming.Value = PlayRange.Empty;
             ViewModel.Chapters.Value = null;
