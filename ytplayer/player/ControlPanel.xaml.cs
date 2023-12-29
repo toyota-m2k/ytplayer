@@ -107,7 +107,12 @@ namespace ytplayer.player {
             if(listView!=null) {
                 var item = listView.SelectedItem as ChapterInfo;
                 if(item!=null) {
-                    ViewModel.Position.Value = item.Position;
+                    // 現在のチャプターを取得
+                    var current = ViewModel.Chapters.Value.GetChapterAtPosition(ViewModel.Position.Value);
+                    if(current?.Position!=item.Position) {
+                        // 現在このチャプターを再生中でなければ、そのチャプターの先頭にシーク
+                        ViewModel.Position.Value = item.Position;
+                    }
                 }
             }
         }

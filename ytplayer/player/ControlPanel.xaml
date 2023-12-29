@@ -362,7 +362,8 @@
                     </Button.RenderTransform>
                     <common:PathView Path="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z"/>
                 </Button>
-                <Button Grid.Column="2" Style="{StaticResource IconButtonStyle}" Command="{Binding ResetTrimCommand}" CommandParameter="End" Padding="4">
+                <Button Grid.Column="2" Style="{StaticResource IconButtonStyle}" 
+                        Command="{Binding ResetTrimCommand}" CommandParameter="End" Padding="4">
                     <common:PathView Path="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
                 </Button>
             </Grid>

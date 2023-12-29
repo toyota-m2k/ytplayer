@@ -315,8 +315,35 @@ namespace ytplayer.data {
             //    yield return new PlayRange(trimEnd, 0);
             //}
         }
+        /**
+         * ポジション（開始位置）が pos と一致するチャプターを返す。
+         */
         public ChapterInfo GetChapterAt(ulong pos) {
             return Values.Where(c => c.Position == pos).FirstOrDefault();
+        }
+        /**
+         * 指定インデックスのチャプターを取得
+         */
+        public ChapterInfo GetChapterAtIndex(int index) {
+            return (0 <= index && index < Values.Count) ? Values[index] : null;
+        }
+        /**
+         * 指定インデックスのチャプターを取得（インデクサ）
+         */
+        public ChapterInfo this[int index] => GetChapterAtIndex(index);
+
+        /**
+         * ポジションを含むチャプターを取得
+         * （現在の再生位置が、どのチャプターに属するかを取得）
+         */
+        public ChapterInfo GetChapterAtPosition(ulong pos) {
+            var hit = GetNeighborChapterIndexEx(pos, out var prev, out var next);
+            if(hit >= 0) {
+                return Values[hit];
+            } else if(prev>=0) {
+                return Values[prev];
+            }
+            return null;
         }
 
         NamedPlayRange namedPlayRange(ulong start, ulong end) {

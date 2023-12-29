@@ -188,6 +188,7 @@
     <Compile Include="common\KeyCommandManager.cs" />
     <Compile Include="common\MediaInfo.cs" />
     <Compile Include="common\WeakList.cs" />
+    <Compile Include="data\ChapterEditor.cs" />
     <Compile Include="data\ChapterEntry.cs" />
     <Compile Include="data\ChapterInfo.cs" />
     <Compile Include="data\NamedPlayRange.cs" />

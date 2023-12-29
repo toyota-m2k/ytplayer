@@ -24,6 +24,7 @@ namespace ytplayer.player {
     public class PlayerViewModel : ViewModelBase, IStorageConsumer {
         const double DEF_NORMAL_PANEL_WIDTH = 320;
         const double DEF_EDITING_PANEL_WIDTH = 440;
+        const double DEF_EDITING_PANEL_HEIGHT = 350;
 
         #region Control Panel Position
         public ReactivePropertySlim<HorizontalAlignment> PanelHorzAlign { get; } = new ReactivePropertySlim<HorizontalAlignment>(HorizontalAlignment.Right);
@@ -379,14 +380,10 @@ namespace ytplayer.player {
                 }
             });
             SmallSeekBackCommand.Subscribe(() => {
-                if (!ChapterEditing.Value) {
-                    SeekRelative(-100);
-                }
+                SeekRelative(-100);
             });
             SmallSeekForwardCommand.Subscribe(() => {
-                if (!ChapterEditing.Value) {
-                    SeekRelative(100);
-                }
+                SeekRelative(100);
             });
             TrashCommand.Subscribe(PlayList.DeleteCurrent);
             ResetSpeedCommand.Subscribe(() => Speed.Value = 0.5);
@@ -404,10 +401,11 @@ namespace ytplayer.player {
                     EditingChapterList.Value = Chapters.Value.Values;
                     PanelVertAlign.Value = VerticalAlignment.Stretch;
                     PanelHorzAlign.Value = HorizontalAlignment.Right;
-                    PanelWidth.Value = DEF_NORMAL_PANEL_WIDTH;
-                } else {
-                    EditingChapterList.Value = null;
                     PanelWidth.Value = DEF_EDITING_PANEL_WIDTH;
+                }
+                else {
+                    EditingChapterList.Value = null;
+                    PanelWidth.Value = DEF_NORMAL_PANEL_WIDTH;
                     PanelHorzAlign.Value = HorizontalAlignment.Right;
                     PanelVertAlign.Value = VerticalAlignment.Bottom;
                     SaveChapterListIfNeeds();
@@ -433,17 +431,17 @@ namespace ytplayer.player {
             PanelPositionCommand.Subscribe(() => {
                 switch(PanelHorzAlign.Value) {
                     default:
-                    case HorizontalAlignment.Right:
-                        PanelWidth.Value = double.NaN;
+                    case HorizontalAlignment.Right: // --> Stretchに変更
+                        PanelWidth.Value = Double.NaN;
                         PanelHorzAlign.Value = HorizontalAlignment.Stretch;
                         PanelVertAlign.Value = VerticalAlignment.Bottom;
                         break;
-                    case HorizontalAlignment.Stretch:
+                    case HorizontalAlignment.Stretch:   // --> Leftに変更
                         PanelWidth.Value = DEF_EDITING_PANEL_WIDTH;
                         PanelHorzAlign.Value = HorizontalAlignment.Left;
                         PanelVertAlign.Value = VerticalAlignment.Stretch;
                         break;
-                    case HorizontalAlignment.Left:
+                    case HorizontalAlignment.Left:  // --> Rightに戻る
                         PanelWidth.Value = DEF_EDITING_PANEL_WIDTH;
                         PanelHorzAlign.Value = HorizontalAlignment.Right;
                         PanelVertAlign.Value = VerticalAlignment.Stretch;
