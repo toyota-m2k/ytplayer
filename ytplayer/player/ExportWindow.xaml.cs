@@ -46,6 +46,9 @@ namespace ytplayer.player {
             Source = entry;
             ChapterList = list;
             TargetFolder.Value = Settings.Instance.ExportPath;
+            OnlyAudio.Value = Settings.Instance.ExportOnlyAudio;
+            Split.Value = Settings.Instance.ExportSplit;
+
             FileName.Value = ExportOption.SafeFileName(entry.Name);
             if (string.IsNullOrWhiteSpace(FileName.Value)) {
                 System.IO.Path.GetFileNameWithoutExtension(entry.Path);
@@ -76,6 +79,8 @@ namespace ytplayer.player {
                 return;
             }
             Settings.Instance.ExportPath = TargetFolder.Value;
+            Settings.Instance.ExportOnlyAudio = OnlyAudio.Value;
+            Settings.Instance.ExportSplit = Split.Value;
             Settings.Instance.Serialize();
 
             var proc = new ExportProcessor(Source, ChapterList, TargetFolder.Value, StdOutProc, StdErrProc);
