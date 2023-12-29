@@ -130,14 +130,14 @@ namespace ytplayer.data {
             return true;
         }
 
-        public bool ClearAllChapters() {
-            if (Values.Count > 0) {
-                Values.Clear();
-                IsModified = true;
-                return true;
-            }
-            return false;
-        }
+        //public bool ClearAllChapters() {
+        //    if (Values.Count > 0) {
+        //        Values.Clear();
+        //        IsModified = true;
+        //        return true;
+        //    }
+        //    return false;
+        //}
         /**
             * 指定位置(current)近傍のChapterを取得
             * 
@@ -180,11 +180,13 @@ namespace ytplayer.data {
             }
             for (int i = 0; i < count; i++) {
                 if (current == Values[i].Position) {
+                    // Hit
                     prev = i - 1;
                     next = clipIndex(i + 1);
                     return i;
                 }
                 if (current < Values[i].Position) {
+                    // Not Hit
                     prev = i - 1;
                     next = i;
                     return -1;

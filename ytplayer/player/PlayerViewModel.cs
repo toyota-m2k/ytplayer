@@ -4,12 +4,14 @@ using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Windows;
 using ytplayer.data;
 using ytplayer.download;
+using ytplayer.intelop;
 using ytplayer.wav;
 
 namespace ytplayer.player {
@@ -21,8 +23,8 @@ namespace ytplayer.player {
         ENDED,
         ERROR,
     }
-    public class PlayerViewModel : ViewModelBase, IStorageConsumer {
-        const double DEF_NORMAL_PANEL_WIDTH = 320;
+    public class PlayerViewModel : ViewModelBase, IStorageConsumer, IChapterEditorViewModelConnector {
+        const double DEF_NORMAL_PANEL_WIDTH = 360;
         const double DEF_EDITING_PANEL_WIDTH = 440;
         const double DEF_EDITING_PANEL_HEIGHT = 350;
 
@@ -46,19 +48,28 @@ namespace ytplayer.player {
 
         #endregion
 
-        #region Trimming/Chapters
-        public ReactivePropertySlim<PlayRange> Trimming { get; } = new ReactivePropertySlim<PlayRange>(PlayRange.Empty);
+        #region Trimming/Chapters Reactive Properties
+
+        public ReactiveProperty<PlayRange> Trimming { get; } = new ReactiveProperty<PlayRange>(PlayRange.Empty);
         public ReadOnlyReactivePropertySlim<bool> HasTrimming { get; }
-        public ReactivePropertySlim<ChapterList> Chapters { get; } = new ReactivePropertySlim<ChapterList>(null,ReactivePropertyMode.RaiseLatestValueOnSubscribe);
-        public ReactivePropertySlim<List<PlayRange>> DisabledRanges { get; } = new ReactivePropertySlim<List<PlayRange>>(null);
+        public ReactiveProperty<ChapterList> Chapters { get; } = new ReactiveProperty<ChapterList>((ChapterList)null, ReactivePropertyMode.RaiseLatestValueOnSubscribe);
+        public ReactiveProperty<List<PlayRange>> DisabledRanges { get; } = new ReactiveProperty<List<PlayRange>>((List<PlayRange>)null, ReactivePropertyMode.RaiseLatestValueOnSubscribe);
         public ReadOnlyReactivePropertySlim<bool> HasDisabledRange { get; }
-        public ReactivePropertySlim<bool> ChapterEditing { get; } = new ReactivePropertySlim<bool>(false);
-        public ReactivePropertySlim<ObservableCollection<ChapterInfo>> EditingChapterList { get; } = new ReactivePropertySlim<ObservableCollection<ChapterInfo>>();
+        public ReactiveProperty<bool> ChapterEditing { get; } = new ReactiveProperty<bool>(false);
+        public ReadOnlyReactivePropertySlim<ObservableCollection<ChapterInfo>> EditingChapterList { get; }
+
+        public ReactivePropertySlim<ChapterEditor> ChapterEditor { get; } = new ReactivePropertySlim<ChapterEditor>(null);
+        //public ReadOnlyReactivePropertySlim<ObservableCollection<ChapterInfo>> EditingChapterCollection { get; }
+
         public Subject<string> ReachRangeEnd { get; } = new Subject<string>();
 
         public ReactiveCommand<ulong> NotifyPosition { get; } = new ReactiveCommand<ulong>();
         public ReactiveCommand<PlayRange> NotifyRange { get; } = new ReactiveCommand<PlayRange>();
         public ReactivePropertySlim<PlayRange?> DraggingRange { get; } = new ReactivePropertySlim<PlayRange?>(null);
+
+        #endregion
+
+        #region Editing Chapters
         /**
          * 現在再生中の動画のチャプター設定が変更されていればDBに保存する。
          */
@@ -92,6 +103,9 @@ namespace ytplayer.player {
                 DisabledRanges.Value = chapterList.GetDisabledRanges(Trimming.Value).ToList();
             }
         }
+        #endregion
+
+        #region Trimming
 
         public void SetTrimmingStartAtCurrentPos() {
             SetTrimming(SetTrimmingStart);
@@ -172,12 +186,9 @@ namespace ytplayer.player {
             return null;
         }
 
-        public void NotifyChapterUpdated() {
-            Chapters.Value.Apply((chapterList) => {
-                Chapters.Value = chapterList;
-                DisabledRanges.Value = chapterList.GetDisabledRanges(Trimming.Value).ToList();
-            });
-        }
+        #endregion
+
+        #region Add Chapters
 
         private void AddChapter() {
             AddChapter(PlayerPosition);
@@ -186,45 +197,81 @@ namespace ytplayer.player {
         private void AddChapter(ulong pos) {
             var item = PlayList.Current.Value;
             if (item == null) return;
-            var chapterList = Chapters.Value;
-            if (chapterList == null) return;
+            var chapterEditor = ChapterEditor.Value;
+            if (chapterEditor == null) return;
             if (pos > Duration.Value) return;
-            if (chapterList.AddChapter(new ChapterInfo(pos))) {
-                Chapters.Value = chapterList;
-                DisabledRanges.Value = chapterList.GetDisabledRanges(Trimming.Value).ToList();
-            }
+            chapterEditor.AddChapter(new ChapterInfo(pos));
         }
 
         private void AddDisabledChapterRange(PlayRange range) {
             if (PlayList.Current.Value == null) return;
+            var chapterEditor = ChapterEditor.Value;
+            if (chapterEditor == null) return;
+
+            range.AdjustTrueEnd(Duration.Value);
+            var del = chapterEditor.Chapters.Value.Values.Where(c => range.Start <= c.Position && c.Position <= range.End).ToList();
+            chapterEditor.EditInGroup((gr) => {
+                foreach (var e in del) {    // chapterList.Valuesは ObservableCollection なので、RemoveAll的なやつ使えない。
+                    gr.RemoveChapter(e);
+                }
+                gr.AddChapter(new ChapterInfo(range.Start) { Skip = true });
+                if (range.End != Duration.Value) {
+                    gr.AddChapter(new ChapterInfo(range.End));
+                }
+            });
+        }
+
+        #endregion
+
+        #region Edit Chapters by Expanding Chapter
+
+        private void ExpandChapterToLeft() {
+            ExpandChapter(false);
+        }
+
+        public void ExpandChapterToRight() {
+            ExpandChapter(true);
+        }
+
+
+        public void ExpandChapter(bool toRight) {
+            if (!ChapterEditing.Value) return;
+            var chapterEditor = ChapterEditor.Value;
+            if (chapterEditor == null) return;
             var chapterList = Chapters.Value;
             if (chapterList == null) return;
 
-            range.AdjustTrueEnd(Duration.Value);
-            var del = chapterList.Values.Where(c => range.Start <= c.Position && c.Position <= range.End).ToList();
-            foreach (var e in del) {    // chapterList.Valuesは ObservableCollection なので、RemoveAll的なやつ使えない。
-                chapterList.Values.Remove(e);
-            }
-            chapterList.AddChapter(new ChapterInfo(range.Start) { Skip = true });
-            if (range.End != Duration.Value) {
-                chapterList.AddChapter(new ChapterInfo(range.End));
-            }
-            Chapters.Value = chapterList;
-            DisabledRanges.Value = chapterList.GetDisabledRanges(Trimming.Value).ToList();
-        }
-
-        private void NextChapter() {
-            var chapterList = Chapters.Value;
-            chapterList.GetNeighborChapterIndex(PlayerPosition, out var prev, out var next);
-            if(next>=0) {
-                var c = chapterList.Values[next].Position;
-                if(Trimming.Value.Contains(c)) {
-                    Position.Value = c;
-                    return;
+            var hitIndex = chapterList.GetNeighborChapterIndexEx(PlayerPosition, out var prevIndex, out var nextIndex);
+            ChapterInfo removingChapter = null, prevChapter = null;
+            if (hitIndex >= 0) {
+                // Hit
+                removingChapter = chapterList[hitIndex];
+                if (!toRight) {
+                    prevChapter = chapterList[prevIndex];
                 }
             }
-            GoForwardCommand.Execute();
+            else {
+                if (toRight) {
+                    removingChapter = chapterList[nextIndex];
+                }
+                else {
+                    removingChapter = chapterList[prevIndex];
+                    prevChapter = chapterList[prevIndex - 1];
+                }
+            }
+            chapterEditor.EditInGroup((gr) => {
+                if (prevChapter != null) {
+                    gr.SetSkip(prevChapter, removingChapter.Skip);
+                }
+                gr.RemoveChapter(removingChapter);
+            });
         }
+
+        #endregion
+
+        #region Seek / Jump by Chapter
+
+        public ReactiveCommand<int> SelectChapterEvent { get; } = new ReactiveCommand<int>();
 
         private void PrevChapter() {
             var chapterList = Chapters.Value;
@@ -236,10 +283,30 @@ namespace ytplayer.player {
                 var c = chapterList.Values[prev].Position;
                 if (Trimming.Value.Contains(c)) {
                     Position.Value = c;
+                    if (ChapterEditing.Value) {
+                        SelectChapterEvent.Execute(prev);
+                    }
                     return;
                 }
             }
             Position.Value = Trimming.Value.Start;
+        }
+
+
+        private void NextChapter() {
+            var chapterList = Chapters.Value;
+            chapterList.GetNeighborChapterIndex(PlayerPosition, out var prev, out var next);
+            if(next>=0) {
+                var c = chapterList.Values[next].Position;
+                if(Trimming.Value.Contains(c)) {
+                    Position.Value = c;
+                    if (ChapterEditing.Value) {
+                        SelectChapterEvent.Execute(next);
+                    }
+                    return;
+                }
+            }
+            GoForwardCommand.Execute();
         }
 
         public void SeekRelative(long delta) {
@@ -251,6 +318,21 @@ namespace ytplayer.player {
             var item = PlayList.Current.Value;
             if (item != null) {
                 item.Rating = rating;
+            }
+        }
+
+        #endregion
+
+        #region Undo/Redo
+
+        private void Undo(bool redo) {
+            var chapterEditor = ChapterEditor.Value;
+            if (chapterEditor == null) return;
+            if (redo) {
+                chapterEditor.Do();
+            }
+            else {
+                chapterEditor.Undo();
             }
         }
 
@@ -304,6 +386,12 @@ namespace ytplayer.player {
         public ReactiveCommand SmallSeekBackCommand { get; } = new ReactiveCommand();
         public ReactiveCommand SmallSeekForwardCommand { get; } = new ReactiveCommand();
 
+        public ReactiveCommand DisableCurrentChapterCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand ExpandLeftCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand ExpandRightCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand UndoCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand RedoCommand { get; } = new ReactiveCommand();
+
         public ReactiveCommand TrashCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ResetSpeedCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ResetVolumeCommand { get; } = new ReactiveCommand();
@@ -356,6 +444,9 @@ namespace ytplayer.player {
 
         #region Construction/Destruction
 
+        private common.DisposablePool mDisposablePool = new common.DisposablePool();
+
+
         public PlayerViewModel(IStorageSupplier storageSupplier) {
             mStorageSupplier = new WeakReference<IStorageSupplier>(storageSupplier);
             storageSupplier.BindConsumer(this);
@@ -368,7 +459,7 @@ namespace ytplayer.player {
             HasTrimming = Trimming.Select(c => c.Start > 0 || c.End > 0).ToReadOnlyReactivePropertySlim();
             IsPlaying = State.Select((v) => v == PlayerState.PLAYING).ToReadOnlyReactivePropertySlim();
             IsReady = State.Select((v) => v == PlayerState.READY || v == PlayerState.PLAYING).ToReadOnlyReactivePropertySlim();
-
+            EditingChapterList = Chapters.Select((c)=> c?.Values).ToReadOnlyReactivePropertySlim();
             GoForwardCommand.Subscribe(() => {
                 if (!ChapterEditing.Value) {
                     PlayList.Next();
@@ -380,11 +471,41 @@ namespace ytplayer.player {
                 }
             });
             SmallSeekBackCommand.Subscribe(() => {
-                SeekRelative(-100);
+                SeekRelative(KeyState.IsKeyDown(KeyState.VK_CONTROL) ? -1000 : -100);
             });
             SmallSeekForwardCommand.Subscribe(() => {
-                SeekRelative(100);
+                SeekRelative(KeyState.IsKeyDown(KeyState.VK_CONTROL) ? 1000 : 100);
             });
+            DisableCurrentChapterCommand.Subscribe(() => {
+                if (ChapterEditing.Value) {
+                    var chapterEditor = ChapterEditor.Value;
+                    if (chapterEditor == null) return;
+                    chapterEditor.EditInGroup((gr) => {
+                        var chapter = chapterEditor.Chapters.Value.GetChapterAtPosition(PlayerPosition);
+                        if (chapter == null) {
+                            var head = chapterEditor.Chapters.Value[0];
+                            if (head == null || head.Position > 0) {
+                                if (gr.AddChapter(new ChapterInfo(0))) {
+                                    chapter = chapterEditor.Chapters.Value[0];
+                                }
+                                else {
+                                    if (head == null) {
+                                        return;
+                                    }
+                                    chapter = head;
+                                }
+                            }
+                        }
+                        gr.SetSkip(chapter, !chapter.Skip);
+                    });
+                }
+            });
+
+            UndoCommand.Subscribe(() => Undo(redo:false));
+            RedoCommand.Subscribe(() => Undo(redo:true));
+            ExpandLeftCommand.Subscribe(ExpandChapterToLeft);
+            ExpandRightCommand.Subscribe(ExpandChapterToRight);
+
             TrashCommand.Subscribe(PlayList.DeleteCurrent);
             ResetSpeedCommand.Subscribe(() => Speed.Value = 0.5);
             ResetVolumeCommand.Subscribe(() => Volume.Value = 0.5);
@@ -396,15 +517,22 @@ namespace ytplayer.player {
             PrevChapterCommand.Subscribe(PrevChapter);
             NextChapterCommand.Subscribe(NextChapter);
 
-            ChapterEditing.Subscribe((c) => {
-                if(c) {
-                    EditingChapterList.Value = Chapters.Value.Values;
+            ChapterEditing.Subscribe((editing) => {
+                if(editing) {
+                    var item = PlayList.Current.Value;
+                    if (item == null) return;
+                    ChapterEditor.Value = new ChapterEditor(item, this);
                     PanelVertAlign.Value = VerticalAlignment.Stretch;
                     PanelHorzAlign.Value = HorizontalAlignment.Right;
                     PanelWidth.Value = DEF_EDITING_PANEL_WIDTH;
+                    mDisposablePool.Add(EditingChapterList.Subscribe((_) => UpdateChapterLengthField()));
+                    mDisposablePool.Add(Duration.Subscribe((_) => UpdateChapterLengthField()));
+                    EditingChapterList.Value.CollectionChanged += OnChapterListChanged;
                 }
                 else {
-                    EditingChapterList.Value = null;
+                    mDisposablePool.Reset();
+                    if (EditingChapterList.Value != null) { EditingChapterList.Value.CollectionChanged -= OnChapterListChanged; }
+                    ChapterEditor.Value = null;
                     PanelWidth.Value = DEF_NORMAL_PANEL_WIDTH;
                     PanelHorzAlign.Value = HorizontalAlignment.Right;
                     PanelVertAlign.Value = VerticalAlignment.Bottom;
@@ -463,10 +591,39 @@ namespace ytplayer.player {
             KeyCommands = new PlayerCommand(this);
         }
 
+        private void OnChapterListChanged(object sender, NotifyCollectionChangedEventArgs e) {
+            UpdateChapterLengthField();
+        }
+
         public override void Dispose() {
             StorageSupplier?.UnbindConsumer(this);
+            mDisposablePool.Dispose();
             base.Dispose();
         }
+
+        public void UpdateChapterLengthField() {
+            if (!ChapterEditing.Value) return;
+            var duration = Duration.Value;
+            UpdateLengthField(duration);
+        }
+
+        private void UpdateLengthField(ulong duration) {
+            if (duration == 0) return;
+            var editingList = EditingChapterList.Value;
+            if (editingList == null) return;
+
+            if (editingList.Count == 0) return;
+            for (var i = 0; i < editingList.Count - 1; i++) {
+                var c0 = editingList[i];
+                var c1 = editingList[i + 1];
+                c0.Length = c1.Position - c0.Position;
+                c0.Index = i + 1;
+            }
+            var c = editingList[editingList.Count - 1];
+            c.Length = duration - c.Position;
+            c.Index = editingList.Count;
+        }
+
 
         #endregion
     }
