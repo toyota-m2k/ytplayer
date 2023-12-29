@@ -205,6 +205,7 @@ namespace ytplayer.player {
                     if (!Utils.IsNullOrEmpty(ranges)) {
                         Dispatcher.Invoke(() => {
                             chapterList.ClearAllChapters();
+                            chapterList.AddChapter(new ChapterInfo(0)); // 先頭にチャプターを設定しておく
                         });
                         foreach (var r in ranges) {
                             var d = r.Item2 - r.Item1;
