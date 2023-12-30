@@ -210,16 +210,16 @@ namespace ytplayer.player {
                             chapterEditor.ClearAllChapters();
                             chapterEditor.AddChapter(new ChapterInfo(0)); // 先頭にチャプターを設定しておく
                         });
-                        chapterEditor.EditInGroup((gr) => {
-                            foreach (var r in ranges) {
-                                var d = r.Item2 - r.Item1;
-                                var p = r.Item2 - Math.Min(d / 2, 1.0);
-                                var pos = (ulong)Math.Round(p * 1000);
-                                Dispatcher.Invoke(() => {
+                        Dispatcher.Invoke(() => {
+                            chapterEditor.EditInGroup((gr) => {
+                                foreach (var r in ranges) {
+                                    var d = r.Item2 - r.Item1;
+                                    var p = r.Item2 - Math.Min(d / 2, 1.0);
+                                    var pos = (ulong)Math.Round(p * 1000);
                                     gr.AddChapter(new ChapterInfo(pos));
                                     AddTextToRichEdit($"  chapter-{chapterEditor.Chapters.Value.Values.Count} : {pos} msec", new SolidColorBrush(Colors.Gray));
-                                });
-                            }
+                                }
+                            });
                         });
                         return true;
                     } else {
