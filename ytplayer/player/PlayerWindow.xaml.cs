@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Documents;
@@ -156,8 +157,11 @@ namespace ytplayer.player {
             if (!ViewModel.ChapterEditing.Value) return;
             var item = ViewModel.PlayList.Current.Value;
             if (item == null) return;
-            var chapterList = ViewModel.Chapters.Value;
-            if (chapterList.Values.Count > 0) {
+            var chapterEditor = ViewModel.ChapterEditor.Value;
+            if (chapterEditor==null) {
+                return;
+            }
+            if (chapterEditor.Chapters.Value.Values.Count > 0) {
                 if (MessageBoxResult.OK != MessageBox.Show(GetWindow(this), "All chapters will be replaced with created chapters.", "Auto Chapter", MessageBoxButton.OKCancel)) {
                     return;
                 }
@@ -204,26 +208,31 @@ namespace ytplayer.player {
 
                     if (!Utils.IsNullOrEmpty(ranges)) {
                         Dispatcher.Invoke(() => {
-                            chapterList.ClearAllChapters();
-                        });
-                        foreach (var r in ranges) {
-                            var d = r.Item2 - r.Item1;
-                            var p = r.Item2 - Math.Min(d / 2, 1.0);
-                            var pos = (ulong)Math.Round(p * 1000);
-                            Dispatcher.Invoke(() => {
-                                chapterList.AddChapter(new ChapterInfo(pos));
-                                AddTextToRichEdit($"  chapter-{chapterList.Values.Count} : {pos} msec", new SolidColorBrush(Colors.Gray));
+                            chapterEditor.EditInGroup((gr) => {
+                                // チャプターをクリア
+                                var chapters = chapterEditor.ChapterList.Values.ToList();
+                                chapters.ForEach((c)=>gr.RemoveChapter(c));
+                                
+                                // 先頭にチャプターを設定しておく
+                                gr.AddChapter(new ChapterInfo(0));
+                                
+                                // 自動生成したチャプターを追加
+                                foreach (var r in ranges) {
+                                    var d = r.Item2 - r.Item1;
+                                    var p = r.Item2 - Math.Min(d / 2, 1.0);
+                                    var pos = (ulong)Math.Round(p * 1000);
+                                    gr.AddChapter(new ChapterInfo(pos));
+                                    AddTextToRichEdit($"  chapter-{chapterEditor.Chapters.Value.Values.Count} : {pos} msec", new SolidColorBrush(Colors.Gray));
+                                }
                             });
-                        }
+                        });
                         return true;
                     } else {
                         return false;
                     }
                 });
-                if (result) {
-                    ViewModel.NotifyChapterUpdated();
-                } else {
-                    AddTextToRichEdit($"No chapter was detected.", new SolidColorBrush(Colors.Red));
+                if (!result) {
+                    AddTextToRichEdit($"     chapter was detected.", new SolidColorBrush(Colors.Red));
                     MessageBox.Show(GetWindow(this), "No chapter was detected.", "Auto Chapter", MessageBoxButton.OK);
                 }
             }
@@ -237,6 +246,7 @@ namespace ytplayer.player {
         private void OnExportFile() {
             var item = ViewModel.PlayList.Current.Value;
             if (item == null) return;
+            ViewModel.SaveChapterListIfNeeds();
             var chapterList = ViewModel.Chapters.Value;
             var exportWindow = new ExportWindow(item, chapterList);
             exportWindow.Owner = this;

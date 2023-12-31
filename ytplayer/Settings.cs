@@ -33,7 +33,10 @@ namespace ytplayer {
         public bool RestartOnLoaded { get; set; } = false;
         public Sorter SortInfo { get; set; } = new Sorter();
         public bool AcceptList { get; set; } = false;
+        // exports
         public string ExportPath { get; set; } = "";
+        public bool ExportOnlyAudio { get; set; } = false;
+        public bool ExportSplit { get; set; } = false;
 
         private const string SETTINGS_FILE = "settings.xml";
         private static Settings sInstance = null;

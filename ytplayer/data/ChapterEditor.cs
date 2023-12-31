@@ -59,6 +59,7 @@ namespace ytplayer.data {
             var rec = new AddRemoveRec(owner, chapter, add, seekOnUndo);
             if (rec.Do()) {
                 Records.Add(rec);
+                owner?.NotifyChapterUpdated();
                 return true;
             }
             return false;
@@ -98,6 +99,7 @@ namespace ytplayer.data {
             var rec = new SkipRec(owner, chapter.Position, skip);
             if (rec.Do()) {
                 Records.Add(rec);
+                owner?.NotifyDisableRangeChanged();
                 return true;
             }
             return false;
@@ -191,7 +193,7 @@ namespace ytplayer.data {
     /**
      * TrimmingStart/Endの設定/設定解除操作用IChapterEditUnit実装クラス
      */
-    class TrimmingRec : OwnerdUnitBase, IChapterEditUnit {
+    class TrimmingRec   : OwnerdUnitBase, IChapterEditUnit {
         private bool End;
         private ulong Position;
         private ulong PreviousPosition;
@@ -322,17 +324,24 @@ namespace ytplayer.data {
         }
     }
 
+    public interface IChapterEditorViewModelConnector {
+        ReactiveProperty<PlayRange> Trimming { get; } 
+        ReactiveProperty<ChapterList> Chapters { get; }
+        ReactiveProperty<List<PlayRange>> DisabledRanges { get; }
+        //ReactiveProperty<ObservableCollection<ChapterInfo>> EditingChapterList { get; }
+    }
+
     /**
      * Chapter編集用公開APIクラス
      */
     public class ChapterEditor : AbsChapterEditHistory, IChapterEditUnit {
         #region Reactive Properties
+        private IChapterEditorViewModelConnector Connector;
 
-        public ReactiveProperty<PlayRange> Trimming { get; } = new ReactiveProperty<PlayRange>(PlayRange.Empty);
-        public ReactiveProperty<ChapterList> Chapters { get; } = new ReactiveProperty<ChapterList>(null, ReactivePropertyMode.RaiseLatestValueOnSubscribe);
-        public ReactiveProperty<List<PlayRange>> DisabledRanges { get; } = new ReactiveProperty<List<PlayRange>>(initialValue: null);
-        public ReactiveProperty<bool> IsEditing { get; } = new ReactiveProperty<bool>(false);
-        public ReactiveProperty<ObservableCollection<ChapterInfo>> EditingChapterList { get; } = new ReactiveProperty<ObservableCollection<ChapterInfo>>();
+        public ReactiveProperty<PlayRange> Trimming => Connector.Trimming;
+        public ReactiveProperty<ChapterList> Chapters => Connector.Chapters;
+        public ReactiveProperty<List<PlayRange>> DisabledRanges => Connector.DisabledRanges;
+        //public ReactiveProperty<ObservableCollection<ChapterInfo>> EditingChapterList => Connector.EditingChapterList;
 
         #endregion
 
@@ -348,40 +357,22 @@ namespace ytplayer.data {
         /**
          * コンストラクタ
          */
-        public ChapterEditor() : base(null) {
+        public ChapterEditor(DLEntry item, IChapterEditorViewModelConnector connector) : base(null) {
             Owner = this;
-            IsEditing.Subscribe((c) => {
-                if (c) {
-                    EditingChapterList.Value = Chapters.Value.Values;
-                }
-                else {
-                    EditingChapterList.Value = null;
-                    //SaveChapterListIfNeeds();
-                }
-            });
+            SetTarget(item, connector);
         }
 
         /**
          * Playerに動画ファイルがロードされた時に呼び出す
          */
-        public void SetTarget(DLEntry item, ChapterList chapterList) {
+        private void SetTarget(DLEntry item, IChapterEditorViewModelConnector connector) {
+            Connector = connector;
             CurrentItem = item;
             if (item == null) {
                 Reset();
                 return;
             }
-            Trimming.Value = new PlayRange(item.TrimStart, item.TrimEnd);
-            //var chapterList = App.Instance.DB.ChapterTable.GetChapterList(this, item.ID);
-            if (chapterList != null) {
-                Chapters.Value = chapterList;
-            }
-            else {
-                Chapters.Value = null;
-            }
             NotifyDisableRangeChanged();
-            if (IsEditing.Value) {
-                EditingChapterList.Value = Chapters.Value.Values;
-            }
         }
 
         ///**
@@ -598,7 +589,7 @@ namespace ytplayer.data {
         public void Reset() {
             ClearUndoBuffer();
             //SaveChapterListIfNeeds();
-            EditingChapterList.Value = null;
+            //EditingChapterList.Value = null;
             Chapters.Value = null;
             DisabledRanges.Value = null;
             Trimming.Value = PlayRange.Empty;
