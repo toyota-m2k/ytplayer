@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Documents;
@@ -207,11 +208,15 @@ namespace ytplayer.player {
 
                     if (!Utils.IsNullOrEmpty(ranges)) {
                         Dispatcher.Invoke(() => {
-                            chapterEditor.ClearAllChapters();
-                            chapterEditor.AddChapter(new ChapterInfo(0)); // 先頭にチャプターを設定しておく
-                        });
-                        Dispatcher.Invoke(() => {
                             chapterEditor.EditInGroup((gr) => {
+                                // チャプターをクリア
+                                var chapters = chapterEditor.ChapterList.Values.ToList();
+                                chapters.ForEach((c)=>gr.RemoveChapter(c));
+                                
+                                // 先頭にチャプターを設定しておく
+                                gr.AddChapter(new ChapterInfo(0));
+                                
+                                // 自動生成したチャプターを追加
                                 foreach (var r in ranges) {
                                     var d = r.Item2 - r.Item1;
                                     var p = r.Item2 - Math.Min(d / 2, 1.0);
