@@ -42,20 +42,33 @@ namespace SimpleHttpServer.Models {
     }
 
     public abstract class AbstractHttpResponse : IHttpResponse {
-        private static Regex refererForCors = new Regex(@"(?<target>http://(?:localhost|127.0.0.1)(?::\d+)?)/");
+        //private static Regex refererForCors = new Regex(@"(?<target>http://(?:localhost|127.0.0.1)(?::\d+)?)/");
+        private static Regex refererForCors = new Regex(@"(?<target>https?://(?:.*)(?::\d+)?)/?");
+
+        private string getReferer(HttpRequest req) {
+            if(req == null) return null;
+            if (req.Headers.TryGetValue("Origin", out var origin)) {
+                var m = refererForCors.Match(origin);
+                if (m.Success) {
+                    return m.Groups["target"]?.Value;
+                }
+            }
+            if (req.Headers.TryGetValue("Referer", out var referer)) {
+                var m = refererForCors.Match(referer);
+                if (m.Success) {
+                    return m.Groups["target"]?.Value;
+                }
+            }
+            return null;
+        }
 
         protected AbstractHttpResponse(HttpRequest req) {
             // ローカルホストからの要求に対してはCross-Origin Resource Shareingを許可する
-            if (req != null && req.Headers.TryGetValue("Referer", out var referer)) {
-                var m = refererForCors.Match(referer);
-                if(m.Success) {
-                    var r = m.Groups["target"]?.Value;
-                    if (!string.IsNullOrEmpty(r)) {
-                        Headers["Access-Control-Allow-Origin"] = r;
-                        Headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE";
-                        Headers["Access-Control-Allow-Headers"] = "Content-Type,Content-Length,Accept";
-                    }
-                }
+            var r = getReferer(req);
+            if (!string.IsNullOrEmpty(r)) { 
+                Headers["Access-Control-Allow-Origin"] = r;
+                Headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE";
+                Headers["Access-Control-Allow-Headers"] = "Content-Type,Content-Length,Accept";
             }
         }
 
