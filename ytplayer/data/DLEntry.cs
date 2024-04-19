@@ -426,6 +426,7 @@ namespace ytplayer.data {
         public string Path => string.IsNullOrEmpty(VPath) ? APath : VPath;
         public string ContentType => string.IsNullOrEmpty(VPath) ? "audio/mpeg": "video/mp4";
         public string BooType => string.IsNullOrEmpty(VPath) ? "mp3" : "mp4";
+        public string MediaType => string.IsNullOrEmpty(VPath) ? "a" : "v";
 
         public bool HasFile => (int)Media > 0;
 

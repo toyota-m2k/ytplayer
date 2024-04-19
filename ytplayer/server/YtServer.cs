@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using ytplayer.data;
 using ytplayer.download;
 using ytplayer.server.lib;
+using static ytplayer.player.PlayerCommand;
 
 namespace ytplayer.server {
     public interface IYtListSource:IReportOutput {
@@ -100,6 +101,56 @@ namespace ytplayer.server {
             }
         }
 
+        /**
+         * ストリームを返す系リクエスト
+         */
+        private IHttpResponse RequestStream(HttpRequest request, string type) {
+            var source = Source?.AllEntries;
+            if (null == source) {
+                return HttpBuilder.ServiceUnavailable();
+            }
+
+            var id = QueryParser.Parse(request.Url)["id"];
+            var entry = source.Single(e => e.KEY == id);
+            string path;
+            string contentType;
+            switch(type) {
+                case "a":
+                case "A":
+                    path = entry.APath;
+                    contentType = "audio/mpeg";
+                    break;
+                case "V":
+                case "v":
+                    path = entry.VPath;
+                    contentType = "video/mp4";
+                    break;
+                case "":
+                case null:
+                default:
+                    path = entry.Path;
+                    contentType = entry.ContentType;
+                    break;
+            }
+            if(path==null) {
+                return HttpBuilder.NotFound();
+            }
+
+            var range = request.Headers.GetValue("Range");
+            if (null == range) {
+                //Source?.StandardOutput($"BooServer: cmd=video({id})");
+                return new StreamingHttpResponse(request, path, contentType, 0, 0);
+            }
+
+            var match = RegRange.Match(range);
+            var ms = match.Groups["start"];
+            var me = match.Groups["end"];
+            var start = ms.Success ? Convert.ToInt64(ms.Value) : 0;
+            var end = me.Success ? Convert.ToInt64(me.Value) : 0;
+            return new StreamingHttpResponse(request, path, contentType, start, end);
+        }
+
+
         private void InitRoutes() {
             if (null == Routes) {
                 Routes = new List<Route>
@@ -112,7 +163,7 @@ namespace ytplayer.server {
                             var json = new JsonObject(new Dictionary<string, JsonValue> {
                                 {"cmd", "capability"},
                                 {"serverName", "BooTube"},
-                                {"version", 1},
+                                {"version", 2},
                                 {"root", "/" },
                                 {"category", true},
                                 {"rating", true},
@@ -123,7 +174,8 @@ namespace ytplayer.server {
                                 {"sync", true },                // 端末間同期（serverNameが一致することが条件）
                                 {"acceptRequest", true},        // register command をサポートする
                                 {"hasView", true},              // current get/set をサポートする
-                                {"authentication", false},
+                                {"authentication", false},      // 認証不要
+                                {"types", "va" }                // v: video, a: audio, p: photo
                             });
                             //LoggerEx.debug(json.ToString());
                             return new TextHttpResponse(request, json.ToString(), "application/json");
@@ -201,6 +253,7 @@ namespace ytplayer.server {
                          *      &s=(0:all|1:listed|2:selected)
                          *      &t=(free word)
                          *      &d=(last downloaded time)
+                         *      &f=(v/a/p)
                          */
                         Name = "ytPlayer list",
                         UrlRegex = @"/list(?:\?.*)?",
@@ -213,9 +266,16 @@ namespace ytplayer.server {
                             var marks = (p.GetValue("m")??"0").Split('.').Select((v)=>Convert.ToInt32(v)).ToList();
                             var sourceType = Convert.ToInt32(p.GetValue("s")??"0");
                             var search = p.GetValue("t");
+                            var types = p.GetValue("f")?.ToLower();
                             var date = Convert.ToInt64(p.GetValue("d")??"0");
                             var current = DateTime.UtcNow.ToFileTimeUtc();
                             var source = SourceOf(sourceType);
+                            var mediaFlags = MediaFlag.BOTH;
+                            if(!string.IsNullOrEmpty(types)) {
+                                if(!types.Contains("a")) { mediaFlags.MinusAudio(); }
+                                if(!types.Contains("v")) { mediaFlags.MinusVideo(); }
+                            }
+
                             if(null==source) {
                                 return HttpBuilder.ServiceUnavailable();
                             }
@@ -226,6 +286,7 @@ namespace ytplayer.server {
                                         .Where(c => (int)c.Rating >= rating)
                                         .Where(c => (marks.Count==1&&marks[0]==0) || marks.IndexOf((int)c.Mark)>=0)
                                         .Where(e => string.IsNullOrEmpty(search) || (e.Name?.ContainsIgnoreCase(search) ?? false)|| (e.Desc?.ContainsIgnoreCase(search) ?? false))
+                                        .Where(e => (mediaFlags & e.Media)!=0)
                                         .Where(e => e.LongDate>date);
                             }
 
@@ -239,7 +300,8 @@ namespace ytplayer.server {
                                         {"start", $"{v.TrimStart}"},
                                         {"end", $"{v.TrimEnd}" },
                                         {"volume",$"{v.Volume}" },
-                                        {"type", v.BooType},
+                                        {"type", v.BooType},        // deprecated
+                                        {"media", v.MediaType },
                                         {"size", v.Size},
                                         {"duration", v.DurationInSec},
                                         //{"rating", $"{(int)v.Rating}" },
@@ -279,27 +341,27 @@ namespace ytplayer.server {
                         UrlRegex = @"/video\?\w+",
                         Method = "GET",
                         Callable = (HttpRequest request) => {
-                            var source = Source?.AllEntries;
-                            if(null==source) {
-                                return HttpBuilder.ServiceUnavailable();
-                            }
-
-                            var id = QueryParser.Parse(request.Url)["id"];
-                            var entry = source.Single(e => e.KEY==id);
-                            var range = request.Headers.GetValue("Range");
-                            if(null==range) {
-                                //Source?.StandardOutput($"BooServer: cmd=video({id})");
-                                return new StreamingHttpResponse(request, entry.Path,entry.ContentType, 0, 0);
-                            } 
-                            
-                            var match = RegRange.Match(range);
-                            var ms = match.Groups["start"];
-                            var me = match.Groups["end"];
-                            var start = ms.Success ? Convert.ToInt64(ms.Value) : 0;
-                            var end = me.Success ? Convert.ToInt64(me.Value) : 0;
-                            return new StreamingHttpResponse(request, entry.Path,entry.ContentType, start, end);
+                            return RequestStream(request, "v");
                         }
                     },
+
+                    new Route {
+                        Name = "ytPlayer audio",
+                        UrlRegex = @"/audio\?\w+",
+                        Method = "GET",
+                        Callable = (HttpRequest request) => {
+                            return RequestStream(request, "a");
+                        }
+                    },
+                    new Route {
+                        Name = "ytPlayer any type",
+                        UrlRegex = @"/item\?\w+",
+                        Method = "GET",
+                        Callable = (HttpRequest request) => {
+                            return RequestStream(request, null);
+                        }
+                    },
+
 
                     // chapter: チャプターリスト要求
                     new Route {

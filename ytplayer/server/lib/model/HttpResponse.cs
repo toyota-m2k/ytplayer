@@ -48,10 +48,11 @@ namespace SimpleHttpServer.Models {
         private string getReferer(HttpRequest req) {
             if(req == null) return null;
             if (req.Headers.TryGetValue("Origin", out var origin)) {
-                var m = refererForCors.Match(origin);
-                if (m.Success) {
-                    return m.Groups["target"]?.Value;
-                }
+                return origin;
+                //var m = refererForCors.Match(origin);
+                //if (m.Success) {
+                //    return m.Groups["target"]?.Value;
+                //}
             }
             if (req.Headers.TryGetValue("Referer", out var referer)) {
                 var m = refererForCors.Match(referer);
