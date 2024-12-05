@@ -304,6 +304,7 @@ namespace ytplayer.server {
                                         {"media", v.MediaType },
                                         {"size", v.Size},
                                         {"duration", v.DurationInSec},
+                                        {"date", v.LongDate },
                                         //{"rating", $"{(int)v.Rating}" },
                                         //{"mark", $"{(int)v.Mark}" },
                                         //{"category", $"{v.Category.Label}" }
