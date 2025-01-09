@@ -1117,7 +1117,7 @@ namespace ytplayer {
                     mFilterEditorWindow.Top = CategoryRatingDialog.StartPosition.Value.Y;
                 } else {
                     mFilterEditorWindow.Left = this.Left + this.ActualWidth - 200;
-                    mFilterEditorWindow.Top = this.Top + this.ActualHeight - 300;
+                    mFilterEditorWindow.Top = this.Top + this.ActualHeight - 500;
                 }
                 mFilterEditorWindow.Show();
             }

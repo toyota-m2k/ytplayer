@@ -327,7 +327,7 @@ namespace ytplayer.server {
                         Callable = (HttpRequest request) => {
                             //Source?.StandardOutput($"BooServer: cmd=check");
                             var date = Convert.ToInt64(QueryParser.Parse(request.Url).GetValue("date"));
-                            var sb = new StringBuilder();
+                            //var sb = new StringBuilder();
                             var f = (date>Storage.LastUpdated) ? 1 : 0;
                             var json = new JsonObject(new Dictionary<string, JsonValue>() {
                                 {"cmd", "check"},
