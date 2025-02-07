@@ -141,7 +141,7 @@ namespace ytplayer {
             System.IO.StreamWriter sw = null;
             try {
 
-                System.Xml.Serialization.XmlSerializer serializer = new System.Xml.Serialization.XmlSerializer(typeof(Settings));
+                var serializer = new System.Xml.Serialization.XmlSerializer(typeof(Settings));
                 //書き込むファイルを開く（UTF-8 BOM無し）
                 sw = new System.IO.StreamWriter(SettingFilePath, false, new System.Text.UTF8Encoding(false));
                 //シリアル化し、XMLファイルに保存する
