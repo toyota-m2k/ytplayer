@@ -9,6 +9,7 @@ using System.Json;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using ytplayer.data;
 using ytplayer.download;
 using ytplayer.server.lib;
@@ -50,6 +51,18 @@ namespace ytplayer.server {
             mStorage = new WeakReference<IYtListSource>(s);
             InitRoutes();
         }
+
+        private delegate T SourceAccessor<T>(IEnumerable<DLEntry> src);
+        private T LockSource<T>(SourceType t, SourceAccessor<T> fn) {
+            var src = SourceOf((int)t);
+            if(src== null) {
+                throw new Exception("Source is not available.");
+            }
+            lock (this) {
+                return fn(src);
+            }
+        }
+
 
         public void Start() {
             if (!IsListening) {
@@ -105,13 +118,20 @@ namespace ytplayer.server {
          * ストリームを返す系リクエスト
          */
         private IHttpResponse RequestStream(HttpRequest request, string type) {
-            var source = Source?.AllEntries;
-            if (null == source) {
+            if (null == Source) {
                 return HttpBuilder.ServiceUnavailable();
             }
 
             var id = QueryParser.Parse(request.Url)["id"];
-            var entry = source.Single(e => e.KEY == id);
+            DLEntry entry;
+            lock (this) {
+                try {
+                    entry = LockSource(SourceType.DB, (source)=>source.Single(e => e.KEY == id));
+                } catch (Exception e) {
+                    Logger.error($"{e}");
+                    return HttpBuilder.NotFound();
+                }
+            }
             string path;
             string contentType;
             switch(type) {
@@ -139,6 +159,7 @@ namespace ytplayer.server {
             var range = request.Headers.GetValue("Range");
             if (null == range) {
                 //Source?.StandardOutput($"BooServer: cmd=video({id})");
+                Logger.debug("video: no-ranged request");
                 return new StreamingHttpResponse(request, path, contentType, 0, 0);
             }
 
@@ -147,6 +168,7 @@ namespace ytplayer.server {
             var me = match.Groups["end"];
             var start = ms.Success ? Convert.ToInt64(ms.Value) : 0;
             var end = me.Success ? Convert.ToInt64(me.Value) : 0;
+            Logger.debug($"video: ranged request {start} - {end}");
             return new StreamingHttpResponse(request, path, contentType, start, end);
         }
 
@@ -155,6 +177,14 @@ namespace ytplayer.server {
             if (null == Routes) {
                 Routes = new List<Route>
                 {
+                    new Route {
+                        Name = "ytplayer nop",
+                        UrlRegex = @"/nop",
+                        Method = "GET",
+                        Callable = (HttpRequest request) => {
+                            return new TextHttpResponse(request, "BooTube server is running.", "text/plain");
+                        }
+                    },
                     new Route {
                         Name = "ytplayer capability",
                         UrlRegex = @"/capability",
@@ -438,7 +468,7 @@ namespace ytplayer.server {
                         Callable = request => {
                             try {
                                 var id = QueryParser.Parse(request.Url)["id"];
-                                var entry = Source?.AllEntries.SingleOrDefault(e => e.Id == id);
+                                var entry = LockSource(SourceType.DB, (source)=>source.SingleOrDefault(e => e.Id == id));
                                 if(entry != null) {
                                     var json = new JsonObject(new Dictionary<string, JsonValue>() {
                                         { "cmd", "reputation"},
@@ -471,7 +501,7 @@ namespace ytplayer.server {
                                 var iRating = json.GetInt("rating",-1);
                                 var iMark = json.GetInt("mark", -1);
                                 var category = json.GetString("category", null);
-                                var entry = Source?.AllEntries.SingleOrDefault(e => e.Id == id);
+                                var entry = LockSource(SourceType.DB, (source)=>source.SingleOrDefault(e => e.Id == id));
                                 if(entry != null) {
                                     if(iRating>=0) {
                                         entry.Rating = (Rating)iRating;

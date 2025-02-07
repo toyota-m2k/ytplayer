@@ -228,7 +228,12 @@ namespace SimpleHttpServer.Models {
                     input.Seek(Start, SeekOrigin.Begin);
                     while (remain > 0) {
                         read = input.Read(buffer, 0, Math.Min(buffer.Length, (int)remain));
-                        output.Write(buffer, 0, read);
+                        try {
+                            output.Write(buffer, 0, read);
+                        } catch(Exception e) {
+                            Logger.debug($"{e}");
+                            break;
+                        }
                         remain -= read;
                     }
                 }

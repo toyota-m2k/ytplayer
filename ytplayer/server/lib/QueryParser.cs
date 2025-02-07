@@ -5,6 +5,7 @@
  */
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Web;
 
 namespace ytplayer.server.lib {
     public static class QueryParser {
@@ -22,7 +23,7 @@ namespace ytplayer.server.lib {
                     if (name.Success) {
                         var value = m.Groups["value"];
                         if(value.Success) {
-                            r[name.Value] = value.Value ?? "";
+                            r[name.Value] = HttpUtility.UrlDecode(value.Value) ?? "";
                         } else {
                             r[name.Value] = "true";
                         }
