@@ -15,7 +15,7 @@ namespace ytplayer.data {
         private const int DB_VERSION = 6;
 
         private SQLiteConnection Connection { get; set; }
-        public static long LastUpdated { get; set; } = 0;
+        public static long LastUpdated { get; set; } = DateTime.UtcNow.ToFileTimeUtc();
 
         public DLEntryTable DLTable { get; }
         public KVEntryTable KVTable { get; }

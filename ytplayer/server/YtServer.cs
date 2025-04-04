@@ -298,7 +298,7 @@ namespace ytplayer.server {
                             var search = p.GetValue("t");
                             var types = p.GetValue("f")?.ToLower();
                             var date = Convert.ToInt64(p.GetValue("d")??"0");
-                            var current = DateTime.UtcNow.ToFileTimeUtc();
+                            //var current = DateTime.UtcNow.ToFileTimeUtc();
                             var source = SourceOf(sourceType);
                             var mediaFlags = MediaFlag.BOTH;
                             if(!string.IsNullOrEmpty(types)) {
@@ -317,7 +317,7 @@ namespace ytplayer.server {
                                         .Where(c => (marks.Count==1&&marks[0]==0) || marks.IndexOf((int)c.Mark)>=0)
                                         .Where(e => string.IsNullOrEmpty(search) || (e.Name?.ContainsIgnoreCase(search) ?? false)|| (e.Desc?.ContainsIgnoreCase(search) ?? false))
                                         .Where(e => (mediaFlags & e.Media)!=0)
-                                        .Where(e => e.LongDate>date);
+                                        .Where(e => date<=0 || e.LongDate>date);
                             }
 
                             var list = new JsonArray();
@@ -343,7 +343,7 @@ namespace ytplayer.server {
 
                             var json = new JsonObject(new Dictionary<string, JsonValue>() {
                                 {"cmd", "list"},
-                                {"date", $"{current}" },
+                                {"date", $"{Storage.LastUpdated}" },
                                 {"list",  list}
                             });
                             return new TextHttpResponse(request, json.ToString(), "application/json");
@@ -358,7 +358,7 @@ namespace ytplayer.server {
                             //Source?.StandardOutput($"BooServer: cmd=check");
                             var date = Convert.ToInt64(QueryParser.Parse(request.Url).GetValue("date"));
                             //var sb = new StringBuilder();
-                            var f = (date>Storage.LastUpdated) ? 1 : 0;
+                            var f = (date<Storage.LastUpdated) ? 1 : 0;
                             var json = new JsonObject(new Dictionary<string, JsonValue>() {
                                 {"cmd", "check"},
                                 {"update", $"{f}" }
