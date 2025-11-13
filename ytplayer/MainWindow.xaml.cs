@@ -1050,6 +1050,9 @@ namespace ytplayer {
 
         private void ResetAndDownload(object obj) {
             ProcessSelectedEntries((entries) => {
+                foreach (var e in entries) {
+                    e.Reset();
+                }
                 mDownloadManager.Enqueue(entries);
             });
         }
