@@ -73,7 +73,8 @@ namespace ytplayer.download.downloader {
         protected virtual string BasicArguments {
             get {
                 if(!ExtractAudio) {
-                    return "--format mp4";
+                    // return "--format mp4";
+                    return "-S \"res,ext:mp4:m4a\" --recode-video mp4";
                 } else {
                     return "-x --audio-format mp3";
                 }
