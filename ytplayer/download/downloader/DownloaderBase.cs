@@ -74,7 +74,7 @@ namespace ytplayer.download.downloader {
             get {
                 if(!ExtractAudio) {
                     // return "--format mp4";
-                    return "-S \"res,ext:mp4:m4a\" --recode-video mp4";
+                    return "-t mp4";
                 } else {
                     return "-x --audio-format mp3";
                 }
