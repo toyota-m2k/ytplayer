@@ -539,7 +539,7 @@
 
                 </StackPanel>
             </Grid>
-            <ListView Grid.Row="1" x:Name="OutputListView" ItemsSource="{Binding OutputList}">
+            <ListView Grid.Row="1" x:Name="OutputListView" ItemsSource="{Binding OutputList}" SelectionMode="Extended">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -547,7 +547,13 @@
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <TextBlock Text="{Binding Message}" Foreground="{Binding Color}"/>
+                        <TextBlock Text="{Binding Message}" Foreground="{Binding Color}">
+                            <TextBlock.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Copy" Click="OnOutputTextCopy"/>
+                                </ContextMenu>
+                            </TextBlock.ContextMenu>
+                        </TextBlock>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>

@@ -1433,6 +1433,28 @@ namespace ytplayer {
         }
 
         #endregion
+
+        private void OnOutputTextCopy(object sender, RoutedEventArgs e) {
+            if (OutputListView.SelectedItems.Count > 0) {
+                var messages = OutputListView.SelectedItems
+                    .Cast<OutputMessage>()
+                    .Select(m => m.Message)
+                    .Where(m => !string.IsNullOrEmpty(m));
+
+                var text = string.Join(Environment.NewLine, messages);
+                if (!string.IsNullOrEmpty(text)) {
+                    Clipboard.SetText(text);
+                }
+            }
+
+            //if (sender is MenuItem menuItem &&
+            //    menuItem.DataContext != null) {
+            //    var message = (menuItem.DataContext as OutputMessage)?.Message;
+            //    if (!string.IsNullOrEmpty(message)) {
+            //        Clipboard.SetText(message);
+            //    }
+            //}
+        }
     }
 
     public static class FilterExt {
