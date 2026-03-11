@@ -463,6 +463,8 @@ namespace ytplayer.player {
             GoForwardCommand.Subscribe(() => {
                 if (!ChapterEditing.Value) {
                     PlayList.Next();
+                } else {
+                    PauseCommand.Execute();
                 }
             });
             GoBackCommand.Subscribe(() => {

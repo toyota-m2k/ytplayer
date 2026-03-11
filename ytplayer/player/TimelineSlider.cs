@@ -14,7 +14,6 @@ namespace ytplayer.player {
         PlayerViewModel ViewModel => DataContext as PlayerViewModel;
         private DispatcherTimer mTimer;
         private bool mSliderSeekingFromPlayer;
-        private string mCurrentItemId = null;
 
         public TimelineSlider() {
             mTimer = new DispatcherTimer();
@@ -32,9 +31,8 @@ namespace ytplayer.player {
         }
 
         private void GoNext() {
-            if (mCurrentItemId != null) {
-                var current = mCurrentItemId;
-                mCurrentItemId = null;
+            var current = ViewModel?.PlayList?.Current?.Value?.KEY;
+            if (current != null) {
                 ViewModel.ReachRangeEnd.OnNext(current);
             }
         }
@@ -77,7 +75,6 @@ namespace ytplayer.player {
                 this.Maximum = (double)duration;
             });
             ViewModel?.PlayList?.Current?.Subscribe((item) => {
-                mCurrentItemId = item?.KEY;
                 Value = 0;
             });
         }
