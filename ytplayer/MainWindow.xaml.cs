@@ -448,7 +448,7 @@ namespace ytplayer {
                     MainListView.ScrollIntoView(entry);
                     if (Settings.Instance.RestartOnLoaded) {
                         var pos = Settings.Instance.LastPlayingPos;
-                        var win = GetPlayer();
+                        var win = GetOrCreatePlayer();
                         win.ResumePlay(viewModel.MainList.Value, entry/*, pos*/);
                     }
                 }
@@ -1204,13 +1204,22 @@ namespace ytplayer {
         #region Player Window
 
         private PlayerWindow mPlayerWindow = null;
-        private PlayerWindow GetPlayer() {
+        private PlayerWindow GetOrCreatePlayer() {
             if (mPlayerWindow == null) {
                 mPlayerWindow = new PlayerWindow(mDownloadManager);
                 mPlayerWindow.PlayItemChanged += OnPlayItemChanged;
                 mPlayerWindow.PlayWindowClosing += OnPlayerWindowClosing;
                 mPlayerWindow.PlayWindowClosed += OnPlayerWindowClosed;
                 mPlayerWindow.Show();
+            } else {
+                // 最小化されている場合は元に戻す
+                if (mPlayerWindow.WindowState == WindowState.Minimized) {
+                    mPlayerWindow.WindowState = WindowState.Normal;
+                }
+                // イベント処理完了後に前面表示するため、非同期で実行
+                Dispatcher.BeginInvoke(new Action(() => {
+                    mPlayerWindow.Activate();
+                }), DispatcherPriority.ApplicationIdle);
             }
             return mPlayerWindow;
         }
@@ -1247,7 +1256,7 @@ namespace ytplayer {
         }
 
         private void Play() {
-            var win = GetPlayer();
+            var win = GetOrCreatePlayer();
             var selected = MainListView.SelectedItems;
             if(selected.Count>1) {
                 win.SetPlayList(selected.ToEnumerable<DLEntry>());
@@ -1411,7 +1420,7 @@ namespace ytplayer {
             if (succeeded && !extractAudio) {
                 Dispatcher.Invoke(() => {
                     if (viewModel.AutoPlay.Value) {
-                        GetPlayer().AddToPlayList(target);
+                        GetOrCreatePlayer().AddToPlayList(target);
                     }
                 });
             }
@@ -1421,7 +1430,7 @@ namespace ytplayer {
             Dispatcher.Invoke(() => {
                 Storage.DLTable.Add(target);
                 if (viewModel.AutoPlay.Value) {
-                    GetPlayer().AddToPlayList(target);
+                    GetOrCreatePlayer().AddToPlayList(target);
                 }
             });
         }
