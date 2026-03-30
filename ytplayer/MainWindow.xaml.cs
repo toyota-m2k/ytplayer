@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Web.UI.WebControls;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -50,7 +51,7 @@ namespace ytplayer {
         DELETE_COMFIRM,
         ACCEPT_DETERMINATION,
         EXTRACT_AUDIO,
-        EDIT_DESCRIPTION,
+        EDIT_LABEL,
         SYNC_FROM,
         MOVE_ITEMS,
         PROGRESS,
@@ -101,6 +102,7 @@ namespace ytplayer {
         public ReactiveCommand ResetAndDownloadCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ExtractAudioCommand { get; } = new ReactiveCommand();
         public ReactiveCommand EditDescriptionCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand EditNameCommand { get; } = new ReactiveCommand();
         public ReactiveCommand CopyVideoPathCommand { get; } = new ReactiveCommand();
 
         // Dialog
@@ -164,14 +166,14 @@ namespace ytplayer {
             return ShowDialog(ExtractAudoDialog, "Extract Audio");
         }
 
-        // Description Dialog
-        public class DescriptionDialogViewModel : DialogViewModel {
-            public override DialogTypeId Type => DialogTypeId.EDIT_DESCRIPTION;
-            public ReactiveProperty<string> Description { get; } = new ReactiveProperty<string>();
+        // Label(Name|Description) Dialog
+        public class LabelDialogViewModel : DialogViewModel {
+            public override DialogTypeId Type => DialogTypeId.EDIT_LABEL;
+            public ReactiveProperty<string> Label { get; } = new ReactiveProperty<string>();
         }
-        public DescriptionDialogViewModel DescriptionDialog { get; } = new DescriptionDialogViewModel();
-        public Task<bool> ShowDescriptionDialog() {
-            return ShowDialog(DescriptionDialog, "Description");
+        public LabelDialogViewModel LabelDialog { get; } = new LabelDialogViewModel();
+        public Task<bool> ShowLabelDialog(string title) {
+            return ShowDialog(LabelDialog, title);
         }
 
         public class SyncDialogViewModel : DialogViewModel {
@@ -389,6 +391,7 @@ namespace ytplayer {
             viewModel.ResetAndDownloadCommand.Subscribe(ResetAndDownload);
             viewModel.DeleteAndBlockCommand.Subscribe(DeleteAndBlock);
             viewModel.EditDescriptionCommand.Subscribe(EditDescription);
+            //viewModel.EditNameCommand.Subscribe(EditName);
             viewModel.CopyVideoPathCommand.Subscribe(CopyVideoPath);
 
             viewModel.ShowFilterEditor.Subscribe((v) => {
@@ -1080,11 +1083,28 @@ namespace ytplayer {
             ProcessSelectedEntries(async (entries) => {
                 var org = entries.First().Desc;
                 if (!string.IsNullOrEmpty(org)) {
-                    viewModel.DescriptionDialog.Description.Value = entries.First().Desc;
+                    viewModel.LabelDialog.Label.Value = entries.First().Desc;
                 }
-                if (await viewModel.ShowDescriptionDialog()) {
+                if (await viewModel.ShowLabelDialog("Description")) {
                     foreach (var e in entries) {
-                        e.Desc = viewModel.DescriptionDialog.Description.Value ?? "";
+                        e.Desc = viewModel.LabelDialog.Label.Value ?? "";
+                    }
+                    Storage.DLTable.Update();
+                }
+            });
+        }
+
+        private void EditName() {
+            ProcessSelectedEntries(async (entries) => {
+                var org = entries.First().Desc;
+                if (!string.IsNullOrEmpty(org)) {
+                    viewModel.LabelDialog.Label.Value = entries.First().Name;
+                }
+                if (await viewModel.ShowLabelDialog("Name")) {
+                    foreach (var e in entries) {
+                        if (!string.IsNullOrEmpty(viewModel.LabelDialog.Label.Value)) {
+                            e.Desc = viewModel.LabelDialog.Label.Value;
+                        }
                     }
                     Storage.DLTable.Update();
                 }
@@ -1444,25 +1464,21 @@ namespace ytplayer {
         #endregion
 
         private void OnOutputTextCopy(object sender, RoutedEventArgs e) {
-            if (OutputListView.SelectedItems.Count > 0) {
-                var messages = OutputListView.SelectedItems
-                    .Cast<OutputMessage>()
-                    .Select(m => m.Message)
-                    .Where(m => !string.IsNullOrEmpty(m));
+            if (OutputListView.SelectedItems.Count <= 0) return;
 
-                var text = string.Join(Environment.NewLine, messages);
-                if (!string.IsNullOrEmpty(text)) {
-                    Clipboard.SetText(text);
-                }
+            var selected = new HashSet<OutputMessage>(
+                OutputListView.SelectedItems.Cast<OutputMessage>());
+
+            var messages = OutputListView.Items
+                .Cast<OutputMessage>()                 // ← 画面表示順（View順）
+                .Where(selected.Contains)              // 選択されているものだけ
+                .Select(m => m.Message)
+                .Where(m => !string.IsNullOrEmpty(m));
+
+            var text = string.Join(Environment.NewLine, messages);
+            if (!string.IsNullOrEmpty(text)) {
+                Clipboard.SetText(text);
             }
-
-            //if (sender is MenuItem menuItem &&
-            //    menuItem.DataContext != null) {
-            //    var message = (menuItem.DataContext as OutputMessage)?.Message;
-            //    if (!string.IsNullOrEmpty(message)) {
-            //        Clipboard.SetText(message);
-            //    }
-            //}
         }
     }
 
