@@ -101,6 +101,7 @@ namespace ytplayer {
         public ReactiveCommand ResetAndDownloadCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ExtractAudioCommand { get; } = new ReactiveCommand();
         public ReactiveCommand EditDescriptionCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand EditNameCommand { get; } = new ReactiveCommand();
         public ReactiveCommand CopyVideoPathCommand { get; } = new ReactiveCommand();
 
         // Dialog
@@ -389,6 +390,7 @@ namespace ytplayer {
             viewModel.ResetAndDownloadCommand.Subscribe(ResetAndDownload);
             viewModel.DeleteAndBlockCommand.Subscribe(DeleteAndBlock);
             viewModel.EditDescriptionCommand.Subscribe(EditDescription);
+            viewModel.EditNameCommand.Subscribe(EditName);
             viewModel.CopyVideoPathCommand.Subscribe(CopyVideoPath);
 
             viewModel.ShowFilterEditor.Subscribe((v) => {
@@ -1023,6 +1025,14 @@ namespace ytplayer {
             action(entries);
         }
 
+        private void ProcessFocusedEntry(Action<DLEntry> action) {
+            var entry = SelectedEntry;
+            if (entry == null) {
+                return;
+            }
+            action(entry);
+        }
+
         private void DeleteAndBlock(object obj) {
             ProcessSelectedEntries(async (entries) => {
                 if (await viewModel.ShowDeleteItemDialog()) {
@@ -1091,6 +1101,21 @@ namespace ytplayer {
             });
         }
 
+
+        private void EditName() {
+            ProcessFocusedEntry(async (entry) => {
+                var org = entry.Name;
+                viewModel.DescriptionDialog.Description.Value = org;
+                if (await viewModel.ShowDescriptionDialog()) {
+                    if (!string.IsNullOrEmpty(viewModel.DescriptionDialog.Description.Value)) {
+                        entry.Name = viewModel.DescriptionDialog.Description.Value;
+                        Storage.DLTable.Update();
+                    }
+                }
+            });
+        }
+
+            
         private void CopyVideoPath() {
             var path = SelectedEntry?.VPath;
             if (path != null) {
@@ -1444,25 +1469,21 @@ namespace ytplayer {
         #endregion
 
         private void OnOutputTextCopy(object sender, RoutedEventArgs e) {
-            if (OutputListView.SelectedItems.Count > 0) {
-                var messages = OutputListView.SelectedItems
-                    .Cast<OutputMessage>()
-                    .Select(m => m.Message)
-                    .Where(m => !string.IsNullOrEmpty(m));
+            if (OutputListView.SelectedItems.Count <= 0) return;
 
-                var text = string.Join(Environment.NewLine, messages);
-                if (!string.IsNullOrEmpty(text)) {
-                    Clipboard.SetText(text);
-                }
+            var selected = new HashSet<OutputMessage>(
+                OutputListView.SelectedItems.Cast<OutputMessage>());
+
+            var messages = OutputListView.Items
+                .Cast<OutputMessage>()                 // ← 画面表示順（View順）
+                .Where(selected.Contains)              // 選択されているものだけ
+                .Select(m => m.Message)
+                .Where(m => !string.IsNullOrEmpty(m));
+
+            var text = string.Join(Environment.NewLine, messages);
+            if (!string.IsNullOrEmpty(text)) {
+                Clipboard.SetText(text);
             }
-
-            //if (sender is MenuItem menuItem &&
-            //    menuItem.DataContext != null) {
-            //    var message = (menuItem.DataContext as OutputMessage)?.Message;
-            //    if (!string.IsNullOrEmpty(message)) {
-            //        Clipboard.SetText(message);
-            //    }
-            //}
         }
     }
 
