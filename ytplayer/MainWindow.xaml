@@ -625,11 +625,11 @@
                     </Grid>
                     <!-- Description -->
                     <Grid Visibility="{Binding DialogType.Value, Converter={StaticResource EnumVisibilityConverter}, 
-                          ConverterParameter=EDIT_DESCRIPTION}"
+                          ConverterParameter=EDIT_LABEL}"
                           Margin="10">
                         <StackPanel Orientation="Vertical">
                             <TextBlock Text="Description"/>
-                            <TextBox Text="{Binding DescriptionDialog.Description.Value}" Width="250"/>
+                            <TextBox Text="{Binding LabelDialog.Label.Value}" Width="250"/>
                             <StackPanel Orientation="Horizontal" Margin="0,10,0,0" HorizontalAlignment="Center">
                                 <Button Content="OK" Command="{Binding CommandOk}" Width="100" Margin="0,0,10,0"/>
                                 <Button Content="Cancel" Width="100" Command="{Binding CommandCancel}" Margin="0,0,10,0"/>

@@ -50,7 +50,7 @@ namespace ytplayer {
         DELETE_COMFIRM,
         ACCEPT_DETERMINATION,
         EXTRACT_AUDIO,
-        EDIT_DESCRIPTION,
+        EDIT_LABEL,
         SYNC_FROM,
         MOVE_ITEMS,
         PROGRESS,
@@ -165,14 +165,19 @@ namespace ytplayer {
             return ShowDialog(ExtractAudoDialog, "Extract Audio");
         }
 
-        // Description Dialog
-        public class DescriptionDialogViewModel : DialogViewModel {
-            public override DialogTypeId Type => DialogTypeId.EDIT_DESCRIPTION;
-            public ReactiveProperty<string> Description { get; } = new ReactiveProperty<string>();
+        // Label (Name|Description) Dialog
+        public class LabelDialogViewModel : DialogViewModel {
+            public override DialogTypeId Type => DialogTypeId.EDIT_LABEL;
+            public bool AllowEmpty { get; set; } = false;
+            public ReactiveProperty<string> Label { get; } = new ReactiveProperty<string>();
+            public override bool CheckBeforeOk() { return AllowEmpty || !string.IsNullOrEmpty(Label.Value); }
+
         }
-        public DescriptionDialogViewModel DescriptionDialog { get; } = new DescriptionDialogViewModel();
-        public Task<bool> ShowDescriptionDialog() {
-            return ShowDialog(DescriptionDialog, "Description");
+        public LabelDialogViewModel LabelDialog { get; } = new LabelDialogViewModel();
+        public Task<bool> ShowLabelDialog(string title, string initialValue, bool allowEmpty=true) {
+            LabelDialog.Label.Value = initialValue;
+            LabelDialog.AllowEmpty = allowEmpty;
+            return ShowDialog(LabelDialog, title);
         }
 
         public class SyncDialogViewModel : DialogViewModel {
@@ -1088,13 +1093,10 @@ namespace ytplayer {
 
         private void EditDescription() {
             ProcessSelectedEntries(async (entries) => {
-                var org = entries.First().Desc;
-                if (!string.IsNullOrEmpty(org)) {
-                    viewModel.DescriptionDialog.Description.Value = entries.First().Desc;
-                }
-                if (await viewModel.ShowDescriptionDialog()) {
+                var org = entries.First().Desc ?? "";
+                if (await viewModel.ShowLabelDialog("Description", org)) {
                     foreach (var e in entries) {
-                        e.Desc = viewModel.DescriptionDialog.Description.Value ?? "";
+                        e.Desc = viewModel.LabelDialog.Label.Value ?? "";
                     }
                     Storage.DLTable.Update();
                 }
@@ -1104,11 +1106,10 @@ namespace ytplayer {
 
         private void EditName() {
             ProcessFocusedEntry(async (entry) => {
-                var org = entry.Name;
-                viewModel.DescriptionDialog.Description.Value = org;
-                if (await viewModel.ShowDescriptionDialog()) {
-                    if (!string.IsNullOrEmpty(viewModel.DescriptionDialog.Description.Value)) {
-                        entry.Name = viewModel.DescriptionDialog.Description.Value;
+                var org = entry.Name ?? "";
+                if (await viewModel.ShowLabelDialog("Name", org, allowEmpty:false)) {
+                    if (!string.IsNullOrEmpty(viewModel.LabelDialog.Label.Value)) {
+                        entry.Name = viewModel.LabelDialog.Label.Value;
                         Storage.DLTable.Update();
                     }
                 }
