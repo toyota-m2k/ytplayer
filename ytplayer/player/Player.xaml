@@ -66,7 +66,9 @@
 
         <Grid 
             Background="{StaticResource ControlPanelBG}" 
-            MouseEnter="OnMouseEnter" MouseLeave="OnMouseLeave"
+            MouseEnter="OnMouseEnter" 
+            MouseLeave="OnMouseLeave"
+            MouseLeftButtonDown="OnControlPanelClicked"
             Opacity="0"
             Width="{Binding PanelWidth.Value}"
             VerticalAlignment="{Binding PanelVertAlign.Value}"

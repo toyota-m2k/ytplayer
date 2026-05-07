@@ -232,5 +232,9 @@ namespace ytplayer.player {
                 CursorManager?.Enable(false);
             }
         }
+
+        private void OnControlPanelClicked(object sender, MouseButtonEventArgs e) {
+            e.Handled = true;
+        }
     }
 }
