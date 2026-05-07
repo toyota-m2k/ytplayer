@@ -80,7 +80,9 @@ namespace ytplayer.player {
                     MediaPlayer.Source = uri;
                     // Sourceをセットしただけでは OnMediaOpenedが呼ばれない。
                     // Play または、Stop を呼んでおく必要がある。
-                    MediaPlayer.Stop();
+                    // Sourceがmp3（音声）の場合は、Stop()では、OnMediaOpenedが呼ばれないので、Play()が必須
+                    // AutoPlay==false の場合は、逆に OnMediaOpenedでPause()する。
+                    MediaPlayer.Play();
                 }
             }
         }
@@ -102,6 +104,8 @@ namespace ytplayer.player {
                 }
                 MediaPlayer.Position = TimeSpan.FromMilliseconds(pos);
                 ReservePosition = 0;
+            } else {
+                Pause();
             }
             if (!ViewModel.ShowPanel.Value && !ViewModel.ShowSizePanel.Value) {
                 CursorManager?.Enable(true);
@@ -218,6 +222,7 @@ namespace ytplayer.player {
             } else {
                 Play();
             }
+            e.Handled = true;
         }
 
         private void OnChapterEditing(bool edit) {

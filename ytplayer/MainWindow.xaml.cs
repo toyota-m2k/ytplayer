@@ -816,8 +816,8 @@ namespace ytplayer {
                     Arguments = $"-i \"{entry.VPath}\" -y -f mp3 -vn \"{dstPath}\"",
                     CreateNoWindow = true,
                     UseShellExecute = false,
-                    //StandardOutputEncoding = System.Text.Encoding.UTF8,
-                    //StandardErrorEncoding = System.Text.Encoding.UTF8,
+                    StandardOutputEncoding = System.Text.Encoding.UTF8,
+                    StandardErrorEncoding = System.Text.Encoding.UTF8,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                 };

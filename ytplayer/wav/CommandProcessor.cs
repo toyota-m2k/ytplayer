@@ -24,6 +24,8 @@ namespace ytplayer.wav {
                     Arguments = Arguments,
                     CreateNoWindow = true,
                     UseShellExecute = true,
+                    StandardOutputEncoding = System.Text.Encoding.UTF8,
+                    StandardErrorEncoding = System.Text.Encoding.UTF8,
                     RedirectStandardOutput = false,
                     RedirectStandardError = false,
                 };

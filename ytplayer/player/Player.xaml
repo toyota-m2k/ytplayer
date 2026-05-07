@@ -12,7 +12,10 @@
     <UserControl.Resources>
         <ResourceDictionary Source="../res/YtpResource.xaml"/>
     </UserControl.Resources>
-    <Grid>
+    <Grid
+        Background="Transparent"
+        MouseLeftButtonDown="OnPlayerClicked"
+        >
         <MediaElement x:Name="MediaPlayer"
                       LoadedBehavior="Manual" UnloadedBehavior="Stop" Stretch="UniformToFill"
                       VerticalAlignment="Stretch" HorizontalAlignment="Stretch"

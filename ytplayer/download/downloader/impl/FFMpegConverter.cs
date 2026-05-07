@@ -1,7 +1,6 @@
 ﻿using io.github.toyota32k.toolkit.utils;
 using System.Diagnostics;
 using System.IO;
-using ytplayer.common;
 using ytplayer.data;
 
 namespace ytplayer.download.downloader.impl {
@@ -15,7 +14,7 @@ namespace ytplayer.download.downloader.impl {
         }
 
         protected override ProcessStartInfo Prepare() {
-            return new ProcessStartInfo() {
+            var pi = new ProcessStartInfo() {
                 FileName = "ffmpeg",
                 Arguments = $"-i \"{Entry.VPath}\" -y -f mp3 -vn \"{GetSavedFilePath(null)}\"",
                 CreateNoWindow = true,
@@ -25,6 +24,7 @@ namespace ytplayer.download.downloader.impl {
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
             };
+            return pi;
         }
 
         protected override string GetSavedFilePath(DownloadResults.ItemInfo info) {
@@ -32,7 +32,7 @@ namespace ytplayer.download.downloader.impl {
                 return Entry.APath;
             }
             if(!string.IsNullOrEmpty(Entry.VPath)) {
-                var dir = System.IO.Path.GetDirectoryName(Entry.VPath);
+                var dir = Settings.Instance.EnsureAudioPath; // System.IO.Path.GetDirectoryName(Entry.VPath);
                 var name = System.IO.Path.GetFileNameWithoutExtension(Entry.VPath);
                 return System.IO.Path.Combine(dir, $"{name}.mp3");
             }
