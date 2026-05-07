@@ -21,6 +21,7 @@ using ytplayer.data;
 using ytplayer.dialog;
 using ytplayer.download;
 using ytplayer.download.downloader;
+using ytplayer.download.downloader.impl;
 using ytplayer.interop;
 using ytplayer.player;
 using ytplayer.server;
@@ -1076,6 +1077,17 @@ namespace ytplayer {
                 }
             });
         }
+
+        bool IYtListSource.ExtractAudio(DLEntry entry) {
+            Logger.info($"Extracting Audio ... {entry.Name}");
+            var converter = new FFMpegConverter(entry, this, false);
+            var tcs = new TaskCompletionSource<bool>();
+            mDownloadManager.Enqueue(converter.WithCompletionNotification(result=> tcs.TrySetResult(result)));
+            var res= tcs.Task.Result;
+            Logger.info($"Extracting Audio Completed: {res}");
+            return res;
+        }
+
 
         private void OpenInWebBrower() {
             var url = SelectedEntry?.Url;

@@ -266,6 +266,7 @@
       <DependentUpon>TextSearchDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="download\downloader\impl\FFMpegConverter.cs" />
+    <Compile Include="download\downloader\impl\ObservableDownloader.cs" />
     <Compile Include="export\CopyExporter.cs" />
     <Compile Include="export\ExportOption.cs" />
     <Compile Include="export\ExtractExporter.cs" />

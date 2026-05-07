@@ -31,6 +31,8 @@ namespace ytplayer.server {
     
         IEnumerable<ChapterEntry> GetChaptersOf(string id);
         IEnumerable<IGrouping<String, ChapterEntry>> GetChapters();
+
+        bool ExtractAudio(DLEntry entry);
     }
 
     public class YtServer : IDisposable {
@@ -139,6 +141,20 @@ namespace ytplayer.server {
                 case "A":
                     path = entry.APath;
                     contentType = "audio/mpeg";
+                    if (path==null||!File.Exists(path)) {
+                        // audio path がない場合はコンバートする
+                        if (Source.ExtractAudio(entry)) {
+                            lock (this) {
+                                try {
+                                    entry = LockSource(SourceType.DB, (source) => source.Single(e => e.KEY == id));
+                                }
+                                catch (Exception e) {
+                                    Logger.error($"{e}");
+                                }
+                            }
+                            path = entry.APath;
+                        }
+                    }
                     break;
                 case "V":
                 case "v":
@@ -205,7 +221,7 @@ namespace ytplayer.server {
                                 {"acceptRequest", true},        // register command をサポートする
                                 {"hasView", true},              // current get/set をサポートする
                                 {"authentication", false},      // 認証不要
-                                {"types", "va" }                // v: video, a: audio, p: photo
+                                {"types", "vax" }               // v: video, a: audio, p: photo, x: extracted audio
                             });
                             //LoggerEx.debug(json.ToString());
                             return new TextHttpResponse(request, json.ToString(), "application/json");
