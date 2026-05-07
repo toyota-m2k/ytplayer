@@ -20,8 +20,8 @@ namespace ytplayer.download.downloader.impl {
                 Arguments = $"-i \"{Entry.VPath}\" -y -f mp3 -vn \"{GetSavedFilePath(null)}\"",
                 CreateNoWindow = true,
                 UseShellExecute = false,
-                //StandardOutputEncoding = System.Text.Encoding.UTF8,
-                //StandardErrorEncoding = System.Text.Encoding.UTF8,
+                StandardOutputEncoding = System.Text.Encoding.UTF8,
+                StandardErrorEncoding = System.Text.Encoding.UTF8,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
             };
@@ -47,12 +47,14 @@ namespace ytplayer.download.downloader.impl {
             while (Alive) {
                 var response = standardError.ReadLine();
                 if(response==null) {
-                    return true;
-                }
-                Host.StandardOutput(response);
-                if(response.StartsWith("video:0kB")) {
                     Results[0].Completed = true;
                     Results[0].Name = Entry.Name;
+                    return true;
+                }
+                if(response.ContainsIgnoreCase("error")) {
+                    Host.ErrorOutput(response);
+                } else {
+                    Host.StandardOutput(response);
                 }
             }
             Entry.Status = Status.CANCELLED;
