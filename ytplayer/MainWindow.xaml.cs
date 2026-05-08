@@ -477,7 +477,7 @@ namespace ytplayer {
         private void StartServer() {
             StopServer();
             if (Settings.Instance.EnableServer && mServer==null) {
-                mServer = new YtServer(this, Settings.Instance.ServerPort);
+                mServer = new YtServer(this);
                 mServer.Start();
             }
         }

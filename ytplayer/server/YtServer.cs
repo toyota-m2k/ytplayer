@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Json;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -36,20 +37,14 @@ namespace ytplayer.server {
     }
 
     public class YtServer : IDisposable {
-        private int mPort;
-        private HttpServer mServer;
+        private List<HttpServer> mServers = new List<HttpServer>();
         //private Regex mRegex = new Regex(@"/wfplayer/cmd/(?<cmd>[a-zA-Z]+)(/(?<param>\w*))?");
         private WeakReference<IYtListSource> mStorage;
         private IYtListSource Source => mStorage.GetValue();
 
         public bool IsListening { get; private set; } = false;
 
-        //public static YtServer CreateInstance(int port = 3500) {
-        //    return new YtServer(port);
-        //}
-
-        public YtServer(IYtListSource s, int port = 3500) {
-            mPort = port;
+        public YtServer(IYtListSource s) {
             mStorage = new WeakReference<IYtListSource>(s);
             InitRoutes();
         }
@@ -67,31 +62,63 @@ namespace ytplayer.server {
 
 
         public void Start() {
-            if (!IsListening) {
-                if (null == mServer) {
-                    mServer = new HttpServer(mPort, Routes, Source);
+            if (IsListening) return;
+
+            var settings = Settings.Instance;
+            // HTTP listener: HTTPS-Only でなければ立てる
+            bool startHttp = !(settings.EnableHttps && settings.HttpsOnly);
+            // HTTPS listener: EnableHttps が立っていれば立てる
+            bool startHttps = settings.EnableHttps;
+
+            if (startHttp) {
+                StartOne(settings.ServerPort, null, "HTTP");
+            }
+            if (startHttps) {
+                X509Certificate2 cert = null;
+                try {
+                    cert = new X509Certificate2(
+                        settings.PfxPath,
+                        settings.PfxPassword,
+                        X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet);
+                } catch (Exception e) {
+                    Source?.ErrorOutput($"BooServer (HTTPS) cannot load PFX: {e.Message}");
+                    LoggerEx.error(e);
                 }
-                if (mServer.Start()) {
-                    IsListening = true;
-                    Source?.StandardOutput($"BooServer has been started: port={mPort}");
-                } else {
-                    mServer = null;
-                    Source?.ErrorOutput($"BooServer cannot be started: port={mPort}");
+                if (cert != null) {
+                    if (!StartOne(settings.HttpsPort, cert, "HTTPS")) {
+                        cert.Dispose();
+                    }
                 }
+            }
+
+            IsListening = mServers.Count > 0;
+        }
+
+        private bool StartOne(int port, X509Certificate2 cert, string label) {
+            var server = new HttpServer(port, Routes, Source, cert);
+            if (server.Start()) {
+                mServers.Add(server);
+                Source?.StandardOutput($"BooServer ({label}) has been started: port={port}");
+                return true;
+            } else {
+                Source?.ErrorOutput($"BooServer ({label}) cannot be started: port={port}");
+                return false;
             }
         }
 
         public void Stop() {
-            if (mServer != null) {
-                mServer.Stop();
-                IsListening = false;
-                Source?.StandardOutput($"BooServer was stopped: port={mPort}");
+            foreach (var s in mServers) {
+                try { s.Stop(); } catch (Exception e) { LoggerEx.error(e); }
             }
+            if (mServers.Count > 0) {
+                Source?.StandardOutput($"BooServer was stopped.");
+            }
+            mServers.Clear();
+            IsListening = false;
         }
 
         public void Dispose() {
             Stop();
-            mServer = null;
         }
 
         public List<Route> Routes { get; set; } = null;

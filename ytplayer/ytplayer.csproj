@@ -189,6 +189,7 @@
       <Private>True</Private>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Security" />
     <Reference Include="System.Security.Cryptography.Algorithms, Version=4.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Security.Cryptography.Algorithms.4.3.1\lib\net463\System.Security.Cryptography.Algorithms.dll</HintPath>
       <Private>True</Private>
@@ -251,6 +252,7 @@
     <Compile Include="browser\Browser.xaml.cs">
       <DependentUpon>Browser.xaml</DependentUpon>
     </Compile>
+    <Compile Include="common\CertificateGenerator.cs" />
     <Compile Include="common\CommandProcessor.cs" />
     <Compile Include="common\CursorManager.cs" />
     <Compile Include="common\DisposablePool.cs" />
@@ -262,6 +264,9 @@
     <Compile Include="data\NamedPlayRange.cs" />
     <Compile Include="data\StorageTable.cs" />
     <Compile Include="data\SyncManager.cs" />
+    <Compile Include="dialog\GenerateCertDialog.xaml.cs">
+      <DependentUpon>GenerateCertDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="dialog\TextSearchDialog.xaml.cs">
       <DependentUpon>TextSearchDialog.xaml</DependentUpon>
     </Compile>
@@ -291,6 +296,7 @@
     <Compile Include="server\lib\HttpBuilder.cs" />
     <Compile Include="server\lib\HttpProcessor.cs" />
     <Compile Include="server\lib\HttpServer.cs" />
+    <Compile Include="server\lib\SslHttpProcessor.cs" />
     <Compile Include="server\lib\model\HttpRequest.cs" />
     <Compile Include="server\lib\model\HttpResponse.cs" />
     <Compile Include="server\lib\model\Route.cs" />
@@ -336,6 +342,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="dialog\CategoryRatingDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="dialog\GenerateCertDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

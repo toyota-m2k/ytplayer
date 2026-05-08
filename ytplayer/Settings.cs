@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using ytplayer.data;
 using ytplayer.download;
@@ -23,6 +24,42 @@ namespace ytplayer {
         public string WebPageRoot { get; set; } = "";
         public int ServerPort { get; set; } = 3500;
         public string SyncPeer { get; set; } = "";
+
+        // HTTPS / TLS
+        public bool EnableHttps { get; set; } = false;
+        public int HttpsPort { get; set; } = 3501;
+        public string PfxPath { get; set; } = "";
+        // PFXパスワードはDPAPI(CurrentUser)で暗号化してBase64で保存する。生のパスワードは settings.xml に書き出さない。
+        public string PfxPasswordEncrypted { get; set; } = "";
+        public bool HttpsOnly { get; set; } = false;
+
+        [System.Xml.Serialization.XmlIgnore]
+        public string PfxPassword {
+            get {
+                if (string.IsNullOrEmpty(PfxPasswordEncrypted)) return "";
+                try {
+                    var bytes = Convert.FromBase64String(PfxPasswordEncrypted);
+                    var plain = ProtectedData.Unprotect(bytes, null, DataProtectionScope.CurrentUser);
+                    return Encoding.UTF8.GetString(plain);
+                } catch (Exception e) {
+                    Debug.WriteLine(e);
+                    return "";
+                }
+            }
+            set {
+                if (string.IsNullOrEmpty(value)) {
+                    PfxPasswordEncrypted = "";
+                    return;
+                }
+                try {
+                    var bytes = ProtectedData.Protect(Encoding.UTF8.GetBytes(value), null, DataProtectionScope.CurrentUser);
+                    PfxPasswordEncrypted = Convert.ToBase64String(bytes);
+                } catch (Exception e) {
+                    Debug.WriteLine(e);
+                    PfxPasswordEncrypted = "";
+                }
+            }
+        }
 
         public DeterminationList Determinations { get; set; } = new DeterminationList();
         public CategoryList Categories { get; set; } = new CategoryList();
