@@ -106,6 +106,9 @@
     <Reference Include="Microsoft.Web.WebView2.Wpf, Version=1.0.3912.50, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Web.WebView2.1.0.3912.50\lib\net462\Microsoft.Web.WebView2.Wpf.dll</HintPath>
     </Reference>
+    <Reference Include="QRCoder, Version=1.6.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\QRCoder.1.6.0\lib\net40\QRCoder.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.WindowsAPICodePack, Version=8.0.15.1, Culture=neutral, PublicKeyToken=8afb38e9204fc0a9, processorArchitecture=MSIL">
       <HintPath>..\packages\WindowsAPICodePack.8.0.15.1\lib\net48\Microsoft.WindowsAPICodePack.dll</HintPath>
     </Reference>
@@ -217,9 +220,6 @@
       <HintPath>..\packages\System.Threading.Tasks.Extensions.4.6.3\lib\net462\System.Threading.Tasks.Extensions.dll</HintPath>
     </Reference>
     <Reference Include="System.Transactions" />
-    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.ValueTuple.4.5.0\lib\net47\System.ValueTuple.dll</HintPath>
-    </Reference>
     <Reference Include="System.Web" />
     <Reference Include="System.Windows" />
     <Reference Include="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
@@ -267,6 +267,9 @@
     <Compile Include="dialog\GenerateCertDialog.xaml.cs">
       <DependentUpon>GenerateCertDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="dialog\PairingQrDialog.xaml.cs">
+      <DependentUpon>PairingQrDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="dialog\TextSearchDialog.xaml.cs">
       <DependentUpon>TextSearchDialog.xaml</DependentUpon>
     </Compile>
@@ -301,6 +304,7 @@
     <Compile Include="server\lib\model\HttpResponse.cs" />
     <Compile Include="server\lib\model\Route.cs" />
     <Compile Include="server\lib\QueryParser.cs" />
+    <Compile Include="server\MdnsAdvertiser.cs" />
     <Compile Include="server\YtServer.cs" />
     <Compile Include="Sorter.cs" />
     <Compile Include="data\Category.cs" />
@@ -346,6 +350,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="dialog\GenerateCertDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="dialog\PairingQrDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

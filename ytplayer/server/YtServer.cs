@@ -38,6 +38,7 @@ namespace ytplayer.server {
 
     public class YtServer : IDisposable {
         private List<HttpServer> mServers = new List<HttpServer>();
+        private MdnsAdvertiser mMdns;
         //private Regex mRegex = new Regex(@"/wfplayer/cmd/(?<cmd>[a-zA-Z]+)(/(?<param>\w*))?");
         private WeakReference<IYtListSource> mStorage;
         private IYtListSource Source => mStorage.GetValue();
@@ -92,6 +93,40 @@ namespace ytplayer.server {
             }
 
             IsListening = mServers.Count > 0;
+
+            // mDNS-SD 広告開始: HTTP/HTTPS どちらかの listener が立っている場合のみ
+            if (IsListening) {
+                StartMdns(settings);
+            }
+        }
+
+        private void StartMdns(Settings settings) {
+            // 広告先ポートは HTTPS が立っていれば HTTPS、それ以外は HTTP
+            int port = settings.EnableHttps ? settings.HttpsPort : settings.ServerPort;
+            bool isHttps = settings.EnableHttps;
+            string fp = null;
+            if (isHttps) {
+                try {
+                    using (var cert = new X509Certificate2(
+                            settings.PfxPath, settings.PfxPassword,
+                            X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet)) {
+                        fp = ytplayer.common.CertificateGenerator.ComputeSha256Fingerprint(cert);
+                    }
+                } catch (Exception e) {
+                    LoggerEx.error(e);
+                }
+            }
+
+            mMdns = new MdnsAdvertiser();
+            try {
+                mMdns.Start(settings.EnsureServerName, port, isHttps, fp);
+                Source?.StandardOutput($"mDNS advertised: _bootube._tcp / {settings.EnsureServerName}");
+            } catch (Exception e) {
+                Source?.ErrorOutput($"mDNS advertise failed: {e.Message}");
+                LoggerEx.error(e);
+                mMdns.Dispose();
+                mMdns = null;
+            }
         }
 
         private bool StartOne(int port, X509Certificate2 cert, string label) {
@@ -107,6 +142,10 @@ namespace ytplayer.server {
         }
 
         public void Stop() {
+            if (mMdns != null) {
+                try { mMdns.Dispose(); } catch (Exception e) { LoggerEx.error(e); }
+                mMdns = null;
+            }
             foreach (var s in mServers) {
                 try { s.Stop(); } catch (Exception e) { LoggerEx.error(e); }
             }

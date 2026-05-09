@@ -28,6 +28,7 @@ namespace ytplayer.dialog {
         public ReactivePropertySlim<string> WebPageRoot { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<int> ServerPort { get; } = new ReactivePropertySlim<int>();
         public ReactivePropertySlim<bool> AcceptList { get; } = new ReactivePropertySlim<bool>();
+        public ReactivePropertySlim<string> ServerName { get; } = new ReactivePropertySlim<string>();
 
         // HTTPS / TLS
         public ReactivePropertySlim<bool> EnableHttps { get; } = new ReactivePropertySlim<bool>();
@@ -49,6 +50,7 @@ namespace ytplayer.dialog {
         public ReactiveCommand CommandWorkPath { get; } = new ReactiveCommand();
         public ReactiveCommand CommandPfxPath { get; } = new ReactiveCommand();
         public ReactiveCommand CommandGenerateCert { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandPairingQr { get; } = new ReactiveCommand();
 
         public ReactiveCommand OKCommand { get; } = new ReactiveCommand();
         public ReactiveCommand CancelCommand { get; } = new ReactiveCommand();
@@ -70,6 +72,7 @@ namespace ytplayer.dialog {
             WebPageRoot.Value = src.WebPageRoot;
             ServerPort.Value = src.ServerPort;
             AcceptList.Value = src.AcceptList;
+            ServerName.Value = src.ServerName;
             EnableHttps.Value = src.EnableHttps;
             HttpsPort.Value = src.HttpsPort;
             PfxPath.Value = src.PfxPath;
@@ -86,6 +89,7 @@ namespace ytplayer.dialog {
             CommandWorkPath.Subscribe(() => SelectFolder("Work Directory", WorkPath));
             CommandPfxPath.Subscribe(() => SelectPfxFile(PfxPath));
             CommandGenerateCert.Subscribe(() => GenerateCert());
+            CommandPairingQr.Subscribe(() => ShowPairingQr());
 
             OKCommand.Subscribe(() => {
                 ErrorMessage.Value = Validate();
@@ -125,6 +129,27 @@ namespace ytplayer.dialog {
                 }
                 path.Value = r;
             }
+        }
+
+        private void ShowPairingQr() {
+            // ペアリング QR は Settings.Instance を読むので、編集中の値が QR に反映されるよう
+            // バリデーション通過時のみ事前保存してから開く。
+            var err = Validate();
+            if (!string.IsNullOrEmpty(err)) {
+                ErrorMessage.Value = err;
+                return;
+            }
+            ErrorMessage.Value = "";
+            SaveSettings();
+
+            var dlg = PairingQrDialog.CreateFromSettings(Owner);
+            if (dlg == null) {
+                MessageBox.Show(Owner,
+                    "Enable the server first (and HTTPS recommended) before showing pairing QR.",
+                    "Pairing QR", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            dlg.ShowDialog();
         }
 
         private void GenerateCert() {
@@ -254,6 +279,7 @@ namespace ytplayer.dialog {
             dst.ServerPort = ServerPort.Value;
             dst.AcceptList = AcceptList.Value;
             dst.WebPageRoot = WebPageRoot.Value;
+            dst.ServerName = ServerName.Value;
             dst.EnableHttps = EnableHttps.Value;
             dst.HttpsPort = HttpsPort.Value;
             dst.PfxPath = PfxPath.Value;

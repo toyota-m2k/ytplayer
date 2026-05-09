@@ -12,6 +12,17 @@ namespace ytplayer.common {
     public static class CertificateGenerator {
 
         /// <summary>
+        /// 証明書の SHA-256 フィンガープリントを "AB:CD:..." 形式で返す。
+        /// mDNS TXT レコードや UI 表示で使う。
+        /// </summary>
+        public static string ComputeSha256Fingerprint(X509Certificate2 cert) {
+            using (var sha = SHA256.Create()) {
+                var hash = sha.ComputeHash(cert.RawData);
+                return BitConverter.ToString(hash).Replace("-", ":");
+            }
+        }
+
+        /// <summary>
         /// アクティブなネットワークインタフェース上の IPv4 アドレスを列挙する（ループバック除く）。
         /// </summary>
         public static IEnumerable<IPAddress> GetLocalIPv4Addresses() {

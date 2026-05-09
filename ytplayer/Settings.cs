@@ -24,6 +24,12 @@ namespace ytplayer {
         public string WebPageRoot { get; set; } = "";
         public int ServerPort { get; set; } = 3500;
         public string SyncPeer { get; set; } = "";
+        // mDNS/NSD でクライアントから見えるサーバ名。空ならマシン名を使う。
+        public string ServerName { get; set; } = "";
+
+        [System.Xml.Serialization.XmlIgnore]
+        public string EnsureServerName =>
+            string.IsNullOrWhiteSpace(ServerName) ? Environment.MachineName : ServerName;
 
         // HTTPS / TLS
         public bool EnableHttps { get; set; } = false;
