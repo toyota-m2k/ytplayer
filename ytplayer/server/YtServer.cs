@@ -77,6 +77,14 @@ namespace ytplayer.server {
             if (startHttps) {
                 X509Certificate2 cert = null;
                 try {
+                    // MachineKeySet | PersistKeySet:
+                    //   .NET FW 4.8 + SChannel ベースの SslStream は CAPI 鍵コンテナを要求するため、
+                    //   EphemeralKeySet (CNG メモリ鍵) では TLS ハンドシェイクが失敗するケースあり。
+                    //   そのため互換性優先で MachineKeySet 系を維持している。
+                    //   副作用として C:\ProgramData\Microsoft\Crypto\RSA\MachineKeys\ に key
+                    //   コンテナファイルが少しずつ蓄積するが ACL で保護されており実害なし。
+                    //   MSIX サンドボックス下 (SecureArchive) では Access denied になるため、
+                    //   そちらは EphemeralKeySet を採用している。
                     cert = new X509Certificate2(
                         settings.PfxPath,
                         settings.PfxPassword,

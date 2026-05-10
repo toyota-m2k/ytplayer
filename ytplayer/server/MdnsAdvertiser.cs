@@ -61,6 +61,9 @@ namespace ytplayer.server {
                     "version=2",
                     isHttps ? "https=1" : "https=0",
                     "app=" + AppId,
+                    // クライアント側の表示用に「hostname.local」も TXT に乗せる。
+                    // (NsdManager は SRV ターゲット名を露出しないので、自前で TXT に入れる)
+                    "hostname=" + _hostLocal,
                 };
                 if (!string.IsNullOrEmpty(fingerprint)) {
                     _txt.Add("fp=" + fingerprint);
