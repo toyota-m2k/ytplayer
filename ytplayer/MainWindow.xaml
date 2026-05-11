@@ -121,6 +121,7 @@
                             -->
                             <MenuItem Header="Import Video Files" Command="{Binding CommandImportFiles}"/>
                             <MenuItem Header="Move Files" Command="{Binding CommandMoveItems}"/>
+                            <MenuItem Header="Pairing QR Code" Command="{Binding PairingQRCodeCommand}"/>
                         </ContextMenu>
                     </common:MenuButton.DropDownMenu>
                 </common:MenuButton>

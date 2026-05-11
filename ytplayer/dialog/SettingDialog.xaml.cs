@@ -42,7 +42,8 @@ namespace ytplayer.dialog {
         public ReactivePropertySlim<int> HttpsPort { get; } = new ReactivePropertySlim<int>();
         public ReactivePropertySlim<string> PfxPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> PfxPassword { get; } = new ReactivePropertySlim<string>();
-        public ReactivePropertySlim<bool> HttpsOnly { get; } = new ReactivePropertySlim<bool>();
+
+        public ReactivePropertySlim<bool> EnableMDnsAdvertizing { get; } = new ReactivePropertySlim<bool>();
 
         public ReactivePropertySlim<string> ErrorMessage { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<bool> Cancellable { get; } = new ReactivePropertySlim<bool>(true);
@@ -57,7 +58,7 @@ namespace ytplayer.dialog {
         public ReactiveCommand CommandWorkPath { get; } = new ReactiveCommand();
         public ReactiveCommand CommandPfxPath { get; } = new ReactiveCommand();
         public ReactiveCommand CommandGenerateCert { get; } = new ReactiveCommand();
-        public ReactiveCommand CommandPairingQr { get; } = new ReactiveCommand();
+        //public ReactiveCommand CommandPairingQr { get; } = new ReactiveCommand();
 
         public ReactiveCommand OKCommand { get; } = new ReactiveCommand();
         public ReactiveCommand CancelCommand { get; } = new ReactiveCommand();
@@ -84,6 +85,7 @@ namespace ytplayer.dialog {
             HttpsPort.Value = src.HttpsPort;
             PfxPath.Value = src.PfxPath;
             PfxPassword.Value = src.PfxPassword;
+            EnableMDnsAdvertizing.Value = src.EnableMDnsAdvertizing;
 
             CanUpdateYTD = YoutubeDLPath.Select((v) => PathUtil.isFile(System.IO.Path.Combine(v, YtpDef.YTDLP_EXE))).ToReadOnlyReactivePropertySlim();
 
@@ -95,7 +97,7 @@ namespace ytplayer.dialog {
             CommandWorkPath.Subscribe(() => SelectFolder("Work Directory", WorkPath));
             CommandPfxPath.Subscribe(() => SelectPfxFile(PfxPath));
             CommandGenerateCert.Subscribe(() => GenerateCert());
-            CommandPairingQr.Subscribe(() => ShowPairingQr());
+            //CommandPairingQr.Subscribe(() => ShowPairingQr());
 
             OKCommand.Subscribe(() => {
                 ErrorMessage.Value = Validate();
@@ -138,26 +140,26 @@ namespace ytplayer.dialog {
             }
         }
 
-        private void ShowPairingQr() {
-            // ペアリング QR は Settings.Instance を読むので、編集中の値が QR に反映されるよう
-            // バリデーション通過時のみ事前保存してから開く。
-            var err = Validate();
-            if (!string.IsNullOrEmpty(err)) {
-                ErrorMessage.Value = err;
-                return;
-            }
-            ErrorMessage.Value = "";
-            SaveSettings();
+        //private void ShowPairingQr() {
+        //    // ペアリング QR は Settings.Instance を読むので、編集中の値が QR に反映されるよう
+        //    // バリデーション通過時のみ事前保存してから開く。
+        //    var err = Validate();
+        //    if (!string.IsNullOrEmpty(err)) {
+        //        ErrorMessage.Value = err;
+        //        return;
+        //    }
+        //    ErrorMessage.Value = "";
+        //    SaveSettings();
 
-            var dlg = PairingQrDialog.CreateFromSettings(Owner);
-            if (dlg == null) {
-                MessageBox.Show(Owner,
-                    "Enable the server first (and HTTPS recommended) before showing pairing QR.",
-                    "Pairing QR", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-            dlg.ShowDialog();
-        }
+        //    var dlg = PairingQrDialog.CreateFromSettings(Owner);
+        //    if (dlg == null) {
+        //        MessageBox.Show(Owner,
+        //            "Enable the server first (and HTTPS recommended) before showing pairing QR.",
+        //            "Pairing QR", MessageBoxButton.OK, MessageBoxImage.Information);
+        //        return;
+        //    }
+        //    dlg.ShowDialog();
+        //}
 
         private void GenerateCert() {
             var dlg = new GenerateCertDialog(PfxPath.Value, PfxPassword.Value) { Owner = Owner };
@@ -294,6 +296,7 @@ namespace ytplayer.dialog {
             dst.HttpsPort = HttpsPort.Value;
             dst.PfxPath = PfxPath.Value;
             dst.PfxPassword = PfxPassword.Value;
+            dst.EnableMDnsAdvertizing = EnableMDnsAdvertizing.Value;
             dst.Serialize();
             dst.ApplyEnvironment();
         }

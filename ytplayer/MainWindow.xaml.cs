@@ -105,6 +105,8 @@ namespace ytplayer {
         public ReactiveCommand EditNameCommand { get; } = new ReactiveCommand();
         public ReactiveCommand CopyVideoPathCommand { get; } = new ReactiveCommand();
 
+        public ReactiveCommand PairingQRCodeCommand { get; } = new ReactiveCommand();
+
         // Dialog
         public abstract class DialogViewModel: ViewModelBase {
             public virtual bool CheckBeforeOk() { return true; }
@@ -398,7 +400,7 @@ namespace ytplayer {
             viewModel.EditDescriptionCommand.Subscribe(EditDescription);
             viewModel.EditNameCommand.Subscribe(EditName);
             viewModel.CopyVideoPathCommand.Subscribe(CopyVideoPath);
-
+            viewModel.PairingQRCodeCommand.Subscribe(PairingQRCode);
             viewModel.ShowFilterEditor.Subscribe((v) => {
                 if (v) {
                     ShowFilterEditorWindow();
@@ -1139,6 +1141,17 @@ namespace ytplayer {
             if (path != null) {
                 Clipboard.SetDataObject(path);
             }
+        }
+
+        private void PairingQRCode() {
+            var dlg = PairingQrDialog.CreateFromSettings(Owner);
+            if (dlg == null) {
+                MessageBox.Show(Owner,
+                    "Enable the server first (and HTTPS recommended) before showing pairing QR.",
+                    "Pairing QR", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            dlg.ShowDialog();
         }
 
 

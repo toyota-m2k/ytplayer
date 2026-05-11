@@ -10,6 +10,8 @@ using static io.github.toyota32k.toolkit.utils.PathUtil;
 
 namespace ytplayer {
     public class Settings {
+        static readonly string AppName = "BooTube";
+
         public WinPlacement Placement { get; set; } = new WinPlacement();
         public WinPlacement PlayerPlacement { get; set; } = new WinPlacement();
         public WinPlacement BrowserPlacement { get; set; } = new WinPlacement();
@@ -23,7 +25,7 @@ namespace ytplayer {
         public string WebPageRoot { get; set; } = "";
         public string SyncPeer { get; set; } = "";
         // mDNS/NSD でクライアントから見えるサーバ名。空ならマシン名を使う。
-        public string ServerName { get; set; } = "BooTube";
+        public string ServerName { get; set; } = AppName;
 
         [System.Xml.Serialization.XmlIgnore]
         public string EnsureServerName =>
@@ -37,7 +39,8 @@ namespace ytplayer {
         public string PfxPath { get; set; } = "";
         // PFXパスワードはDPAPI(CurrentUser)で暗号化してBase64で保存する。生のパスワードは settings.xml に書き出さない。
         public string PfxPasswordEncrypted { get; set; } = "";
-
+        // mDNSのAdvertizing を有効化するか？
+        public bool EnableMDnsAdvertizing { get; set; } = true;
         [System.Xml.Serialization.XmlIgnore]
         public bool ServerEnabled => EnableHttp || EnableHttps;
 
