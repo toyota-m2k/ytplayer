@@ -66,13 +66,13 @@ namespace ytplayer.server {
             if (IsListening) return;
 
             var settings = Settings.Instance;
-            // HTTP listener: HTTPS-Only でなければ立てる
-            bool startHttp = !(settings.EnableHttps && settings.HttpsOnly);
+            // HTTP listener: EnableHttp が立っていれば立てる
+            bool startHttp = settings.EnableHttp;
             // HTTPS listener: EnableHttps が立っていれば立てる
             bool startHttps = settings.EnableHttps;
 
             if (startHttp) {
-                StartOne(settings.ServerPort, null, "HTTP");
+                StartOne(settings.HttpPort, null, "HTTP");
             }
             if (startHttps) {
                 X509Certificate2 cert = null;
@@ -109,8 +109,9 @@ namespace ytplayer.server {
         }
 
         private void StartMdns(Settings settings) {
+            return;
             // 広告先ポートは HTTPS が立っていれば HTTPS、それ以外は HTTP
-            int port = settings.EnableHttps ? settings.HttpsPort : settings.ServerPort;
+            int port = settings.EnableHttps ? settings.HttpsPort : settings.HttpPort;
             bool isHttps = settings.EnableHttps;
             string fp = null;
             if (isHttps) {

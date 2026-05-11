@@ -110,9 +110,9 @@ namespace ytplayer.dialog {
         /// </summary>
         public static PairingQrDialog CreateFromSettings(Window owner) {
             var s = Settings.Instance;
-            if (!s.EnableServer) return null;
+            if (!s.ServerEnabled) return null;
 
-            int port = s.EnableHttps ? s.HttpsPort : s.ServerPort;
+            int port = s.EnableHttps ? s.HttpsPort : s.HttpPort;
             string fp = "";
             if (s.EnableHttps) {
                 try {

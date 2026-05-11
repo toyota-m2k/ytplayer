@@ -476,7 +476,7 @@ namespace ytplayer {
 
         private void StartServer() {
             StopServer();
-            if (Settings.Instance.EnableServer && mServer==null) {
+            if (Settings.Instance.ServerEnabled && mServer==null) {
                 mServer = new YtServer(this);
                 mServer.Start();
             }
@@ -1099,7 +1099,12 @@ namespace ytplayer {
         private void PlayInWebBrower() {
             var id = SelectedEntry?.Id;
             if (id != null) {
-                Process.Start($"http://localhost:{Settings.Instance.ServerPort}/ytplayer/video?id={id}");
+                if (Settings.Instance.EnableHttp) {
+                    Process.Start($"http://localhost:{Settings.Instance.HttpPort}/ytplayer/video?id={id}");
+                }
+                else {
+                    Process.Start($"https://localhost:{Settings.Instance.HttpsPort}/ytplayer/video?id={id}");
+                }
             }
         }
 

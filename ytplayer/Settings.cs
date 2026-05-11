@@ -20,24 +20,29 @@ namespace ytplayer {
         public string VideoPath { get; set; } = "";
         public string AudioPath { get; set; } = "";
         public string WorkPath { get; set; } = "";          // 無音抽出用Wavファイル作成先
-        public bool EnableServer { get; set; } = false;
         public string WebPageRoot { get; set; } = "";
-        public int ServerPort { get; set; } = 3500;
         public string SyncPeer { get; set; } = "";
         // mDNS/NSD でクライアントから見えるサーバ名。空ならマシン名を使う。
-        public string ServerName { get; set; } = "";
+        public string ServerName { get; set; } = "BooTube";
 
         [System.Xml.Serialization.XmlIgnore]
         public string EnsureServerName =>
             string.IsNullOrWhiteSpace(ServerName) ? Environment.MachineName : ServerName;
 
         // HTTPS / TLS
+        public bool EnableHttp { get; set; } = false;
         public bool EnableHttps { get; set; } = false;
         public int HttpsPort { get; set; } = 3501;
+        public int HttpPort { get; set; } = 3500;
         public string PfxPath { get; set; } = "";
         // PFXパスワードはDPAPI(CurrentUser)で暗号化してBase64で保存する。生のパスワードは settings.xml に書き出さない。
         public string PfxPasswordEncrypted { get; set; } = "";
-        public bool HttpsOnly { get; set; } = false;
+
+        [System.Xml.Serialization.XmlIgnore]
+        public bool ServerEnabled => EnableHttp || EnableHttps;
+
+        //[System.Xml.Serialization.XmlIgnore]
+        //public bool HttpsOnly => EnableHttps && !EnableHttps;
 
         [System.Xml.Serialization.XmlIgnore]
         public string PfxPassword {

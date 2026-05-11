@@ -24,11 +24,18 @@ namespace ytplayer.dialog {
         public ReactivePropertySlim<string> VideoPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> AudioPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> WorkPath { get; } = new ReactivePropertySlim<string>();
-        public ReactivePropertySlim<bool> EnableServer { get; } = new ReactivePropertySlim<bool>();
-        public ReactivePropertySlim<string> WebPageRoot { get; } = new ReactivePropertySlim<string>();
-        public ReactivePropertySlim<int> ServerPort { get; } = new ReactivePropertySlim<int>();
+
+
         public ReactivePropertySlim<bool> AcceptList { get; } = new ReactivePropertySlim<bool>();
+        public ReactivePropertySlim<string> WebPageRoot { get; } = new ReactivePropertySlim<string>();
+
+
+        //public ReactivePropertySlim<bool> EnableServer { get; } = new ReactivePropertySlim<bool>();
         public ReactivePropertySlim<string> ServerName { get; } = new ReactivePropertySlim<string>();
+
+        public ReactivePropertySlim<bool> EnableHttp { get; } = new ReactivePropertySlim<bool>();
+        public ReactivePropertySlim<int> HttpPort { get; } = new ReactivePropertySlim<int>();
+        public ReadOnlyReactivePropertySlim<bool> ServerEnabled { get; }
 
         // HTTPS / TLS
         public ReactivePropertySlim<bool> EnableHttps { get; } = new ReactivePropertySlim<bool>();
@@ -68,16 +75,15 @@ namespace ytplayer.dialog {
             VideoPath.Value = src.VideoPath;
             AudioPath.Value = src.AudioPath;
             WorkPath.Value = src.WorkPath;
-            EnableServer.Value = src.EnableServer;
             WebPageRoot.Value = src.WebPageRoot;
-            ServerPort.Value = src.ServerPort;
+            EnableHttp.Value = src.EnableHttp;
+            HttpPort.Value = src.HttpPort;
             AcceptList.Value = src.AcceptList;
             ServerName.Value = src.ServerName;
             EnableHttps.Value = src.EnableHttps;
             HttpsPort.Value = src.HttpsPort;
             PfxPath.Value = src.PfxPath;
             PfxPassword.Value = src.PfxPassword;
-            HttpsOnly.Value = src.HttpsOnly;
 
             CanUpdateYTD = YoutubeDLPath.Select((v) => PathUtil.isFile(System.IO.Path.Combine(v, YtpDef.YTDLP_EXE))).ToReadOnlyReactivePropertySlim();
 
@@ -101,6 +107,7 @@ namespace ytplayer.dialog {
             });
             CancelCommand.Subscribe(() => Completed.Execute(false));
             UpdateCommand.Subscribe(UpdateYTD);
+            ServerEnabled = Observable.CombineLatest(EnableHttp, EnableHttps, (http, https) => http || https).ToReadOnlyReactivePropertySlim();
         }
 
         private void SelectFolder(string title, ReactivePropertySlim<string> path) {
@@ -237,6 +244,11 @@ namespace ytplayer.dialog {
             }
 
             if (EnableHttps.Value) {
+                if (EnableHttp.Value) {
+                    if (HttpPort.Value == HttpsPort.Value) {
+                        return "Same port for HTTP/HTTPS";
+                    }
+                }
                 if (string.IsNullOrEmpty(PfxPath.Value) || !PathUtil.isFile(PfxPath.Value)) {
                     return "PFX file is not found.";
                 }
@@ -250,9 +262,7 @@ namespace ytplayer.dialog {
                 } catch (Exception) {
                     return "Cannot open PFX file (wrong password?).";
                 }
-                if (!HttpsOnly.Value && ServerPort.Value == HttpsPort.Value) {
-                    return "HTTP port and HTTPS port must differ.";
-                }
+
             }
 
             Console.WriteLine($"Current: {Owner.CurrentStorage?.DBPath}");
@@ -275,16 +285,15 @@ namespace ytplayer.dialog {
             dst.VideoPath = VideoPath.Value;
             dst.AudioPath = AudioPath.Value;
             dst.WorkPath = WorkPath.Value;
-            dst.EnableServer = EnableServer.Value;
-            dst.ServerPort = ServerPort.Value;
             dst.AcceptList = AcceptList.Value;
             dst.WebPageRoot = WebPageRoot.Value;
+            dst.EnableHttp = EnableHttp.Value;
+            dst.HttpPort = HttpPort.Value;
             dst.ServerName = ServerName.Value;
             dst.EnableHttps = EnableHttps.Value;
             dst.HttpsPort = HttpsPort.Value;
             dst.PfxPath = PfxPath.Value;
             dst.PfxPassword = PfxPassword.Value;
-            dst.HttpsOnly = HttpsOnly.Value;
             dst.Serialize();
             dst.ApplyEnvironment();
         }
