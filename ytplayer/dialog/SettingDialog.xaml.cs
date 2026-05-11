@@ -85,7 +85,7 @@ namespace ytplayer.dialog {
             HttpsPort.Value = src.HttpsPort;
             PfxPath.Value = src.PfxPath;
             PfxPassword.Value = src.PfxPassword;
-            EnableMDnsAdvertizing.Value = src.EnableMDnsAdvertizing;
+            EnableMDnsAdvertizing.Value = src.EnableMdnAdvertizing;
 
             CanUpdateYTD = YoutubeDLPath.Select((v) => PathUtil.isFile(System.IO.Path.Combine(v, YtpDef.YTDLP_EXE))).ToReadOnlyReactivePropertySlim();
 
@@ -296,7 +296,7 @@ namespace ytplayer.dialog {
             dst.HttpsPort = HttpsPort.Value;
             dst.PfxPath = PfxPath.Value;
             dst.PfxPassword = PfxPassword.Value;
-            dst.EnableMDnsAdvertizing = EnableMDnsAdvertizing.Value;
+            dst.EnableMdnAdvertizing = EnableMDnsAdvertizing.Value;
             dst.Serialize();
             dst.ApplyEnvironment();
         }

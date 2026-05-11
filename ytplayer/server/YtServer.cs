@@ -109,7 +109,7 @@ namespace ytplayer.server {
         }
 
         private void StartMdns(Settings settings) {
-            if (!Settings.Instance.EnableMDnsAdvertizing) return;
+            if (!Settings.Instance.EnableMdnAdvertizing) return;
 
             // 広告先ポートは HTTPS が立っていれば HTTPS、それ以外は HTTP
             int port = settings.EnableHttps ? settings.HttpsPort : settings.HttpPort;

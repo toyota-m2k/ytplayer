@@ -40,7 +40,7 @@ namespace ytplayer {
         // PFXパスワードはDPAPI(CurrentUser)で暗号化してBase64で保存する。生のパスワードは settings.xml に書き出さない。
         public string PfxPasswordEncrypted { get; set; } = "";
         // mDNSのAdvertizing を有効化するか？
-        public bool EnableMDnsAdvertizing { get; set; } = true;
+        public bool EnableMdnAdvertizing { get; set; } = true;
         [System.Xml.Serialization.XmlIgnore]
         public bool ServerEnabled => EnableHttp || EnableHttps;
 
