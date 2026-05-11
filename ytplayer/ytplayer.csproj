@@ -305,6 +305,10 @@
     <Compile Include="server\lib\model\Route.cs" />
     <Compile Include="server\lib\QueryParser.cs" />
     <Compile Include="server\MdnsAdvertiser.cs" />
+    <Compile Include="server\MdnsBrowser.cs" />
+    <Compile Include="server\MdnsCommon.cs" />
+    <Compile Include="server\DiscoveredPeer.cs" />
+    <Compile Include="data\PeerEndpoint.cs" />
     <Compile Include="server\YtServer.cs" />
     <Compile Include="Sorter.cs" />
     <Compile Include="data\Category.cs" />

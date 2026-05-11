@@ -25,6 +25,8 @@ using ytplayer.download.downloader.impl;
 using ytplayer.interop;
 using ytplayer.player;
 using ytplayer.server;
+using System.Security.Cryptography.X509Certificates;
+using System.Reactive.Linq;
 using static ytplayer.data.SyncManager;
 
 namespace ytplayer {
@@ -186,18 +188,90 @@ namespace ytplayer {
         public class SyncDialogViewModel : DialogViewModel {
             public override DialogTypeId Type => DialogTypeId.SYNC_FROM;
             public ReactiveProperty<string> HostAddress { get; } = new ReactiveProperty<string>();
-        }
-        public SyncDialogViewModel SyncDialog { get; } = new SyncDialogViewModel();
-        public async Task<bool> ShowSyncDialog() {
-            if (string.IsNullOrEmpty(SyncDialog.HostAddress.Value)) {
-                SyncDialog.HostAddress.Value = Settings.Instance.SyncPeer;
+            public ReactiveProperty<bool> UseHttps { get; } = new ReactiveProperty<bool>(false);
+            public ReactiveProperty<string> Fingerprint { get; } = new ReactiveProperty<string>("");
+            public ReactivePropertySlim<bool> IsScanning { get; } = new ReactivePropertySlim<bool>(false);
+
+            // Browser に渡す discovery 結果コレクション (参照は不変)。
+            public ObservableCollection<DiscoveredPeer> DiscoveredPeers { get; }
+                = new ObservableCollection<DiscoveredPeer>();
+            public ReactiveProperty<DiscoveredPeer> SelectedPeer { get; } = new ReactiveProperty<DiscoveredPeer>();
+            public ReactiveCommand RescanCommand { get; } = new ReactiveCommand();
+
+            private IDisposable _selSubscription;
+            private IDisposable _rescanSubscription;
+            private IDisposable _scanIndicatorSubscription;
+
+            public void AttachBrowser(MdnsBrowser browser) {
+                _selSubscription?.Dispose();
+                _selSubscription = SelectedPeer.Subscribe(p => {
+                    if (p == null) return;
+                    string host = p.Addresses.Count > 0
+                        ? p.Addresses[0].ToString()
+                        : (p.Hostname ?? "").TrimEnd('.');
+                    HostAddress.Value = $"{host}:{p.Port}";
+                    UseHttps.Value = p.IsHttps;
+                    Fingerprint.Value = p.Fingerprint ?? "";
+                });
+                _rescanSubscription?.Dispose();
+                _rescanSubscription = RescanCommand.Subscribe(() => {
+                    IsScanning.Value = true;
+                    browser.Rescan();
+                    _scanIndicatorSubscription?.Dispose();
+                    _scanIndicatorSubscription = Observable.Timer(TimeSpan.FromSeconds(3))
+                        .ObserveOnDispatcher()
+                        .Subscribe(_ => IsScanning.Value = false);
+                });
+                // 初回スキャン表示
+                IsScanning.Value = true;
+                _scanIndicatorSubscription = Observable.Timer(TimeSpan.FromSeconds(5))
+                    .ObserveOnDispatcher()
+                    .Subscribe(_ => IsScanning.Value = false);
             }
 
-            if (await ShowDialog(SyncDialog, "Synchronization")) {
-                Settings.Instance.SyncPeer = SyncDialog.HostAddress.Value;
+            public void DetachBrowser() {
+                _selSubscription?.Dispose(); _selSubscription = null;
+                _rescanSubscription?.Dispose(); _rescanSubscription = null;
+                _scanIndicatorSubscription?.Dispose(); _scanIndicatorSubscription = null;
+                DiscoveredPeers.Clear();
+                SelectedPeer.Value = null;
+                IsScanning.Value = false;
+            }
+
+            public override bool CheckBeforeOk() {
+                if (string.IsNullOrWhiteSpace(HostAddress.Value)) return false;
+                // HTTPS 選択時は指紋必須 (mDNS で選んだピアなら自動入力される)
+                if (UseHttps.Value && string.IsNullOrWhiteSpace(Fingerprint.Value)) return false;
                 return true;
             }
-            return false;
+        }
+        public SyncDialogViewModel SyncDialog { get; } = new SyncDialogViewModel();
+        public async Task<bool> ShowSyncDialog(Dispatcher uiDispatcher, string selfFingerprint) {
+            if (string.IsNullOrEmpty(SyncDialog.HostAddress.Value)) {
+                SyncDialog.HostAddress.Value = Settings.Instance.SyncPeer;
+                SyncDialog.UseHttps.Value = Settings.Instance.SyncUseHttps;
+                SyncDialog.Fingerprint.Value = Settings.Instance.SyncPeerFingerprint ?? "";
+            }
+
+            using (var browser = new MdnsBrowser(uiDispatcher, SyncDialog.DiscoveredPeers)) {
+                SyncDialog.AttachBrowser(browser);
+                try {
+                    browser.Start(selfFingerprint);
+                } catch (Exception e) {
+                    LoggerEx.error(e);
+                }
+                try {
+                    if (await ShowDialog(SyncDialog, "Synchronization")) {
+                        Settings.Instance.SyncPeer = SyncDialog.HostAddress.Value;
+                        Settings.Instance.SyncUseHttps = SyncDialog.UseHttps.Value;
+                        Settings.Instance.SyncPeerFingerprint = SyncDialog.Fingerprint.Value ?? "";
+                        return true;
+                    }
+                    return false;
+                } finally {
+                    SyncDialog.DetachBrowser();
+                }
+            }
         }
 
         public class MoveItemsViewModel : DialogViewModel {
@@ -730,10 +804,35 @@ namespace ytplayer {
             }
         }
         private async void SyncFrom() {
-            if (await viewModel.ShowSyncDialog()) {
+            string selfFp = ComputeSelfFingerprint();
+            if (await viewModel.ShowSyncDialog(Dispatcher, selfFp)) {
+                var vm = viewModel.SyncDialog;
+                var defaultPort = vm.UseHttps.Value ? Settings.Instance.HttpsPort : Settings.Instance.HttpPort;
+                var peer = PeerEndpoint.FromUserInput(vm.HostAddress.Value, defaultPort, vm.UseHttps.Value, vm.Fingerprint.Value);
                 using (viewModel.ActivateProgress("Synchronizing Data", this)) {
-                    await SyncManager.SyncFrom(viewModel.SyncDialog.HostAddress.Value, Storage, this, viewModel.Progress);
+                    await SyncManager.SyncFrom(peer, Storage, this, viewModel.Progress);
                 }
+            }
+        }
+
+        /// <summary>
+        /// 自身がサーバとして HTTPS で listen している場合に、その証明書 SHA-256 指紋を返す。
+        /// mDNS Browser で「自分」を discovery 結果から除外するために使う。
+        /// listen していない場合は null。
+        /// </summary>
+        private static string ComputeSelfFingerprint() {
+            try {
+                var s = Settings.Instance;
+                if (!s.EnableHttps) return null;
+                if (string.IsNullOrEmpty(s.PfxPath) || !File.Exists(s.PfxPath)) return null;
+                using (var cert = new X509Certificate2(
+                        s.PfxPath, s.PfxPassword,
+                        X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet)) {
+                    return CertificateGenerator.ComputeSha256Fingerprint(cert);
+                }
+            } catch (Exception e) {
+                LoggerEx.error(e);
+                return null;
             }
         }
         private async void MoveItems() {

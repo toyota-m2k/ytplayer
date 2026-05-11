@@ -24,6 +24,10 @@ namespace ytplayer {
         public string WorkPath { get; set; } = "";          // 無音抽出用Wavファイル作成先
         public string WebPageRoot { get; set; } = "";
         public string SyncPeer { get; set; } = "";
+        // Sync 接続時に HTTPS を使うか (mDNS discovery でピアを選択した場合は自動で上書きされる)。
+        public bool SyncUseHttps { get; set; } = false;
+        // HTTPS Sync 時の期待サーバ証明書 SHA-256 フィンガープリント (pin-to-fingerprint)。
+        public string SyncPeerFingerprint { get; set; } = "";
         // mDNS/NSD でクライアントから見えるサーバ名。空ならマシン名を使う。
         public string ServerName { get; set; } = AppName;
 

@@ -23,16 +23,13 @@ namespace ytplayer.server {
     /// 参考: RFC 6762 (mDNS), RFC 6763 (DNS-SD)
     /// </summary>
     public class MdnsAdvertiser : IDisposable {
-        // 全 BooTube プロトコル互換アプリ (winui-secure-archive 等) で共用するサービスタイプ。
-        // アプリ識別は TXT の "app=bootube" / "app=archive" 等で行う。詳細は docs/mdns.md 参照。
-        public const string ServiceType = "_booapi._tcp";
-        // このアプリ識別子 (TXT app=...)。同 LAN に他 BooAPI 互換アプリがいる場合の識別用。
-        public const string AppId = "bootube";
-        private const int MdnsPort = 5353;
+        // サービスタイプ / アプリ識別子は MdnsCommon に集約 (Browser と共通)。
+        // 既存外部参照のため public エイリアスを残しておく。
+        public const string ServiceType = MdnsCommon.ServiceType;
+        public const string AppId = MdnsCommon.AppId;
         private const uint TtlAnnouncement = 120;   // RFC 6762 推奨: 2 分
         private const uint TtlHostAddress = 120;
         private const int AnnounceIntervalMs = 30000;
-        private static readonly IPAddress MulticastV4 = IPAddress.Parse("224.0.0.251");
 
         private readonly LoggerEx logger = new LoggerEx("MDNS");
 
@@ -106,30 +103,22 @@ namespace ytplayer.server {
         // ---- Sockets ----------------------------------------------------------------------
 
         private void BindSockets() {
-            foreach (var nic in NetworkInterface.GetAllNetworkInterfaces()) {
-                if (nic.OperationalStatus != OperationalStatus.Up) continue;
-                if (nic.NetworkInterfaceType == NetworkInterfaceType.Loopback) continue;
-                if (!nic.SupportsMulticast) continue;
-                var ipProps = nic.GetIPProperties();
-                foreach (var ua in ipProps.UnicastAddresses) {
-                    if (ua.Address.AddressFamily != AddressFamily.InterNetwork) continue;
-                    if (IPAddress.IsLoopback(ua.Address)) continue;
-                    UdpClient sock = null;
-                    try {
-                        sock = new UdpClient(AddressFamily.InterNetwork);
-                        sock.ExclusiveAddressUse = false;
-                        sock.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        sock.Client.Bind(new IPEndPoint(ua.Address, MdnsPort));
-                        sock.JoinMulticastGroup(MulticastV4, ua.Address);
-                        sock.MulticastLoopback = false;
-                        _sockets.Add(sock);
-                        logger.debug($"mDNS bound on {ua.Address}");
-                        var s = sock;
-                        Task.Run(() => ListenLoop(s, _cts.Token));
-                    } catch (Exception e) {
-                        logger.error($"mDNS bind on {ua.Address} failed: {e.Message}");
-                        try { sock?.Close(); } catch { }
-                    }
+            foreach (var addr in MdnsCommon.EnumerateMulticastV4Addresses()) {
+                UdpClient sock = null;
+                try {
+                    sock = new UdpClient(AddressFamily.InterNetwork);
+                    sock.ExclusiveAddressUse = false;
+                    sock.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                    sock.Client.Bind(new IPEndPoint(addr, MdnsCommon.MdnsPort));
+                    sock.JoinMulticastGroup(MdnsCommon.MulticastV4, addr);
+                    sock.MulticastLoopback = false;
+                    _sockets.Add(sock);
+                    logger.debug($"mDNS bound on {addr}");
+                    var s = sock;
+                    Task.Run(() => ListenLoop(s, _cts.Token));
+                } catch (Exception e) {
+                    logger.error($"mDNS bind on {addr} failed: {e.Message}");
+                    try { sock?.Close(); } catch { }
                 }
             }
         }
@@ -175,13 +164,13 @@ namespace ytplayer.server {
             bool needRespond = false;
             for (int i = 0; i < qdcount; i++) {
                 string qname;
-                if (!TryReadName(buffer, ref offset, out qname)) return;
+                if (!MdnsCommon.TryReadName(buffer, ref offset, out qname)) return;
                 if (offset + 4 > buffer.Length) return;
                 int qtype = (buffer[offset] << 8) | buffer[offset + 1];
                 offset += 4; // type + class
 
                 string lower = qname.ToLowerInvariant();
-                if (qtype == 12 && lower == ServiceType + ".local.") needRespond = true;             // PTR for service browse
+                if (qtype == 12 && lower == MdnsCommon.ServiceType + ".local.") needRespond = true;  // PTR for service browse
                 else if (qtype == 12 && lower == "_services._dns-sd._udp.local.") needRespond = true; // service enumeration
                 else if (lower == InstanceFqdn().ToLowerInvariant() && (qtype == 33 || qtype == 16 || qtype == 255)) needRespond = true;
                 else if (lower == HostFqdn().ToLowerInvariant() && (qtype == 1 || qtype == 255)) needRespond = true;
@@ -210,7 +199,7 @@ namespace ytplayer.server {
 
         private void SendOnSocket(UdpClient sock, byte[] packet) {
             try {
-                sock.Send(packet, packet.Length, new IPEndPoint(MulticastV4, MdnsPort));
+                sock.Send(packet, packet.Length, new IPEndPoint(MdnsCommon.MulticastV4, MdnsCommon.MdnsPort));
             } catch (ObjectDisposedException) {
                 // socket already closed
             } catch (Exception e) {
@@ -223,7 +212,7 @@ namespace ytplayer.server {
         // FQDN 表記で末尾ドット付きに揃える。
         // DNS パケットから TryReadName で取り出したクエリ名も末尾ドット付きなので、比較が一致するようにするため。
         // WriteName は末尾の空ラベルを skip するので、ドット付き/無しどちらでも生成バイト列は同じ。
-        private string InstanceFqdn() => _instance + "." + ServiceType + ".local.";
+        private string InstanceFqdn() => _instance + "." + MdnsCommon.ServiceType + ".local.";
         private string HostFqdn() => _hostLocal + ".";
 
         /// <summary>
@@ -233,28 +222,28 @@ namespace ytplayer.server {
         private byte[] BuildResponsePacket(bool includePTR, uint? ttlOverride) {
             var ms = new MemoryStream();
             // Header
-            WriteUInt16(ms, 0);           // ID
-            WriteUInt16(ms, 0x8400);      // Flags: QR=1, AA=1
-            WriteUInt16(ms, 0);           // QDCOUNT
+            MdnsCommon.WriteUInt16(ms, 0);           // ID
+            MdnsCommon.WriteUInt16(ms, 0x8400);      // Flags: QR=1, AA=1
+            MdnsCommon.WriteUInt16(ms, 0);           // QDCOUNT
             int answerCount = (includePTR ? 1 : 0) + 1 /*SRV*/ + 1 /*TXT*/ + _addresses.Count;
-            WriteUInt16(ms, (ushort)answerCount);
-            WriteUInt16(ms, 0);           // NSCOUNT
-            WriteUInt16(ms, 0);           // ARCOUNT
+            MdnsCommon.WriteUInt16(ms, (ushort)answerCount);
+            MdnsCommon.WriteUInt16(ms, 0);           // NSCOUNT
+            MdnsCommon.WriteUInt16(ms, 0);           // ARCOUNT
 
             uint ttl = ttlOverride ?? TtlAnnouncement;
 
             if (includePTR) {
                 // PTR: _booapi._tcp.local. -> Instance._booapi._tcp.local.
-                WriteRecord(ms, ServiceType + ".local", 12 /*PTR*/, 0x0001 /*IN, no flush bit*/, ttl, () => {
-                    WriteName(ms, InstanceFqdn());
+                WriteRecord(ms, MdnsCommon.ServiceType + ".local", 12 /*PTR*/, 0x0001 /*IN, no flush bit*/, ttl, () => {
+                    MdnsCommon.WriteName(ms, InstanceFqdn());
                 });
             }
             // SRV: Instance -> 0 0 port host
             WriteRecord(ms, InstanceFqdn(), 33 /*SRV*/, 0x8001 /*IN + cache-flush*/, ttl, () => {
-                WriteUInt16(ms, 0);            // priority
-                WriteUInt16(ms, 0);            // weight
-                WriteUInt16(ms, _port);        // port
-                WriteName(ms, HostFqdn());
+                MdnsCommon.WriteUInt16(ms, 0);            // priority
+                MdnsCommon.WriteUInt16(ms, 0);            // weight
+                MdnsCommon.WriteUInt16(ms, _port);        // port
+                MdnsCommon.WriteName(ms, HostFqdn());
             });
             // TXT: Instance -> "k=v" "k=v" ...
             WriteRecord(ms, InstanceFqdn(), 16 /*TXT*/, 0x8001, ttl, () => {
@@ -281,83 +270,20 @@ namespace ytplayer.server {
         }
 
         private static void WriteRecord(MemoryStream ms, string name, ushort type, ushort cls, uint ttl, Action writeData) {
-            WriteName(ms, name);
-            WriteUInt16(ms, type);
-            WriteUInt16(ms, cls);
-            WriteUInt32(ms, ttl);
+            MdnsCommon.WriteName(ms, name);
+            MdnsCommon.WriteUInt16(ms, type);
+            MdnsCommon.WriteUInt16(ms, cls);
+            MdnsCommon.WriteUInt32(ms, ttl);
             // RDLENGTH placeholder
             long lenPos = ms.Position;
-            WriteUInt16(ms, 0);
+            MdnsCommon.WriteUInt16(ms, 0);
             long startPos = ms.Position;
             writeData();
             long endPos = ms.Position;
             int rdlen = (int)(endPos - startPos);
             ms.Position = lenPos;
-            WriteUInt16(ms, (ushort)rdlen);
+            MdnsCommon.WriteUInt16(ms, (ushort)rdlen);
             ms.Position = endPos;
-        }
-
-        private static void WriteName(MemoryStream ms, string fqdn) {
-            // Name compression は省略 (パケットサイズは増えるが実装が単純で済む)
-            foreach (var label in fqdn.Split('.')) {
-                if (string.IsNullOrEmpty(label)) continue;
-                var bytes = Encoding.UTF8.GetBytes(label);
-                if (bytes.Length > 63) {
-                    // 63 バイトを超えるラベルは仕様外なので切り詰め
-                    Array.Resize(ref bytes, 63);
-                }
-                ms.WriteByte((byte)bytes.Length);
-                ms.Write(bytes, 0, bytes.Length);
-            }
-            ms.WriteByte(0);
-        }
-
-        private static void WriteUInt16(MemoryStream ms, ushort v) {
-            ms.WriteByte((byte)(v >> 8));
-            ms.WriteByte((byte)(v & 0xFF));
-        }
-
-        private static void WriteUInt32(MemoryStream ms, uint v) {
-            ms.WriteByte((byte)((v >> 24) & 0xFF));
-            ms.WriteByte((byte)((v >> 16) & 0xFF));
-            ms.WriteByte((byte)((v >> 8) & 0xFF));
-            ms.WriteByte((byte)(v & 0xFF));
-        }
-
-        // ---- DNS name parsing -------------------------------------------------------------
-
-        /// <summary>
-        /// バッファ中の DNS 形式の名前を読み取る。コンプレッションポインタ (0xC0xx) も追従する。
-        /// 末尾に "." を付けた fqdn を返す。失敗時 false。
-        /// </summary>
-        private static bool TryReadName(byte[] buffer, ref int offset, out string name) {
-            var sb = new StringBuilder();
-            int cursor = offset;
-            int? returnOffset = null; // 圧縮ポインタを辿った場合の元の位置
-            int hops = 0;
-            while (true) {
-                if (cursor >= buffer.Length) { name = null; return false; }
-                int len = buffer[cursor];
-                if (len == 0) {
-                    cursor++;
-                    if (returnOffset.HasValue) offset = returnOffset.Value;
-                    else offset = cursor;
-                    name = sb.ToString() + (sb.Length > 0 ? "." : "");
-                    return true;
-                }
-                if ((len & 0xC0) == 0xC0) {
-                    if (cursor + 1 >= buffer.Length) { name = null; return false; }
-                    if (++hops > 32) { name = null; return false; } // ループ防止
-                    int pointer = ((len & 0x3F) << 8) | buffer[cursor + 1];
-                    if (!returnOffset.HasValue) returnOffset = cursor + 2;
-                    cursor = pointer;
-                    continue;
-                }
-                if (cursor + 1 + len > buffer.Length) { name = null; return false; }
-                if (sb.Length > 0) sb.Append('.');
-                sb.Append(Encoding.UTF8.GetString(buffer, cursor + 1, len));
-                cursor += 1 + len;
-            }
         }
 
         // ---- Name helpers -----------------------------------------------------------------

@@ -5,6 +5,7 @@ using System.IO;
 using System.Json;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using ytplayer.download;
 using ytplayer.common;
@@ -32,22 +33,28 @@ namespace ytplayer.data {
             }
         }
 
-        public static async Task SyncFrom(string host, Storage storage, IReportOutput output, ISyncProgress progress) {
+        /// <summary>
+        /// 旧 API: ホスト文字列 ("host[:port]") のみ受け取り、HTTP 固定で同期する。
+        /// 互換のため残しているが新規呼び出し側は <see cref="SyncFrom(PeerEndpoint, Storage, IReportOutput, ISyncProgress)"/> を使うこと。
+        /// </summary>
+        public static Task SyncFrom(string host, Storage storage, IReportOutput output, ISyncProgress progress) {
+            var peer = PeerEndpoint.FromUserInput(host, defaultPort: 3500, useHttps: false, fp: null);
+            return SyncFrom(peer, storage, output, progress);
+        }
+
+        public static async Task SyncFrom(PeerEndpoint peer, Storage storage, IReportOutput output, ISyncProgress progress) {
             if(busy) {
                 return;
             }
             busy = true;
 
-            if(!host.Contains(":")) {
-                host += ":3500";
-            }
-
             progress?.OnMessage("Waiting for item list ...");
-            using (var client = new HttpClient()) {
+            using (var handler = CreateHandlerForPeer(peer, output))
+            using (var client = new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(30) }) {
                 List<DLEntry> list;
                 try {
-                    output.StandardOutput("Start synchronizing items ...");
-                    var res = await client.GetStringAsync($"http://{host}/ytplayer/sync?boo");
+                    output.StandardOutput($"Start synchronizing items from {peer.BaseUrl} ...");
+                    var res = await client.GetStringAsync($"{peer.BaseUrl}/sync?boo");
                     var json = JsonObject.Parse(res);
                     list = (json["list"] as JsonArray)?.Select(v => {
                         var c = v as JsonObject;
@@ -80,7 +87,7 @@ namespace ytplayer.data {
                             logger.debug($"saving:{c.VPath}");
                             output.StandardOutput($"synchronizing item: {c.KEY} - {c.Name}");
                             if (!PathUtil.isFile(c.VPath)) {
-                                using (var inStream = await client.GetStreamAsync($"http://{host}/ytplayer/video?id={c.KEY}"))
+                                using (var inStream = await client.GetStreamAsync($"{peer.BaseUrl}/video?id={c.KEY}"))
                                 using (var outStream = new FileStream(c.VPath, FileMode.Create)) {
                                     await inStream.CopyToAsync(outStream);
                                     await outStream.FlushAsync();
@@ -100,7 +107,7 @@ namespace ytplayer.data {
                     progress?.OnMessage("Items Completed.");
                     output.StandardOutput("Complete synchronizing items.");
 
-                    await SyncChaptersFrom(client, host, storage, output, progress);
+                    await SyncChaptersFrom(client, peer, storage, output, progress);
                 }
                 catch (Exception e) {
                     logger.error(e);
@@ -111,15 +118,49 @@ namespace ytplayer.data {
                 }
             }
 
-            
+
+        }
+
+        /// <summary>
+        /// HTTPS 用 HttpClientHandler を生成。peer.UseHttps の場合、mDNS TXT で得た指紋と
+        /// 実際のサーバ証明書 SHA-256 を pin-to-fingerprint 比較する。
+        /// HTTP の場合は素の HttpClientHandler を返す。
+        /// </summary>
+        private static HttpClientHandler CreateHandlerForPeer(PeerEndpoint peer, IReportOutput output) {
+            var h = new HttpClientHandler();
+            if (peer.UseHttps) {
+                var expected = peer.ExpectedFingerprint ?? "";
+                h.ServerCertificateCustomValidationCallback = (req, cert, chain, sslErrors) => {
+                    if (cert == null) {
+                        output?.ErrorOutput("Sync: no certificate presented");
+                        return false;
+                    }
+                    if (string.IsNullOrEmpty(expected)) {
+                        // 旧サーバ (TXT に fp 無し) との互換は無し。SSL を選んだ時点で指紋必須。
+                        output?.ErrorOutput("Sync: HTTPS requires fingerprint; none configured.");
+                        return false;
+                    }
+                    string actual = ytplayer.common.CertificateGenerator.ComputeSha256Fingerprint(cert);
+                    bool ok = string.Equals(
+                        PeerEndpoint.NormalizeFp(actual),
+                        PeerEndpoint.NormalizeFp(expected),
+                        StringComparison.OrdinalIgnoreCase);
+                    if (!ok) {
+                        output?.ErrorOutput(
+                            $"Sync: certificate fingerprint mismatch.\n  expected={expected}\n  actual  ={actual}");
+                    }
+                    return ok;
+                };
+            }
+            return h;
         }
 
 
-        private static async Task SyncChaptersFrom(HttpClient client, string host, Storage storage, IReportOutput output, ISyncProgress progress) {
+        private static async Task SyncChaptersFrom(HttpClient client, PeerEndpoint peer, Storage storage, IReportOutput output, ISyncProgress progress) {
             try {
                 progress?.OnMessage("Waiting for chapter list ...");
                 output.StandardOutput("Start synchronizing chapters");
-                var res = await client.GetStringAsync($"http://{host}/ytplayer/sync.chapter");
+                var res = await client.GetStringAsync($"{peer.BaseUrl}/sync.chapter");
                 var json = JsonValue.Parse(res) as JsonObject;
                 if (json == null) {
                     output.StandardOutput("no chapters to be synchronized.");
