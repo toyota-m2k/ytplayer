@@ -304,10 +304,10 @@
     <Compile Include="server\lib\model\HttpResponse.cs" />
     <Compile Include="server\lib\model\Route.cs" />
     <Compile Include="server\lib\QueryParser.cs" />
-    <Compile Include="server\MdnsAdvertiser.cs" />
-    <Compile Include="server\MdnsBrowser.cs" />
-    <Compile Include="server\MdnsCommon.cs" />
-    <Compile Include="server\DiscoveredPeer.cs" />
+    <Compile Include="server\mdns\MdnsAdvertiser.cs" />
+    <Compile Include="server\mdns\MdnsBrowser.cs" />
+    <Compile Include="server\mdns\MdnsCommon.cs" />
+    <Compile Include="server\mdns\DiscoveredPeer.cs" />
     <Compile Include="data\PeerEndpoint.cs" />
     <Compile Include="server\YtServer.cs" />
     <Compile Include="Sorter.cs" />
