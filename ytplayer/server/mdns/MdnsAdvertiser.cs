@@ -47,12 +47,13 @@ namespace ytplayer.server {
             get { lock (_lock) return _cts != null; }
         }
 
-        public void Start(string instanceName, int port, bool isHttps, string fingerprint) {
+        public void Start(string serviceName, int port, bool isHttps, string fingerprint) {
             lock (_lock) {
                 if (_cts != null) return;
 
-                _instance = SanitizeInstanceName(instanceName);
-                _hostLocal = SanitizeHostname(Environment.MachineName) + ".local";
+                var machineName = Environment.MachineName;
+                _instance = SanitizeInstanceName($"{serviceName}@{machineName}");
+                _hostLocal = SanitizeHostname(machineName) + ".local";
                 _port = (ushort)port;
                 _txt = new List<string> {
                     "version=2",
@@ -60,7 +61,7 @@ namespace ytplayer.server {
                     "app=" + AppId,
                     // クライアント側の表示用に「hostname.local」も TXT に乗せる。
                     // (NsdManager は SRV ターゲット名を露出しないので、自前で TXT に入れる)
-                    "hostname=" + _hostLocal,
+                    "hostname=" + machineName,  // 表示用
                 };
                 if (!string.IsNullOrEmpty(fingerprint)) {
                     _txt.Add("fp=" + fingerprint);
