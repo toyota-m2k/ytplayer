@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.Reactive.Linq;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using ytplayer.data;
 
 namespace ytplayer.dialog {
@@ -23,10 +24,26 @@ namespace ytplayer.dialog {
         public ReactivePropertySlim<string> VideoPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> AudioPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> WorkPath { get; } = new ReactivePropertySlim<string>();
-        public ReactivePropertySlim<bool> EnableServer { get; } = new ReactivePropertySlim<bool>();
-        public ReactivePropertySlim<string> WebPageRoot { get; } = new ReactivePropertySlim<string>();
-        public ReactivePropertySlim<int> ServerPort { get; } = new ReactivePropertySlim<int>();
+
+
         public ReactivePropertySlim<bool> AcceptList { get; } = new ReactivePropertySlim<bool>();
+        public ReactivePropertySlim<string> WebPageRoot { get; } = new ReactivePropertySlim<string>();
+
+
+        //public ReactivePropertySlim<bool> EnableServer { get; } = new ReactivePropertySlim<bool>();
+        public ReactivePropertySlim<string> ServerName { get; } = new ReactivePropertySlim<string>();
+
+        public ReactivePropertySlim<bool> EnableHttp { get; } = new ReactivePropertySlim<bool>();
+        public ReactivePropertySlim<int> HttpPort { get; } = new ReactivePropertySlim<int>();
+        public ReadOnlyReactivePropertySlim<bool> ServerEnabled { get; }
+
+        // HTTPS / TLS
+        public ReactivePropertySlim<bool> EnableHttps { get; } = new ReactivePropertySlim<bool>();
+        public ReactivePropertySlim<int> HttpsPort { get; } = new ReactivePropertySlim<int>();
+        public ReactivePropertySlim<string> PfxPath { get; } = new ReactivePropertySlim<string>();
+        public ReactivePropertySlim<string> PfxPassword { get; } = new ReactivePropertySlim<string>();
+
+        public ReactivePropertySlim<bool> EnableMDnsAdvertizing { get; } = new ReactivePropertySlim<bool>();
 
         public ReactivePropertySlim<string> ErrorMessage { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<bool> Cancellable { get; } = new ReactivePropertySlim<bool>(true);
@@ -39,6 +56,9 @@ namespace ytplayer.dialog {
         public ReactiveCommand CommandVideoPath { get; } = new ReactiveCommand();
         public ReactiveCommand CommandAudioPath { get; } = new ReactiveCommand();
         public ReactiveCommand CommandWorkPath { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandPfxPath { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandGenerateCert { get; } = new ReactiveCommand();
+        //public ReactiveCommand CommandPairingQr { get; } = new ReactiveCommand();
 
         public ReactiveCommand OKCommand { get; } = new ReactiveCommand();
         public ReactiveCommand CancelCommand { get; } = new ReactiveCommand();
@@ -56,10 +76,16 @@ namespace ytplayer.dialog {
             VideoPath.Value = src.VideoPath;
             AudioPath.Value = src.AudioPath;
             WorkPath.Value = src.WorkPath;
-            EnableServer.Value = src.EnableServer;
             WebPageRoot.Value = src.WebPageRoot;
-            ServerPort.Value = src.ServerPort;
+            EnableHttp.Value = src.EnableHttp;
+            HttpPort.Value = src.HttpPort;
             AcceptList.Value = src.AcceptList;
+            ServerName.Value = src.ServerName;
+            EnableHttps.Value = src.EnableHttps;
+            HttpsPort.Value = src.HttpsPort;
+            PfxPath.Value = src.PfxPath;
+            PfxPassword.Value = src.PfxPassword;
+            EnableMDnsAdvertizing.Value = src.EnableMdnAdvertizing;
 
             CanUpdateYTD = YoutubeDLPath.Select((v) => PathUtil.isFile(System.IO.Path.Combine(v, YtpDef.YTDLP_EXE))).ToReadOnlyReactivePropertySlim();
 
@@ -69,6 +95,9 @@ namespace ytplayer.dialog {
             CommandVideoPath.Subscribe(() => SelectFolder("Video Folder", VideoPath));
             CommandAudioPath.Subscribe(() => SelectFolder("Audio Folder", AudioPath));
             CommandWorkPath.Subscribe(() => SelectFolder("Work Directory", WorkPath));
+            CommandPfxPath.Subscribe(() => SelectPfxFile(PfxPath));
+            CommandGenerateCert.Subscribe(() => GenerateCert());
+            //CommandPairingQr.Subscribe(() => ShowPairingQr());
 
             OKCommand.Subscribe(() => {
                 ErrorMessage.Value = Validate();
@@ -80,6 +109,7 @@ namespace ytplayer.dialog {
             });
             CancelCommand.Subscribe(() => Completed.Execute(false));
             UpdateCommand.Subscribe(UpdateYTD);
+            ServerEnabled = Observable.CombineLatest(EnableHttp, EnableHttps, (http, https) => http || https).ToReadOnlyReactivePropertySlim();
         }
 
         private void SelectFolder(string title, ReactivePropertySlim<string> path) {
@@ -106,6 +136,51 @@ namespace ytplayer.dialog {
                     MessageBox.Show(Owner, "このファイルはいけません。", "DBファイル", MessageBoxButton.OK);
                     return;
                 }
+                path.Value = r;
+            }
+        }
+
+        //private void ShowPairingQr() {
+        //    // ペアリング QR は Settings.Instance を読むので、編集中の値が QR に反映されるよう
+        //    // バリデーション通過時のみ事前保存してから開く。
+        //    var err = Validate();
+        //    if (!string.IsNullOrEmpty(err)) {
+        //        ErrorMessage.Value = err;
+        //        return;
+        //    }
+        //    ErrorMessage.Value = "";
+        //    SaveSettings();
+
+        //    var dlg = PairingQrDialog.CreateFromSettings(Owner);
+        //    if (dlg == null) {
+        //        MessageBox.Show(Owner,
+        //            "Enable the server first (and HTTPS recommended) before showing pairing QR.",
+        //            "Pairing QR", MessageBoxButton.OK, MessageBoxImage.Information);
+        //        return;
+        //    }
+        //    dlg.ShowDialog();
+        //}
+
+        private void GenerateCert() {
+            var dlg = new GenerateCertDialog(PfxPath.Value, PfxPassword.Value) { Owner = Owner };
+            dlg.ShowDialog();
+            if (dlg.Result != null && dlg.Result.Ok) {
+                PfxPath.Value = dlg.Result.PfxPath;
+                PfxPassword.Value = dlg.Result.Password;
+                // PasswordBox は VM とバインドしていないので親ダイアログ側でも反映する
+                Owner.PfxPasswordBox.Password = dlg.Result.Password;
+                // 自動的に HTTPS を有効化はしない（ユーザの明示操作を尊重）
+            }
+        }
+
+        private void SelectPfxFile(ReactivePropertySlim<string> path) {
+            var r = OpenFileDialogBuilder.Create()
+                .title("PFX File")
+                .ensureFileExists(true)
+                .initialDirectory(PathUtil.getDirectoryName(path.Value))
+                .defaultExtension("pfx")
+                .GetFilePath(Owner);
+            if (null != r) {
                 path.Value = r;
             }
         }
@@ -170,6 +245,28 @@ namespace ytplayer.dialog {
                 }
             }
 
+            if (EnableHttps.Value) {
+                if (EnableHttp.Value) {
+                    if (HttpPort.Value == HttpsPort.Value) {
+                        return "Same port for HTTP/HTTPS";
+                    }
+                }
+                if (string.IsNullOrEmpty(PfxPath.Value) || !PathUtil.isFile(PfxPath.Value)) {
+                    return "PFX file is not found.";
+                }
+                try {
+                    using (var cert = new System.Security.Cryptography.X509Certificates.X509Certificate2(
+                            PfxPath.Value, PfxPassword.Value)) {
+                        if (!cert.HasPrivateKey) {
+                            return "PFX file does not contain a private key.";
+                        }
+                    }
+                } catch (Exception) {
+                    return "Cannot open PFX file (wrong password?).";
+                }
+
+            }
+
             Console.WriteLine($"Current: {Owner.CurrentStorage?.DBPath}");
             Console.WriteLine($"New    : {DBPath.Value}");
             if (Owner.CurrentStorage == null || !PathUtil.isEqualDirectoryName(Owner.CurrentStorage.DBPath, DBPath.Value)) {
@@ -190,10 +287,16 @@ namespace ytplayer.dialog {
             dst.VideoPath = VideoPath.Value;
             dst.AudioPath = AudioPath.Value;
             dst.WorkPath = WorkPath.Value;
-            dst.EnableServer = EnableServer.Value;
-            dst.ServerPort = ServerPort.Value;
             dst.AcceptList = AcceptList.Value;
             dst.WebPageRoot = WebPageRoot.Value;
+            dst.EnableHttp = EnableHttp.Value;
+            dst.HttpPort = HttpPort.Value;
+            dst.ServerName = ServerName.Value;
+            dst.EnableHttps = EnableHttps.Value;
+            dst.HttpsPort = HttpsPort.Value;
+            dst.PfxPath = PfxPath.Value;
+            dst.PfxPassword = PfxPassword.Value;
+            dst.EnableMdnAdvertizing = EnableMDnsAdvertizing.Value;
             dst.Serialize();
             dst.ApplyEnvironment();
         }
@@ -282,10 +385,18 @@ namespace ytplayer.dialog {
             viewModel = new SettingsViewModel(this);
             viewModel.Cancellable.Value = currentStorage!=null;
             InitializeComponent();
+            // PasswordBox.Password は DependencyProperty ではないので手動同期する。
+            PfxPasswordBox.Password = viewModel.PfxPassword.Value;
             viewModel.Completed.Subscribe((res) => {
                 Result = new DResult(res, viewModel.NewStorage);
                 Close();
             });
+        }
+
+        private void OnPfxPasswordChanged(object sender, RoutedEventArgs e) {
+            if (DataContext is SettingsViewModel vm) {
+                vm.PfxPassword.Value = ((PasswordBox)sender).Password;
+            }
         }
         private SettingsViewModel viewModel {
             get => DataContext as SettingsViewModel;

@@ -6,37 +6,49 @@
         xmlns:common="clr-namespace:io.github.toyota32k.toolkit.view;assembly=io.github.toyota32k.wpfLittleToolkit"
         xmlns:local="clr-namespace:ytplayer.dialog"
         mc:Ignorable="d"
-        Title="Settings" 
+        Title="Settings"
         Background="#EFEFEF"
         IsEnabled="{Binding Ready.Value}"
-        Height="325" Width="600">
+        Height="504" Width="600">
     <Window.Resources>
         <ResourceDictionary Source="../res/YtpResource.xaml"/>
     </Window.Resources>
     <Grid Margin="20,5">
         <Grid.RowDefinitions>
             <RowDefinition Height="1*"/>
-            <RowDefinition Height="Auto"/>            <!-- 1: Data Path -->
+            <RowDefinition Height="Auto"/>              <!-- 1: Data Path -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>            <!-- 3: ytdl-path -->
+            <RowDefinition Height="Auto"/>              <!-- 3: ytdl-path -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>            <!-- 5: ffmpeg path -->
+            <RowDefinition Height="Auto"/>              <!-- 5: ffmpeg path -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>            <!-- 7: video output path -->
+            <RowDefinition Height="Auto"/>              <!-- 7: video output path -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>            <!-- 9: audio output path -->
+            <RowDefinition Height="Auto"/>              <!-- 9: audio output path -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>            <!-- 11: work directory -->
+            <RowDefinition Height="Auto"/>              <!-- 11: work directory -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>            <!-- 13: Accept PlayList -->
+            <RowDefinition Height="Auto"/>              <!-- 13: Accept PlayList -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>            <!-- 15: Server -->
+            <RowDefinition Height="Auto"/>              <!-- 15: Server / HTTP -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>            <!-- 17: Web Page-->
+            <RowDefinition Height="Auto"/>              <!-- 17: HTTPS -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>            <!-- 19: Ok/Cancel -->
+            <RowDefinition Height="Auto"/>              <!-- 19: Server Name -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>            <!-- 21: Message Line -->
+            <RowDefinition Height="Auto"/>              <!-- 21: mDSN Advertizing -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>              <!-- 23: PFX Generate -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>              <!-- 25: PFX File -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>              <!-- 27: PFX / Password-->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>              <!-- 29: Web Page -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>              <!-- 31: OK/Cancel -->
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>              <!-- 33: Message Line -->
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -84,22 +96,54 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <CheckBox Content="Enable server" Grid.Column="0" IsChecked="{Binding EnableServer.Value, Mode=TwoWay}"/>
+            <CheckBox Content="HTTP" Grid.Column="0" IsChecked="{Binding EnableHttp.Value, Mode=TwoWay}"/>
             <TextBlock Text="Port" Margin="10,0" Grid.Column="1"/>
-            <common:NumericTextBox Text="{Binding ServerPort.Value}" Grid.Column="2" MinWidth="40"/>
+            <common:NumericTextBox Text="{Binding HttpPort.Value}" Grid.Column="2" MinWidth="40"  IsEnabled="{Binding EnableHttp.Value}"/>
         </Grid>
 
-        <TextBlock Grid.Row="17" Grid.Column="0" Text="Web page root"/>
-        <TextBox Grid.Row="17" Grid.Column="2" Text="{Binding WebPageRoot.Value, Mode=TwoWay}" IsEnabled="{Binding EnableServer.Value}"/>
-        <Button Grid.Row="11" Grid.Column="4" Content="…" Padding="8,0" Command="{Binding CommandWebPageRoot}"/>
+        <Grid Grid.Row="17" Grid.Column="2" Grid.ColumnSpan="1" HorizontalAlignment="Stretch">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="42*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="5*"/>
+            </Grid.ColumnDefinitions>
+            <CheckBox Grid.Column="0" Content="HTTPS" IsChecked="{Binding EnableHttps.Value, Mode=TwoWay}"/>
+            <TextBlock Grid.Column="1" Text="Port" Margin="10,0"/>
+            <common:NumericTextBox Grid.Column="2" Text="{Binding HttpsPort.Value}" MinWidth="40" IsEnabled="{Binding EnableHttps.Value}"/>
+        </Grid>
 
-        <StackPanel Grid.Row="19" Grid.Column="0" Grid.ColumnSpan="5" HorizontalAlignment="Center" Orientation="Horizontal">
+        <TextBlock Grid.Row="19" Grid.Column="0" Text="Server Name"/>
+        <TextBox Grid.Row="19" Grid.Column="2" Grid.ColumnSpan="1"
+                 Text="{Binding ServerName.Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                 IsEnabled="{Binding ServerEnabled.Value}"
+                 ToolTip="Used as mDNS service name."/>
+
+        <TextBlock Grid.Row="21" Grid.Column="0" Text="mDNS"/>
+        <CheckBox Grid.Row="21" Grid.Column="2" Content="Enable Advertizing" IsChecked="{Binding EnableMDnsAdvertizing.Value, Mode=TwoWay}"/>
+
+        <TextBlock Grid.Row="23" Grid.Column="0" Text="PFX"/>
+        <Button Grid.Row="23" Grid.Column="2" Content="Generate…" Padding="8,0" HorizontalAlignment="Left" Command="{Binding CommandGenerateCert}" IsEnabled="{Binding EnableHttps.Value}"/>
+        <!--<Button Grid.Row="23" Grid.Column="2" Content="Pairing QR…" Padding="8,0" Command="{Binding CommandPairingQr}" IsEnabled="{Binding ServerEvabled.Value}" HorizontalAlignment="Right"/>-->
+
+
+        <TextBlock Grid.Row="25" Grid.Column="0" Text="PFX file" HorizontalAlignment="Right"/>
+        <TextBox Grid.Row="25" Grid.Column="2" Text="{Binding PfxPath.Value, Mode=TwoWay}" IsEnabled="{Binding EnableHttps.Value}"/>
+        <Button Grid.Row="25" Grid.Column="4" Content="…" Padding="8,0" Command="{Binding CommandPfxPath}" IsEnabled="{Binding EnableHttps.Value}"/>
+
+        <TextBlock Grid.Row="27" Grid.Column="0" Text="Password" HorizontalAlignment="Right"/>
+        <PasswordBox Grid.Row="27" Grid.Column="2" x:Name="PfxPasswordBox" PasswordChanged="OnPfxPasswordChanged" IsEnabled="{Binding EnableHttps.Value}"/>
+
+        <TextBlock Grid.Row="29" Grid.Column="0" Text="Web page root"/>
+        <TextBox Grid.Row="29" Grid.Column="2" Text="{Binding WebPageRoot.Value, Mode=TwoWay}" IsEnabled="{Binding ServerEnabled.Value}"/>
+        <Button Grid.Row="29" Grid.Column="4" Content="…" Padding="8,0" Command="{Binding CommandWebPageRoot}"/>
+
+        <StackPanel Grid.Row="31" Grid.Column="0" Grid.ColumnSpan="5" HorizontalAlignment="Center" Orientation="Horizontal">
             <Button Content="OK" Command="{Binding OKCommand}" Width="100"/>
             <Button Content="Cancel" Command="{Binding CancelCommand}" Width="100" Margin="20,0,0,0" Visibility="{Binding Cancellable.Value, Converter={StaticResource BoolVisibilityConverter}}"/>
             <Button Content="Update yt-dlp" Command="{Binding UpdateCommand}" Width="100" Margin="20,0,0,0" Visibility="{Binding CanUpdateYTD.Value, Converter={StaticResource BoolVisibilityConverter}}"/>
         </StackPanel>
 
-        <TextBlock Grid.Row="21" Grid.Column="0" Grid.ColumnSpan="5" Margin="0,0,0,0" Text="{Binding ErrorMessage.Value}" Height="30" VerticalAlignment="Top"/>
+        <TextBlock Grid.Row="33" Grid.Column="0" Grid.ColumnSpan="5" Margin="0,0,0,0" Text="{Binding ErrorMessage.Value}" Height="30" VerticalAlignment="Top"/>
 
     </Grid>
 </Window>

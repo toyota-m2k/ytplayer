@@ -1,0 +1,70 @@
+<Window x:Class="ytplayer.dialog.GenerateCertDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:common="clr-namespace:io.github.toyota32k.toolkit.view;assembly=io.github.toyota32k.wpfLittleToolkit"
+        xmlns:local="clr-namespace:ytplayer.dialog"
+        mc:Ignorable="d"
+        Title="Generate Self-Signed Certificate"
+        Background="#EFEFEF"
+        Height="370" Width="600"
+        WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <ResourceDictionary Source="../res/YtpResource.xaml"/>
+    </Window.Resources>
+    <Grid Margin="20,10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>      <!-- 0: Subject CN -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>      <!-- 2: DNS names -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>      <!-- 4: IP addresses -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>      <!-- 6: PFX path -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>      <!-- 8: Password -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>      <!-- 10: Validity years -->
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="Auto"/>      <!-- 12: Buttons -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>      <!-- 14: Error -->
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="20"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="10"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Subject CN" VerticalAlignment="Center"/>
+        <TextBox Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="3" Text="{Binding SubjectCN.Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="DNS names" VerticalAlignment="Center"/>
+        <TextBox Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="3" Text="{Binding DnsNames.Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Comma- or semicolon-separated"/>
+
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="IP addresses" VerticalAlignment="Center"/>
+        <TextBox Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="3" Text="{Binding IpAddresses.Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Comma- or semicolon-separated"/>
+
+        <TextBlock Grid.Row="6" Grid.Column="0" Text="PFX file" VerticalAlignment="Center"/>
+        <TextBox Grid.Row="6" Grid.Column="2" Text="{Binding PfxPath.Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+        <Button Grid.Row="6" Grid.Column="4" Content="…" Padding="8,0" Command="{Binding CommandPfxPath}"/>
+
+        <TextBlock Grid.Row="8" Grid.Column="0" Text="Password" VerticalAlignment="Center"/>
+        <TextBox Grid.Row="8" Grid.Column="2" Text="{Binding Password.Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+        <Button Grid.Row="8" Grid.Column="4" Content="Random" Padding="8,0" Command="{Binding CommandRandomPassword}"/>
+
+        <TextBlock Grid.Row="10" Grid.Column="0" Text="Validity (years)" VerticalAlignment="Center"/>
+        <common:NumericTextBox Grid.Row="10" Grid.Column="2" HorizontalAlignment="Left" MinWidth="60" Text="{Binding ValidityYears.Value}"/>
+
+        <StackPanel Grid.Row="12" Grid.Column="0" Grid.ColumnSpan="5" HorizontalAlignment="Center" Orientation="Horizontal">
+            <Button Content="Generate" Command="{Binding GenerateCommand}" Width="100"/>
+            <Button Content="Cancel" Command="{Binding CancelCommand}" Width="100" Margin="20,0,0,0"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="14" Grid.Column="0" Grid.ColumnSpan="5" Foreground="Red" Text="{Binding ErrorMessage.Value}" TextWrapping="Wrap"/>
+    </Grid>
+</Window>

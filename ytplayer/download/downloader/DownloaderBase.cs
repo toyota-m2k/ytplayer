@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using ytplayer.common;
 using ytplayer.data;
 
 namespace ytplayer.download.downloader {
@@ -73,9 +72,10 @@ namespace ytplayer.download.downloader {
         protected virtual string BasicArguments {
             get {
                 if(!ExtractAudio) {
-                    return "--format mp4";
+                    // return "--format mp4";
+                    return "-t mp4 --encoding utf-8";
                 } else {
-                    return "-x --audio-format mp3";
+                    return "-x --audio-format mp3 --encoding utf-8";
                 }
             }
         }
@@ -113,16 +113,17 @@ namespace ytplayer.download.downloader {
         }
 
         protected virtual ProcessStartInfo Prepare() {
-            return new ProcessStartInfo() {
+            var pi = new ProcessStartInfo() {
                 FileName = YtpDef.YTDLP_EXE,
                 Arguments = $"{BasicArguments} {SpecialArguments} {Entry.Url}",
                 CreateNoWindow = true,
                 UseShellExecute = false,
-                //StandardOutputEncoding = System.Text.Encoding.UTF8,
-                //StandardErrorEncoding = System.Text.Encoding.UTF8,
+                StandardOutputEncoding = System.Text.Encoding.UTF8,
+                StandardErrorEncoding = System.Text.Encoding.UTF8,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
             };
+            return pi;
         }
 
         private Process BeginProcess() {

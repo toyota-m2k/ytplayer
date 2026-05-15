@@ -35,12 +35,16 @@ namespace ytplayer.download.downloader.impl {
         // https://www.youtube.com/watch?v=QkBvmv8kt4U
         // https://www.youtube.com/watch?v=NhKEBTz2N28&list=RDNhKEBTz2N28&start_radio=1
         // https://youtu.be/UF9PWHDJ-AE
+        // https://www.youtube.com/shorts/YSuKtUQH0B8
         // https://www.youtube.com/embed/23GcaWtbVdQ?rel=0
-        private static readonly Regex regexId = new Regex(@"(?:[?&]v=|youtu.be/|embed/)(?<id>[^?&=\r\n \t]+)(?:[?&]list=(?<list>[^&=\r\n \t]+))?");
+        // https://youtube.com/shorts/glaMogP4j-g?si=0sn0xXupFLfqoik1
+        private static readonly Regex regexId = new Regex(@"(?:[?&]v=|youtu.be/|/embed/|/shorts/)(?<id>[^?&=\r\n \t]+)(?:[?&]list=(?<list>[^&=\r\n \t]+))?(?:[?&]si=(?<si>[^&=\r\n \t]+))?");
 
         public static (string id, string list) GetIdsStringFromUrl(string url) {
             var m = regexId.Match(url);
-            return (m.Groups["id"]?.Value, m.Groups["list"]?.Value);
+            var si = m.Groups["si"]?.Value;
+            var id = string.IsNullOrEmpty(si) ? m.Groups["id"]?.Value : si;
+            return (id, m.Groups["list"]?.Value);
         }
 
         public static string GetIDStringFromUrl(string url) {

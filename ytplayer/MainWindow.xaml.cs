@@ -21,9 +21,12 @@ using ytplayer.data;
 using ytplayer.dialog;
 using ytplayer.download;
 using ytplayer.download.downloader;
+using ytplayer.download.downloader.impl;
 using ytplayer.interop;
 using ytplayer.player;
 using ytplayer.server;
+using System.Security.Cryptography.X509Certificates;
+using System.Reactive.Linq;
 using static ytplayer.data.SyncManager;
 
 namespace ytplayer {
@@ -50,7 +53,7 @@ namespace ytplayer {
         DELETE_COMFIRM,
         ACCEPT_DETERMINATION,
         EXTRACT_AUDIO,
-        EDIT_DESCRIPTION,
+        EDIT_LABEL,
         SYNC_FROM,
         MOVE_ITEMS,
         PROGRESS,
@@ -101,7 +104,10 @@ namespace ytplayer {
         public ReactiveCommand ResetAndDownloadCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ExtractAudioCommand { get; } = new ReactiveCommand();
         public ReactiveCommand EditDescriptionCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand EditNameCommand { get; } = new ReactiveCommand();
         public ReactiveCommand CopyVideoPathCommand { get; } = new ReactiveCommand();
+
+        public ReactiveCommand PairingQRCodeCommand { get; } = new ReactiveCommand();
 
         // Dialog
         public abstract class DialogViewModel: ViewModelBase {
@@ -164,31 +170,108 @@ namespace ytplayer {
             return ShowDialog(ExtractAudoDialog, "Extract Audio");
         }
 
-        // Description Dialog
-        public class DescriptionDialogViewModel : DialogViewModel {
-            public override DialogTypeId Type => DialogTypeId.EDIT_DESCRIPTION;
-            public ReactiveProperty<string> Description { get; } = new ReactiveProperty<string>();
+        // Label (Name|Description) Dialog
+        public class LabelDialogViewModel : DialogViewModel {
+            public override DialogTypeId Type => DialogTypeId.EDIT_LABEL;
+            public bool AllowEmpty { get; set; } = false;
+            public ReactiveProperty<string> Label { get; } = new ReactiveProperty<string>();
+            public override bool CheckBeforeOk() { return AllowEmpty || !string.IsNullOrEmpty(Label.Value); }
+
         }
-        public DescriptionDialogViewModel DescriptionDialog { get; } = new DescriptionDialogViewModel();
-        public Task<bool> ShowDescriptionDialog() {
-            return ShowDialog(DescriptionDialog, "Description");
+        public LabelDialogViewModel LabelDialog { get; } = new LabelDialogViewModel();
+        public Task<bool> ShowLabelDialog(string title, string initialValue, bool allowEmpty=true) {
+            LabelDialog.Label.Value = initialValue;
+            LabelDialog.AllowEmpty = allowEmpty;
+            return ShowDialog(LabelDialog, title);
         }
 
         public class SyncDialogViewModel : DialogViewModel {
             public override DialogTypeId Type => DialogTypeId.SYNC_FROM;
             public ReactiveProperty<string> HostAddress { get; } = new ReactiveProperty<string>();
-        }
-        public SyncDialogViewModel SyncDialog { get; } = new SyncDialogViewModel();
-        public async Task<bool> ShowSyncDialog() {
-            if (string.IsNullOrEmpty(SyncDialog.HostAddress.Value)) {
-                SyncDialog.HostAddress.Value = Settings.Instance.SyncPeer;
+            public ReactiveProperty<bool> UseHttps { get; } = new ReactiveProperty<bool>(false);
+            public ReactiveProperty<string> Fingerprint { get; } = new ReactiveProperty<string>("");
+            public ReactivePropertySlim<bool> IsScanning { get; } = new ReactivePropertySlim<bool>(false);
+
+            // Browser に渡す discovery 結果コレクション (参照は不変)。
+            public ObservableCollection<DiscoveredPeer> DiscoveredPeers { get; }
+                = new ObservableCollection<DiscoveredPeer>();
+            public ReactiveProperty<DiscoveredPeer> SelectedPeer { get; } = new ReactiveProperty<DiscoveredPeer>();
+            public ReactiveCommand RescanCommand { get; } = new ReactiveCommand();
+
+            private IDisposable _selSubscription;
+            private IDisposable _rescanSubscription;
+            private IDisposable _scanIndicatorSubscription;
+
+            public void AttachBrowser(MdnsBrowser browser) {
+                _selSubscription?.Dispose();
+                _selSubscription = SelectedPeer.Subscribe(p => {
+                    if (p == null) return;
+                    string host = p.Addresses.Count > 0
+                        ? p.Addresses[0].ToString()
+                        : (p.Hostname ?? "").TrimEnd('.');
+                    HostAddress.Value = $"{host}:{p.Port}";
+                    UseHttps.Value = p.IsHttps;
+                    Fingerprint.Value = p.Fingerprint ?? "";
+                });
+                _rescanSubscription?.Dispose();
+                _rescanSubscription = RescanCommand.Subscribe(() => {
+                    IsScanning.Value = true;
+                    browser.Rescan();
+                    _scanIndicatorSubscription?.Dispose();
+                    _scanIndicatorSubscription = Observable.Timer(TimeSpan.FromSeconds(3))
+                        .ObserveOnDispatcher()
+                        .Subscribe(_ => IsScanning.Value = false);
+                });
+                // 初回スキャン表示
+                IsScanning.Value = true;
+                _scanIndicatorSubscription = Observable.Timer(TimeSpan.FromSeconds(5))
+                    .ObserveOnDispatcher()
+                    .Subscribe(_ => IsScanning.Value = false);
             }
 
-            if (await ShowDialog(SyncDialog, "Synchronization")) {
-                Settings.Instance.SyncPeer = SyncDialog.HostAddress.Value;
+            public void DetachBrowser() {
+                _selSubscription?.Dispose(); _selSubscription = null;
+                _rescanSubscription?.Dispose(); _rescanSubscription = null;
+                _scanIndicatorSubscription?.Dispose(); _scanIndicatorSubscription = null;
+                DiscoveredPeers.Clear();
+                SelectedPeer.Value = null;
+                IsScanning.Value = false;
+            }
+
+            public override bool CheckBeforeOk() {
+                if (string.IsNullOrWhiteSpace(HostAddress.Value)) return false;
+                // HTTPS 選択時は指紋必須 (mDNS で選んだピアなら自動入力される)
+                if (UseHttps.Value && string.IsNullOrWhiteSpace(Fingerprint.Value)) return false;
                 return true;
             }
-            return false;
+        }
+        public SyncDialogViewModel SyncDialog { get; } = new SyncDialogViewModel();
+        public async Task<bool> ShowSyncDialog(Dispatcher uiDispatcher, string selfFingerprint) {
+            if (string.IsNullOrEmpty(SyncDialog.HostAddress.Value)) {
+                SyncDialog.HostAddress.Value = Settings.Instance.SyncPeer;
+                SyncDialog.UseHttps.Value = Settings.Instance.SyncUseHttps;
+                SyncDialog.Fingerprint.Value = Settings.Instance.SyncPeerFingerprint ?? "";
+            }
+
+            using (var browser = new MdnsBrowser(uiDispatcher, SyncDialog.DiscoveredPeers)) {
+                SyncDialog.AttachBrowser(browser);
+                try {
+                    browser.Start(selfFingerprint);
+                } catch (Exception e) {
+                    LoggerEx.error(e);
+                }
+                try {
+                    if (await ShowDialog(SyncDialog, "Synchronization")) {
+                        Settings.Instance.SyncPeer = SyncDialog.HostAddress.Value;
+                        Settings.Instance.SyncUseHttps = SyncDialog.UseHttps.Value;
+                        Settings.Instance.SyncPeerFingerprint = SyncDialog.Fingerprint.Value ?? "";
+                        return true;
+                    }
+                    return false;
+                } finally {
+                    SyncDialog.DetachBrowser();
+                }
+            }
         }
 
         public class MoveItemsViewModel : DialogViewModel {
@@ -389,8 +472,9 @@ namespace ytplayer {
             viewModel.ResetAndDownloadCommand.Subscribe(ResetAndDownload);
             viewModel.DeleteAndBlockCommand.Subscribe(DeleteAndBlock);
             viewModel.EditDescriptionCommand.Subscribe(EditDescription);
+            viewModel.EditNameCommand.Subscribe(EditName);
             viewModel.CopyVideoPathCommand.Subscribe(CopyVideoPath);
-
+            viewModel.PairingQRCodeCommand.Subscribe(PairingQRCode);
             viewModel.ShowFilterEditor.Subscribe((v) => {
                 if (v) {
                     ShowFilterEditorWindow();
@@ -448,7 +532,7 @@ namespace ytplayer {
                     MainListView.ScrollIntoView(entry);
                     if (Settings.Instance.RestartOnLoaded) {
                         var pos = Settings.Instance.LastPlayingPos;
-                        var win = GetPlayer();
+                        var win = GetOrCreatePlayer();
                         win.ResumePlay(viewModel.MainList.Value, entry/*, pos*/);
                     }
                 }
@@ -468,8 +552,8 @@ namespace ytplayer {
 
         private void StartServer() {
             StopServer();
-            if (Settings.Instance.EnableServer && mServer==null) {
-                mServer = new YtServer(this, Settings.Instance.ServerPort);
+            if (Settings.Instance.ServerEnabled && mServer==null) {
+                mServer = new YtServer(this);
                 mServer.Start();
             }
         }
@@ -720,10 +804,35 @@ namespace ytplayer {
             }
         }
         private async void SyncFrom() {
-            if (await viewModel.ShowSyncDialog()) {
+            string selfFp = ComputeSelfFingerprint();
+            if (await viewModel.ShowSyncDialog(Dispatcher, selfFp)) {
+                var vm = viewModel.SyncDialog;
+                var defaultPort = vm.UseHttps.Value ? Settings.Instance.HttpsPort : Settings.Instance.HttpPort;
+                var peer = PeerEndpoint.FromUserInput(vm.HostAddress.Value, defaultPort, vm.UseHttps.Value, vm.Fingerprint.Value);
                 using (viewModel.ActivateProgress("Synchronizing Data", this)) {
-                    await SyncManager.SyncFrom(viewModel.SyncDialog.HostAddress.Value, Storage, this, viewModel.Progress);
+                    await SyncManager.SyncFrom(peer, Storage, this, viewModel.Progress);
                 }
+            }
+        }
+
+        /// <summary>
+        /// 自身がサーバとして HTTPS で listen している場合に、その証明書 SHA-256 指紋を返す。
+        /// mDNS Browser で「自分」を discovery 結果から除外するために使う。
+        /// listen していない場合は null。
+        /// </summary>
+        private static string ComputeSelfFingerprint() {
+            try {
+                var s = Settings.Instance;
+                if (!s.EnableHttps) return null;
+                if (string.IsNullOrEmpty(s.PfxPath) || !File.Exists(s.PfxPath)) return null;
+                using (var cert = new X509Certificate2(
+                        s.PfxPath, s.PfxPassword,
+                        X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet)) {
+                    return CertificateGenerator.ComputeSha256Fingerprint(cert);
+                }
+            } catch (Exception e) {
+                LoggerEx.error(e);
+                return null;
             }
         }
         private async void MoveItems() {
@@ -809,8 +918,8 @@ namespace ytplayer {
                     Arguments = $"-i \"{entry.VPath}\" -y -f mp3 -vn \"{dstPath}\"",
                     CreateNoWindow = true,
                     UseShellExecute = false,
-                    //StandardOutputEncoding = System.Text.Encoding.UTF8,
-                    //StandardErrorEncoding = System.Text.Encoding.UTF8,
+                    StandardOutputEncoding = System.Text.Encoding.UTF8,
+                    StandardErrorEncoding = System.Text.Encoding.UTF8,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                 };
@@ -1023,6 +1132,14 @@ namespace ytplayer {
             action(entries);
         }
 
+        private void ProcessFocusedEntry(Action<DLEntry> action) {
+            var entry = SelectedEntry;
+            if (entry == null) {
+                return;
+            }
+            action(entry);
+        }
+
         private void DeleteAndBlock(object obj) {
             ProcessSelectedEntries(async (entries) => {
                 if (await viewModel.ShowDeleteItemDialog()) {
@@ -1050,6 +1167,9 @@ namespace ytplayer {
 
         private void ResetAndDownload(object obj) {
             ProcessSelectedEntries((entries) => {
+                foreach (var e in entries) {
+                    e.Reset();
+                }
                 mDownloadManager.Enqueue(entries);
             });
         }
@@ -1062,6 +1182,17 @@ namespace ytplayer {
             });
         }
 
+        bool IYtListSource.ExtractAudio(DLEntry entry) {
+            Logger.info($"Extracting Audio ... {entry.Name}");
+            var converter = new FFMpegConverter(entry, this, false);
+            var tcs = new TaskCompletionSource<bool>();
+            mDownloadManager.Enqueue(converter.WithCompletionNotification(result=> tcs.TrySetResult(result)));
+            var res= tcs.Task.Result;
+            Logger.info($"Extracting Audio Completed: {res}");
+            return res;
+        }
+
+
         private void OpenInWebBrower() {
             var url = SelectedEntry?.Url;
             if (url != null) {
@@ -1072,30 +1203,57 @@ namespace ytplayer {
         private void PlayInWebBrower() {
             var id = SelectedEntry?.Id;
             if (id != null) {
-                Process.Start($"http://localhost:{Settings.Instance.ServerPort}/ytplayer/video?id={id}");
+                if (Settings.Instance.EnableHttp) {
+                    Process.Start($"http://localhost:{Settings.Instance.HttpPort}/ytplayer/video?id={id}");
+                }
+                else {
+                    Process.Start($"https://localhost:{Settings.Instance.HttpsPort}/ytplayer/video?id={id}");
+                }
             }
         }
 
         private void EditDescription() {
             ProcessSelectedEntries(async (entries) => {
-                var org = entries.First().Desc;
-                if (!string.IsNullOrEmpty(org)) {
-                    viewModel.DescriptionDialog.Description.Value = entries.First().Desc;
-                }
-                if (await viewModel.ShowDescriptionDialog()) {
+                var org = entries.First().Desc ?? "";
+                if (await viewModel.ShowLabelDialog("Description", org)) {
                     foreach (var e in entries) {
-                        e.Desc = viewModel.DescriptionDialog.Description.Value ?? "";
+                        e.Desc = viewModel.LabelDialog.Label.Value ?? "";
                     }
                     Storage.DLTable.Update();
                 }
             });
         }
 
+
+        private void EditName() {
+            ProcessFocusedEntry(async (entry) => {
+                var org = entry.Name ?? "";
+                if (await viewModel.ShowLabelDialog("Name", org, allowEmpty:false)) {
+                    if (!string.IsNullOrEmpty(viewModel.LabelDialog.Label.Value)) {
+                        entry.Name = viewModel.LabelDialog.Label.Value;
+                        Storage.DLTable.Update();
+                    }
+                }
+            });
+        }
+
+            
         private void CopyVideoPath() {
             var path = SelectedEntry?.VPath;
             if (path != null) {
                 Clipboard.SetDataObject(path);
             }
+        }
+
+        private void PairingQRCode() {
+            var dlg = PairingQrDialog.CreateFromSettings(Owner);
+            if (dlg == null) {
+                MessageBox.Show(Owner,
+                    "Enable the server first (and HTTPS recommended) before showing pairing QR.",
+                    "Pairing QR", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            dlg.ShowDialog();
         }
 
 
@@ -1204,13 +1362,22 @@ namespace ytplayer {
         #region Player Window
 
         private PlayerWindow mPlayerWindow = null;
-        private PlayerWindow GetPlayer() {
+        private PlayerWindow GetOrCreatePlayer() {
             if (mPlayerWindow == null) {
                 mPlayerWindow = new PlayerWindow(mDownloadManager);
                 mPlayerWindow.PlayItemChanged += OnPlayItemChanged;
                 mPlayerWindow.PlayWindowClosing += OnPlayerWindowClosing;
                 mPlayerWindow.PlayWindowClosed += OnPlayerWindowClosed;
                 mPlayerWindow.Show();
+            } else {
+                // 最小化されている場合は元に戻す
+                if (mPlayerWindow.WindowState == WindowState.Minimized) {
+                    mPlayerWindow.WindowState = WindowState.Normal;
+                }
+                // イベント処理完了後に前面表示するため、非同期で実行
+                Dispatcher.BeginInvoke(new Action(() => {
+                    mPlayerWindow.Activate();
+                }), DispatcherPriority.ApplicationIdle);
             }
             return mPlayerWindow;
         }
@@ -1247,7 +1414,7 @@ namespace ytplayer {
         }
 
         private void Play() {
-            var win = GetPlayer();
+            var win = GetOrCreatePlayer();
             var selected = MainListView.SelectedItems;
             if(selected.Count>1) {
                 win.SetPlayList(selected.ToEnumerable<DLEntry>());
@@ -1411,7 +1578,7 @@ namespace ytplayer {
             if (succeeded && !extractAudio) {
                 Dispatcher.Invoke(() => {
                     if (viewModel.AutoPlay.Value) {
-                        GetPlayer().AddToPlayList(target);
+                        GetOrCreatePlayer().AddToPlayList(target);
                     }
                 });
             }
@@ -1421,7 +1588,7 @@ namespace ytplayer {
             Dispatcher.Invoke(() => {
                 Storage.DLTable.Add(target);
                 if (viewModel.AutoPlay.Value) {
-                    GetPlayer().AddToPlayList(target);
+                    GetOrCreatePlayer().AddToPlayList(target);
                 }
             });
         }
@@ -1433,6 +1600,24 @@ namespace ytplayer {
         }
 
         #endregion
+
+        private void OnOutputTextCopy(object sender, RoutedEventArgs e) {
+            if (OutputListView.SelectedItems.Count <= 0) return;
+
+            var selected = new HashSet<OutputMessage>(
+                OutputListView.SelectedItems.Cast<OutputMessage>());
+
+            var messages = OutputListView.Items
+                .Cast<OutputMessage>()                 // ← 画面表示順（View順）
+                .Where(selected.Contains)              // 選択されているものだけ
+                .Select(m => m.Message)
+                .Where(m => !string.IsNullOrEmpty(m));
+
+            var text = string.Join(Environment.NewLine, messages);
+            if (!string.IsNullOrEmpty(text)) {
+                Clipboard.SetText(text);
+            }
+        }
     }
 
     public static class FilterExt {

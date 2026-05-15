@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using ytplayer.data;
 using ytplayer.download;
@@ -9,6 +10,8 @@ using static io.github.toyota32k.toolkit.utils.PathUtil;
 
 namespace ytplayer {
     public class Settings {
+        static readonly string AppName = "BooTube";
+
         public WinPlacement Placement { get; set; } = new WinPlacement();
         public WinPlacement PlayerPlacement { get; set; } = new WinPlacement();
         public WinPlacement BrowserPlacement { get; set; } = new WinPlacement();
@@ -19,10 +22,62 @@ namespace ytplayer {
         public string VideoPath { get; set; } = "";
         public string AudioPath { get; set; } = "";
         public string WorkPath { get; set; } = "";          // 無音抽出用Wavファイル作成先
-        public bool EnableServer { get; set; } = false;
         public string WebPageRoot { get; set; } = "";
-        public int ServerPort { get; set; } = 3500;
         public string SyncPeer { get; set; } = "";
+        // Sync 接続時に HTTPS を使うか (mDNS discovery でピアを選択した場合は自動で上書きされる)。
+        public bool SyncUseHttps { get; set; } = false;
+        // HTTPS Sync 時の期待サーバ証明書 SHA-256 フィンガープリント (pin-to-fingerprint)。
+        public string SyncPeerFingerprint { get; set; } = "";
+        // mDNS/NSD でクライアントから見えるサーバ名。空ならマシン名を使う。
+        public string ServerName { get; set; } = AppName;
+
+        [System.Xml.Serialization.XmlIgnore]
+        public string EnsureServerName =>
+            string.IsNullOrWhiteSpace(ServerName) ? Environment.MachineName : ServerName;
+
+        // HTTPS / TLS
+        public bool EnableHttp { get; set; } = false;
+        public bool EnableHttps { get; set; } = false;
+        public int HttpsPort { get; set; } = 3501;
+        public int HttpPort { get; set; } = 3500;
+        public string PfxPath { get; set; } = "";
+        // PFXパスワードはDPAPI(CurrentUser)で暗号化してBase64で保存する。生のパスワードは settings.xml に書き出さない。
+        public string PfxPasswordEncrypted { get; set; } = "";
+        // mDNSのAdvertizing を有効化するか？
+        public bool EnableMdnAdvertizing { get; set; } = true;
+        [System.Xml.Serialization.XmlIgnore]
+        public bool ServerEnabled => EnableHttp || EnableHttps;
+
+        //[System.Xml.Serialization.XmlIgnore]
+        //public bool HttpsOnly => EnableHttps && !EnableHttps;
+
+        [System.Xml.Serialization.XmlIgnore]
+        public string PfxPassword {
+            get {
+                if (string.IsNullOrEmpty(PfxPasswordEncrypted)) return "";
+                try {
+                    var bytes = Convert.FromBase64String(PfxPasswordEncrypted);
+                    var plain = ProtectedData.Unprotect(bytes, null, DataProtectionScope.CurrentUser);
+                    return Encoding.UTF8.GetString(plain);
+                } catch (Exception e) {
+                    Debug.WriteLine(e);
+                    return "";
+                }
+            }
+            set {
+                if (string.IsNullOrEmpty(value)) {
+                    PfxPasswordEncrypted = "";
+                    return;
+                }
+                try {
+                    var bytes = ProtectedData.Protect(Encoding.UTF8.GetBytes(value), null, DataProtectionScope.CurrentUser);
+                    PfxPasswordEncrypted = Convert.ToBase64String(bytes);
+                } catch (Exception e) {
+                    Debug.WriteLine(e);
+                    PfxPasswordEncrypted = "";
+                }
+            }
+        }
 
         public DeterminationList Determinations { get; set; } = new DeterminationList();
         public CategoryList Categories { get; set; } = new CategoryList();

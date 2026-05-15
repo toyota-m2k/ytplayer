@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using ytplayer.download;
@@ -33,11 +34,22 @@ namespace SimpleHttpServer
         private WeakReference<IReportOutput> mReportOutput;
         private IReportOutput ReportOutput => mReportOutput?.GetValue();
 
+        public bool IsSecure => mCertificate != null;
+
+        private readonly X509Certificate2 mCertificate;
+
         #region Public Methods
         public HttpServer(int port, List<Route> routes, IReportOutput reportOutput)
+            : this(port, routes, reportOutput, null) {
+        }
+
+        public HttpServer(int port, List<Route> routes, IReportOutput reportOutput, X509Certificate2 certificate)
         {
             this.Port = port;
-            this.Processor = new HttpProcessor();
+            this.mCertificate = certificate;
+            this.Processor = (certificate != null)
+                ? new SslHttpProcessor(certificate)
+                : new HttpProcessor();
             this.mReportOutput = new WeakReference<IReportOutput>(reportOutput);
 
             foreach (var route in routes)

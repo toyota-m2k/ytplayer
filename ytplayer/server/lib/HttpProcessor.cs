@@ -35,21 +35,24 @@ namespace SimpleHttpServer {
         #region Public Methods
         public void HandleClient(TcpClient tcpClient) {
             Task.Run(() => {
-                using (Stream inputStream = GetInputStream(tcpClient))
-                using (Stream outputStream = GetOutputStream(tcpClient)) {
-                    HttpRequest request = GetRequest(inputStream, outputStream);
+                try {
+                    // SSL対応のため、入出力で同じStreamを使う必要がある（SslStreamは1コネクションで1インスタンス）。
+                    using (var stream = WrapStream(tcpClient)) {
+                        HttpRequest request = GetRequest(stream, stream);
 
-                    // route and handle the request...
-                    IHttpResponse response = RouteRequest(inputStream, outputStream, request) ?? HttpBuilder.InternalServerError();
+                        // route and handle the request...
+                        IHttpResponse response = RouteRequest(stream, stream, request) ?? HttpBuilder.InternalServerError();
 
-                    Console.WriteLine("{0} {1}", response.ToString(), request.Url);
-                    try {
-                        response.WriteResponse(outputStream);
-                        outputStream.Flush();
+                        Console.WriteLine("{0} {1}", response.ToString(), request.Url);
+                        response.WriteResponse(stream);
+                        stream.Flush();
                     }
-                    catch (Exception e) {
-                        log.Error(e);
-                    }
+                }
+                catch (Exception e) {
+                    log.Error(e);
+                }
+                finally {
+                    try { tcpClient.Close(); } catch { /* ignore */ }
                 }
             });
         }
@@ -65,16 +68,18 @@ namespace SimpleHttpServer {
         #region Private Methods
 
         private static string Readline(Stream stream) {
-            int next_char;
-            string data = "";
+            var sb = new StringBuilder();
             while (true) {
-                next_char = stream.ReadByte();
-                if (next_char == '\n') { break; }
-                if (next_char == '\r') { continue; }
-                if (next_char == -1) { Thread.Sleep(1); continue; };
-                data += Convert.ToChar(next_char);
+                int c = stream.ReadByte();
+                if (c == -1) {
+                    // 接続が閉じられた / タイムアウト到達。EOSを例外で抜けて呼び出し側のtry/catchで扱う。
+                    throw new IOException("End of stream while reading line.");
+                }
+                if (c == '\n') break;
+                if (c == '\r') continue;
+                sb.Append((char)c);
             }
-            return data;
+            return sb.ToString();
         }
 
         private static void Write(Stream stream, string text) {
@@ -82,11 +87,14 @@ namespace SimpleHttpServer {
             stream.Write(bytes, 0, bytes.Length);
         }
 
-        protected virtual Stream GetOutputStream(TcpClient tcpClient) {
-            return tcpClient.GetStream();
-        }
-
-        protected virtual Stream GetInputStream(TcpClient tcpClient) {
+        /// <summary>
+        /// TcpClientから1コネクションぶんの読み書きストリームを取り出す。
+        /// SSL派生クラスはここをoverrideしてSslStreamを返す。
+        /// </summary>
+        protected virtual Stream WrapStream(TcpClient tcpClient) {
+            // ハンドシェイク中のslowloris等を避けるための保険
+            tcpClient.ReceiveTimeout = 30000;
+            tcpClient.SendTimeout = 30000;
             return tcpClient.GetStream();
         }
 

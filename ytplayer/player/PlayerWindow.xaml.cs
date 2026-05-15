@@ -92,7 +92,7 @@ namespace ytplayer.player {
             PlayWindowClosed?.Invoke(this);
             PlayWindowClosed = null;
             PlayItemChanged = null;
-            ViewModel = null;
+            //ViewModel = null;
         }
 
         private void Window_PreviewDragOver(object sender, DragEventArgs e) {

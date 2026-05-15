@@ -439,6 +439,12 @@ namespace ytplayer.data {
         public void Delete() {
             Status = Status.BLOCKED;
         }
+        public void Reset() {
+            Status = Status.INITIAL;
+            Progress = 0;
+            PathUtil.safeDeleteFile(VPath);
+            PathUtil.safeDeleteFile(APath);
+        }
 
         public DLEntry() {
             KEY = "";

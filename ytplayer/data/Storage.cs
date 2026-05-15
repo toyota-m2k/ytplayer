@@ -1,9 +1,6 @@
 ﻿using io.github.toyota32k.toolkit.utils;
 using System;
 using System.Data.SQLite;
-using System.IO;
-using System.Linq;
-using ytplayer.common;
 
 namespace ytplayer.data {
     //public interface IEntry {

@@ -161,6 +161,7 @@ namespace ytplayer.data {
         }
 
         private bool Apply(bool add) {
+            if (Target == null) return false;
             if (add) {
                 if(!(ChapterList?.AddChapter(Target) ?? false)) {
                     return false;

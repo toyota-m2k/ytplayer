@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Json;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -31,23 +32,20 @@ namespace ytplayer.server {
     
         IEnumerable<ChapterEntry> GetChaptersOf(string id);
         IEnumerable<IGrouping<String, ChapterEntry>> GetChapters();
+
+        bool ExtractAudio(DLEntry entry);
     }
 
     public class YtServer : IDisposable {
-        private int mPort;
-        private HttpServer mServer;
+        private List<HttpServer> mServers = new List<HttpServer>();
+        private MdnsAdvertiser mMdns;
         //private Regex mRegex = new Regex(@"/wfplayer/cmd/(?<cmd>[a-zA-Z]+)(/(?<param>\w*))?");
         private WeakReference<IYtListSource> mStorage;
         private IYtListSource Source => mStorage.GetValue();
 
         public bool IsListening { get; private set; } = false;
 
-        //public static YtServer CreateInstance(int port = 3500) {
-        //    return new YtServer(port);
-        //}
-
-        public YtServer(IYtListSource s, int port = 3500) {
-            mPort = port;
+        public YtServer(IYtListSource s) {
             mStorage = new WeakReference<IYtListSource>(s);
             InitRoutes();
         }
@@ -65,31 +63,111 @@ namespace ytplayer.server {
 
 
         public void Start() {
-            if (!IsListening) {
-                if (null == mServer) {
-                    mServer = new HttpServer(mPort, Routes, Source);
+            if (IsListening) return;
+
+            var settings = Settings.Instance;
+            // HTTP listener: EnableHttp が立っていれば立てる
+            bool startHttp = settings.EnableHttp;
+            // HTTPS listener: EnableHttps が立っていれば立てる
+            bool startHttps = settings.EnableHttps;
+
+            if (startHttp) {
+                StartOne(settings.HttpPort, null, "HTTP");
+            }
+            if (startHttps) {
+                X509Certificate2 cert = null;
+                try {
+                    // MachineKeySet | PersistKeySet:
+                    //   .NET FW 4.8 + SChannel ベースの SslStream は CAPI 鍵コンテナを要求するため、
+                    //   EphemeralKeySet (CNG メモリ鍵) では TLS ハンドシェイクが失敗するケースあり。
+                    //   そのため互換性優先で MachineKeySet 系を維持している。
+                    //   副作用として C:\ProgramData\Microsoft\Crypto\RSA\MachineKeys\ に key
+                    //   コンテナファイルが少しずつ蓄積するが ACL で保護されており実害なし。
+                    //   MSIX サンドボックス下 (SecureArchive) では Access denied になるため、
+                    //   そちらは EphemeralKeySet を採用している。
+                    cert = new X509Certificate2(
+                        settings.PfxPath,
+                        settings.PfxPassword,
+                        X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet);
+                } catch (Exception e) {
+                    Source?.ErrorOutput($"BooServer (HTTPS) cannot load PFX: {e.Message}");
+                    LoggerEx.error(e);
                 }
-                if (mServer.Start()) {
-                    IsListening = true;
-                    Source?.StandardOutput($"BooServer has been started: port={mPort}");
-                } else {
-                    mServer = null;
-                    Source?.ErrorOutput($"BooServer cannot be started: port={mPort}");
+                if (cert != null) {
+                    if (!StartOne(settings.HttpsPort, cert, "HTTPS")) {
+                        cert.Dispose();
+                    }
                 }
+            }
+
+            IsListening = mServers.Count > 0;
+
+            // mDNS-SD 広告開始: HTTP/HTTPS どちらかの listener が立っている場合のみ
+            if (IsListening) {
+                StartMdns(settings);
+            }
+        }
+
+        private void StartMdns(Settings settings) {
+            if (!Settings.Instance.EnableMdnAdvertizing) return;
+
+            // 広告先ポートは HTTPS が立っていれば HTTPS、それ以外は HTTP
+            int port = settings.EnableHttps ? settings.HttpsPort : settings.HttpPort;
+            bool isHttps = settings.EnableHttps;
+            string fp = null;
+            if (isHttps) {
+                try {
+                    using (var cert = new X509Certificate2(
+                            settings.PfxPath, settings.PfxPassword,
+                            X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet)) {
+                        fp = ytplayer.common.CertificateGenerator.ComputeSha256Fingerprint(cert);
+                    }
+                } catch (Exception e) {
+                    LoggerEx.error(e);
+                }
+            }
+
+            mMdns = new MdnsAdvertiser();
+            try {
+                mMdns.Start(settings.EnsureServerName, port, isHttps, fp);
+                Source?.StandardOutput($"mDNS advertised: _bootube._tcp / {settings.EnsureServerName}");
+            } catch (Exception e) {
+                Source?.ErrorOutput($"mDNS advertise failed: {e.Message}");
+                LoggerEx.error(e);
+                mMdns.Dispose();
+                mMdns = null;
+            }
+        }
+
+        private bool StartOne(int port, X509Certificate2 cert, string label) {
+            var server = new HttpServer(port, Routes, Source, cert);
+            if (server.Start()) {
+                mServers.Add(server);
+                Source?.StandardOutput($"BooServer ({label}) has been started: port={port}");
+                return true;
+            } else {
+                Source?.ErrorOutput($"BooServer ({label}) cannot be started: port={port}");
+                return false;
             }
         }
 
         public void Stop() {
-            if (mServer != null) {
-                mServer.Stop();
-                IsListening = false;
-                Source?.StandardOutput($"BooServer was stopped: port={mPort}");
+            if (mMdns != null) {
+                try { mMdns.Dispose(); } catch (Exception e) { LoggerEx.error(e); }
+                mMdns = null;
             }
+            foreach (var s in mServers) {
+                try { s.Stop(); } catch (Exception e) { LoggerEx.error(e); }
+            }
+            if (mServers.Count > 0) {
+                Source?.StandardOutput($"BooServer was stopped.");
+            }
+            mServers.Clear();
+            IsListening = false;
         }
 
         public void Dispose() {
             Stop();
-            mServer = null;
         }
 
         public List<Route> Routes { get; set; } = null;
@@ -139,6 +217,20 @@ namespace ytplayer.server {
                 case "A":
                     path = entry.APath;
                     contentType = "audio/mpeg";
+                    if (path==null||!File.Exists(path)) {
+                        // audio path がない場合はコンバートする
+                        if (Source.ExtractAudio(entry)) {
+                            lock (this) {
+                                try {
+                                    entry = LockSource(SourceType.DB, (source) => source.Single(e => e.KEY == id));
+                                }
+                                catch (Exception e) {
+                                    Logger.error($"{e}");
+                                }
+                            }
+                            path = entry.APath;
+                        }
+                    }
                     break;
                 case "V":
                 case "v":
@@ -205,7 +297,7 @@ namespace ytplayer.server {
                                 {"acceptRequest", true},        // register command をサポートする
                                 {"hasView", true},              // current get/set をサポートする
                                 {"authentication", false},      // 認証不要
-                                {"types", "va" }                // v: video, a: audio, p: photo
+                                {"types", "vax" }               // v: video, a: audio, p: photo, x: extracted audio
                             });
                             //LoggerEx.debug(json.ToString());
                             return new TextHttpResponse(request, json.ToString(), "application/json");

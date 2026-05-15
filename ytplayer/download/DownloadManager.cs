@@ -129,7 +129,11 @@ namespace ytplayer.download {
         public void Enqueue(IEnumerable<DLEntry> entries) {
             InternalEnqueue(entries.Select((entry) => CreateDownloader(entry)).Where((dlr)=>dlr!=null));
         }
-        
+
+        public void Enqueue(IDownloader dlr) {
+            InternalEnqueue(dlr.ToSingleEnumerable());
+        }
+
         public void EnqueueExtractAudio(bool deleteVideo, bool downloadAudioFile, DLEntry entry) {
             EnqueueExtractAudio(deleteVideo, downloadAudioFile, entry.ToSingleEnumerable());
         }
