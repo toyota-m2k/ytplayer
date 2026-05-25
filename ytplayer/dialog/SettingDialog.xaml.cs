@@ -24,6 +24,7 @@ namespace ytplayer.dialog {
         public ReactivePropertySlim<string> VideoPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> AudioPath { get; } = new ReactivePropertySlim<string>();
         public ReactivePropertySlim<string> WorkPath { get; } = new ReactivePropertySlim<string>();
+        public ReactivePropertySlim<string> CookieFilePath { get; } = new ReactivePropertySlim<string>();
 
 
         public ReactivePropertySlim<bool> AcceptList { get; } = new ReactivePropertySlim<bool>();
@@ -56,6 +57,9 @@ namespace ytplayer.dialog {
         public ReactiveCommand CommandVideoPath { get; } = new ReactiveCommand();
         public ReactiveCommand CommandAudioPath { get; } = new ReactiveCommand();
         public ReactiveCommand CommandWorkPath { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandWebPageRoot { get; } = new ReactiveCommand();
+        public ReactiveCommand CommandCookieFilePath { get; } = new ReactiveCommand();
+
         public ReactiveCommand CommandPfxPath { get; } = new ReactiveCommand();
         public ReactiveCommand CommandGenerateCert { get; } = new ReactiveCommand();
         //public ReactiveCommand CommandPairingQr { get; } = new ReactiveCommand();
@@ -76,6 +80,7 @@ namespace ytplayer.dialog {
             VideoPath.Value = src.VideoPath;
             AudioPath.Value = src.AudioPath;
             WorkPath.Value = src.WorkPath;
+            CookieFilePath.Value = src.CookieFilePath;
             WebPageRoot.Value = src.WebPageRoot;
             EnableHttp.Value = src.EnableHttp;
             HttpPort.Value = src.HttpPort;
@@ -95,7 +100,9 @@ namespace ytplayer.dialog {
             CommandVideoPath.Subscribe(() => SelectFolder("Video Folder", VideoPath));
             CommandAudioPath.Subscribe(() => SelectFolder("Audio Folder", AudioPath));
             CommandWorkPath.Subscribe(() => SelectFolder("Work Directory", WorkPath));
-            CommandPfxPath.Subscribe(() => SelectPfxFile(PfxPath));
+            CommandWebPageRoot.Subscribe(() => SelectFolder("Web Page Root", WebPageRoot));
+            CommandCookieFilePath.Subscribe(()=> SelectFile("Cookie File", "txt", CookieFilePath));
+            CommandPfxPath.Subscribe(() => SelectFile("PFX File", "pfx", PfxPath));
             CommandGenerateCert.Subscribe(() => GenerateCert());
             //CommandPairingQr.Subscribe(() => ShowPairingQr());
 
@@ -173,12 +180,24 @@ namespace ytplayer.dialog {
             }
         }
 
-        private void SelectPfxFile(ReactivePropertySlim<string> path) {
+        //private void SelectPfxFile(ReactivePropertySlim<string> path) {
+        //    var r = OpenFileDialogBuilder.Create()
+        //        .title("PFX File")
+        //        .ensureFileExists(true)
+        //        .initialDirectory(PathUtil.getDirectoryName(path.Value))
+        //        .defaultExtension("pfx")
+        //        .GetFilePath(Owner);
+        //    if (null != r) {
+        //        path.Value = r;
+        //    }
+        //}
+
+        private void SelectFile(string title, string ext, ReactivePropertySlim<string> path) {
             var r = OpenFileDialogBuilder.Create()
-                .title("PFX File")
+                .title(title)
                 .ensureFileExists(true)
                 .initialDirectory(PathUtil.getDirectoryName(path.Value))
-                .defaultExtension("pfx")
+                .defaultExtension(ext)
                 .GetFilePath(Owner);
             if (null != r) {
                 path.Value = r;
@@ -287,6 +306,7 @@ namespace ytplayer.dialog {
             dst.VideoPath = VideoPath.Value;
             dst.AudioPath = AudioPath.Value;
             dst.WorkPath = WorkPath.Value;
+            dst.CookieFilePath = CookieFilePath.Value;
             dst.AcceptList = AcceptList.Value;
             dst.WebPageRoot = WebPageRoot.Value;
             dst.EnableHttp = EnableHttp.Value;

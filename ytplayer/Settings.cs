@@ -22,6 +22,7 @@ namespace ytplayer {
         public string VideoPath { get; set; } = "";
         public string AudioPath { get; set; } = "";
         public string WorkPath { get; set; } = "";          // 無音抽出用Wavファイル作成先
+        public string CookieFilePath { get; set; } = "";
         public string WebPageRoot { get; set; } = "";
         public string SyncPeer { get; set; } = "";
         // Sync 接続時に HTTPS を使うか (mDNS discovery でピアを選択した場合は自動で上書きされる)。
@@ -148,6 +149,8 @@ namespace ytplayer {
                 return System.IO.Path.GetTempPath();
             }
         }
+
+        public string YtDlpSpecialArguments => PathUtil.isFile(CookieFilePath) ? $"--cookies {CookieFilePath}" : "";
 
         public static string ComplementDBPath(string dbPath) {
             dbPath = dbPath?.Trim();

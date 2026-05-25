@@ -9,7 +9,7 @@
         Title="Settings"
         Background="#EFEFEF"
         IsEnabled="{Binding Ready.Value}"
-        Height="504" Width="600">
+        Height="554" Width="600">
     <Window.Resources>
         <ResourceDictionary Source="../res/YtpResource.xaml"/>
     </Window.Resources>
@@ -28,27 +28,29 @@
             <RowDefinition Height="10"/>
             <RowDefinition Height="Auto"/>              <!-- 11: work directory -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>              <!-- 13: Accept PlayList -->
+            <RowDefinition Height="Auto"/>              <!-- 13: Cookie File Path -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>              <!-- 15: Server / HTTP -->
+            <RowDefinition Height="Auto"/>              <!-- 15: Accept PlayList -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>              <!-- 17: HTTPS -->
+            <RowDefinition Height="Auto"/>              <!-- 17: Server / HTTP -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>              <!-- 19: Server Name -->
+            <RowDefinition Height="Auto"/>              <!-- 19: HTTPS -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>              <!-- 21: mDSN Advertizing -->
+            <RowDefinition Height="Auto"/>              <!-- 21: Server Name -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>              <!-- 23: PFX Generate -->
+            <RowDefinition Height="Auto"/>              <!-- 23: mDSN Advertizing -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>              <!-- 25: PFX File -->
+            <RowDefinition Height="Auto"/>              <!-- 25: PFX Generate -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>              <!-- 27: PFX / Password-->
+            <RowDefinition Height="Auto"/>              <!-- 27: PFX File -->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>              <!-- 29: Web Page -->
+            <RowDefinition Height="Auto"/>              <!-- 29: PFX / Password-->
             <RowDefinition Height="10"/>
-            <RowDefinition Height="Auto"/>              <!-- 31: OK/Cancel -->
+            <RowDefinition Height="Auto"/>              <!-- 31: Web Page -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>              <!-- 33: OK/Cancel -->
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>              <!-- 33: Message Line -->
+            <RowDefinition Height="Auto"/>              <!-- 35: Message Line -->
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -86,11 +88,16 @@
         <TextBox Grid.Row="11" Grid.Column="2" Text="{Binding WorkPath.Value, Mode=TwoWay}"/>
         <Button Grid.Row="11" Grid.Column="4" Content="…" Padding="8,0" Command="{Binding CommandWorkPath}"/>
 
-        <TextBlock Grid.Row="13" Grid.Column="0" Text="Behavior"/>
-        <CheckBox Grid.Row="13" Grid.Column="2" Grid.ColumnSpan="3" Content="Accept PlayList" IsChecked="{Binding AcceptList.Value, Mode=TwoWay}"/>
+        <TextBlock Grid.Row="13" Grid.Column="0" Text="Cookie File"/>
+        <TextBox Grid.Row="13" Grid.Column="2" Text="{Binding CookieFilePath.Value, Mode=TwoWay}"/>
+        <Button Grid.Row="13" Grid.Column="4" Content="…" Padding="8,0" Command="{Binding CommandCookieFilePath}"/>
 
-        <TextBlock Grid.Row="15" Grid.Column="0" Text="Server"/>
-        <Grid Grid.Row="15" Grid.Column="2" Grid.ColumnSpan="1" HorizontalAlignment="Stretch">
+
+        <TextBlock Grid.Row="15" Grid.Column="0" Text="Behavior"/>
+        <CheckBox Grid.Row="15" Grid.Column="2" Grid.ColumnSpan="3" Content="Accept PlayList" IsChecked="{Binding AcceptList.Value, Mode=TwoWay}"/>
+
+        <TextBlock Grid.Row="17" Grid.Column="0" Text="Server"/>
+        <Grid Grid.Row="17" Grid.Column="2" Grid.ColumnSpan="1" HorizontalAlignment="Stretch">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -101,7 +108,7 @@
             <common:NumericTextBox Text="{Binding HttpPort.Value}" Grid.Column="2" MinWidth="40"  IsEnabled="{Binding EnableHttp.Value}"/>
         </Grid>
 
-        <Grid Grid.Row="17" Grid.Column="2" Grid.ColumnSpan="1" HorizontalAlignment="Stretch">
+        <Grid Grid.Row="19" Grid.Column="2" Grid.ColumnSpan="1" HorizontalAlignment="Stretch">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="42*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -112,38 +119,38 @@
             <common:NumericTextBox Grid.Column="2" Text="{Binding HttpsPort.Value}" MinWidth="40" IsEnabled="{Binding EnableHttps.Value}"/>
         </Grid>
 
-        <TextBlock Grid.Row="19" Grid.Column="0" Text="Server Name"/>
-        <TextBox Grid.Row="19" Grid.Column="2" Grid.ColumnSpan="1"
+        <TextBlock Grid.Row="21" Grid.Column="0" Text="Server Name"/>
+        <TextBox Grid.Row="21" Grid.Column="2" Grid.ColumnSpan="1"
                  Text="{Binding ServerName.Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                  IsEnabled="{Binding ServerEnabled.Value}"
                  ToolTip="Used as mDNS service name."/>
 
-        <TextBlock Grid.Row="21" Grid.Column="0" Text="mDNS"/>
-        <CheckBox Grid.Row="21" Grid.Column="2" Content="Enable Advertizing" IsChecked="{Binding EnableMDnsAdvertizing.Value, Mode=TwoWay}"/>
+        <TextBlock Grid.Row="23" Grid.Column="0" Text="mDNS"/>
+        <CheckBox Grid.Row="23" Grid.Column="2" Content="Enable Advertizing" IsChecked="{Binding EnableMDnsAdvertizing.Value, Mode=TwoWay}"/>
 
-        <TextBlock Grid.Row="23" Grid.Column="0" Text="PFX"/>
-        <Button Grid.Row="23" Grid.Column="2" Content="Generate…" Padding="8,0" HorizontalAlignment="Left" Command="{Binding CommandGenerateCert}" IsEnabled="{Binding EnableHttps.Value}"/>
-        <!--<Button Grid.Row="23" Grid.Column="2" Content="Pairing QR…" Padding="8,0" Command="{Binding CommandPairingQr}" IsEnabled="{Binding ServerEvabled.Value}" HorizontalAlignment="Right"/>-->
+        <TextBlock Grid.Row="25" Grid.Column="0" Text="PFX"/>
+        <Button Grid.Row="25" Grid.Column="2" Content="Generate…" Padding="8,0" HorizontalAlignment="Left" Command="{Binding CommandGenerateCert}" IsEnabled="{Binding EnableHttps.Value}"/>
+        <!--<Button Grid.Row="25" Grid.Column="2" Content="Pairing QR…" Padding="8,0" Command="{Binding CommandPairingQr}" IsEnabled="{Binding ServerEvabled.Value}" HorizontalAlignment="Right"/>-->
 
 
-        <TextBlock Grid.Row="25" Grid.Column="0" Text="PFX file" HorizontalAlignment="Right"/>
-        <TextBox Grid.Row="25" Grid.Column="2" Text="{Binding PfxPath.Value, Mode=TwoWay}" IsEnabled="{Binding EnableHttps.Value}"/>
-        <Button Grid.Row="25" Grid.Column="4" Content="…" Padding="8,0" Command="{Binding CommandPfxPath}" IsEnabled="{Binding EnableHttps.Value}"/>
+        <TextBlock Grid.Row="27" Grid.Column="0" Text="PFX file" HorizontalAlignment="Right"/>
+        <TextBox Grid.Row="27" Grid.Column="2" Text="{Binding PfxPath.Value, Mode=TwoWay}" IsEnabled="{Binding EnableHttps.Value}"/>
+        <Button Grid.Row="27" Grid.Column="4" Content="…" Padding="8,0" Command="{Binding CommandPfxPath}" IsEnabled="{Binding EnableHttps.Value}"/>
 
-        <TextBlock Grid.Row="27" Grid.Column="0" Text="Password" HorizontalAlignment="Right"/>
-        <PasswordBox Grid.Row="27" Grid.Column="2" x:Name="PfxPasswordBox" PasswordChanged="OnPfxPasswordChanged" IsEnabled="{Binding EnableHttps.Value}"/>
+        <TextBlock Grid.Row="29" Grid.Column="0" Text="Password" HorizontalAlignment="Right"/>
+        <PasswordBox Grid.Row="29" Grid.Column="2" x:Name="PfxPasswordBox" PasswordChanged="OnPfxPasswordChanged" IsEnabled="{Binding EnableHttps.Value}"/>
 
-        <TextBlock Grid.Row="29" Grid.Column="0" Text="Web page root"/>
-        <TextBox Grid.Row="29" Grid.Column="2" Text="{Binding WebPageRoot.Value, Mode=TwoWay}" IsEnabled="{Binding ServerEnabled.Value}"/>
-        <Button Grid.Row="29" Grid.Column="4" Content="…" Padding="8,0" Command="{Binding CommandWebPageRoot}"/>
+        <TextBlock Grid.Row="31" Grid.Column="0" Text="Web page root"/>
+        <TextBox Grid.Row="31" Grid.Column="2" Text="{Binding WebPageRoot.Value, Mode=TwoWay}" IsEnabled="{Binding ServerEnabled.Value}"/>
+        <Button Grid.Row="31" Grid.Column="4" Content="…" Padding="8,0" Command="{Binding CommandWebPageRoot}"/>
 
-        <StackPanel Grid.Row="31" Grid.Column="0" Grid.ColumnSpan="5" HorizontalAlignment="Center" Orientation="Horizontal">
+        <StackPanel Grid.Row="33" Grid.Column="0" Grid.ColumnSpan="5" HorizontalAlignment="Center" Orientation="Horizontal">
             <Button Content="OK" Command="{Binding OKCommand}" Width="100"/>
             <Button Content="Cancel" Command="{Binding CancelCommand}" Width="100" Margin="20,0,0,0" Visibility="{Binding Cancellable.Value, Converter={StaticResource BoolVisibilityConverter}}"/>
             <Button Content="Update yt-dlp" Command="{Binding UpdateCommand}" Width="100" Margin="20,0,0,0" Visibility="{Binding CanUpdateYTD.Value, Converter={StaticResource BoolVisibilityConverter}}"/>
         </StackPanel>
 
-        <TextBlock Grid.Row="33" Grid.Column="0" Grid.ColumnSpan="5" Margin="0,0,0,0" Text="{Binding ErrorMessage.Value}" Height="30" VerticalAlignment="Top"/>
+        <TextBlock Grid.Row="35" Grid.Column="0" Grid.ColumnSpan="5" Margin="0,0,0,0" Text="{Binding ErrorMessage.Value}" Height="30" VerticalAlignment="Top"/>
 
     </Grid>
 </Window>

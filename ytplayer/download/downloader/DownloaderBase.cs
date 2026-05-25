@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Linq;
 using ytplayer.data;
@@ -83,7 +84,7 @@ namespace ytplayer.download.downloader {
         /**
          * youtube-dlに渡す、サイト固有の引数（不要なら空文字）
          */
-        protected virtual string SpecialArguments => "";
+        protected virtual string SpecialArguments => Settings.Instance.YtDlpSpecialArguments;
 
         /**
          * ダウンロード進捗(%)を保持するプロパティ... とりあえず int型。未使用。
@@ -113,6 +114,7 @@ namespace ytplayer.download.downloader {
         }
 
         protected virtual ProcessStartInfo Prepare() {
+            Host.StandardOutput($"{YtpDef.YTDLP_EXE} {BasicArguments} {SpecialArguments} {Entry.Url}");
             var pi = new ProcessStartInfo() {
                 FileName = YtpDef.YTDLP_EXE,
                 Arguments = $"{BasicArguments} {SpecialArguments} {Entry.Url}",
