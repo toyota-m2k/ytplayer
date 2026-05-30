@@ -16,7 +16,9 @@ namespace ytplayer.dialog {
     /// <summary>
     /// BooTube サーバへのペアリング情報 (host:port + fingerprint) を QR で表示するダイアログ。
     ///
-    /// QR の中身は `bootube://<host>:<port>?fp=<fp>&name=<name>&svc=<svc>&https=<0|1>` 形式。
+    /// QR の中身は `bootube://<host>:<port>?fp=<fp>&name=<machineName>&svc=<serverName>&https=<0|1>&app=bootube` 形式。
+    /// クライアントは <svc>@<name> を合成すると mDNS Service Instance 名と一致するため、
+    /// QR 経由で追加したホストでも mDNS による IP 再解決が利く。
     /// BooDroid 側では bootube:// スキームの intent-filter で受け取って HostAddressEntity に変換する。
     /// </summary>
     public partial class PairingQrDialog : Window {
@@ -74,9 +76,13 @@ namespace ytplayer.dialog {
             sb.Append(host);
             sb.Append(":").Append(_port);
             sb.Append("?fp=").Append(Uri.EscapeDataString(_fingerprint));
-            sb.Append("&name=").Append(Uri.EscapeDataString(_serverName));
+            // name: マシン名 (例 "MY-PC")、svc: サーバー名 (例 "BooTube")
+            // クライアントが「{svc}@{name}」を合成すると mDNS Service Instance 名と一致するため、
+            // QR 経由で追加したホストでも IP 再解決が機能する。
+            sb.Append("&name=").Append(Uri.EscapeDataString(Environment.MachineName));
             sb.Append("&svc=").Append(Uri.EscapeDataString(_serverName));
             sb.Append("&https=").Append(_isHttps ? "1" : "0");
+            sb.Append("&app=bootube");
             var uri = sb.ToString();
 
             UriText.Text = uri;
