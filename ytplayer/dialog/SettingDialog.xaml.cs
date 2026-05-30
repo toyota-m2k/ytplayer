@@ -403,7 +403,7 @@ namespace ytplayer.dialog {
             CurrentStorage = currentStorage;
             Result = null;
             viewModel = new SettingsViewModel(this);
-            viewModel.Cancellable.Value = currentStorage!=null;
+            viewModel.Cancellable.Value = true; // currentStorage!=null;
             InitializeComponent();
             // PasswordBox.Password は DependencyProperty ではないので手動同期する。
             PfxPasswordBox.Password = viewModel.PfxPassword.Value;

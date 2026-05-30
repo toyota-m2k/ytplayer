@@ -521,7 +521,11 @@ namespace ytplayer {
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
             Instance = this;
-            InitStorage();
+            if (!InitStorage()) {
+                ReadyToClose = true;
+                App.Current.Shutdown();
+                return;
+            }
             mClipboardMonitor = new ClipboardMonitor(this, true);
             mClipboardMonitor.ClipboardUpdate += OnClipboardUpdated;
             var lastUrl = Settings.Instance.LastPlayingUrl;
@@ -565,6 +569,7 @@ namespace ytplayer {
 
         private bool ReadyToClose = false;
         private async Task CloseAndWait() {
+            if (Storage == null) return;
             Storage.DLTable.Update();
 
             viewModel.DialogType.Value = DialogTypeId.CLOSING_MESSAGE;
@@ -584,7 +589,7 @@ namespace ytplayer {
         
 
         private async void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
-            if (mDownloadManager.IsBusy) {
+            if (mDownloadManager?.IsBusy == true) {
                 var r = MessageBox.Show("Are you sure to cancel downloading tasks？", "BooTube", MessageBoxButton.YesNo);
                 if (r == MessageBoxResult.No) {
                     e.Cancel = true;
@@ -606,7 +611,7 @@ namespace ytplayer {
 
             StopServer();
 
-            mClipboardMonitor.Dispose();
+            mClipboardMonitor?.Dispose();
             if (mPlayerWindow != null) {
                 Settings.Instance.RestartOnLoaded = true;
                 mPlayerWindow.Close();
@@ -643,6 +648,10 @@ namespace ytplayer {
             dlg.Owner = this;
             dlg.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             dlg.ShowDialog();
+            if (currentStorage==null && dlg.Result==null) {
+                // 初回の初期化がキャンセルされた
+                throw new InvalidOperationException("not initialized.");
+            }
             bool ret = false;
             if (dlg.Result!=null && dlg.Result.Ok && dlg.Result.NewStorage != null) {
                 SetStorage(dlg.Result.NewStorage);
@@ -652,14 +661,16 @@ namespace ytplayer {
             return ret;
         }
 
-        private void InitStorage(bool forceCreate = false) {
+        private bool InitStorage(bool forceCreate = false) {
             if (forceCreate || !PathUtil.isFile(Settings.Instance.EnsureDBPath)) {
                 while (true) {
                     viewModel.BusyWithModal = true;
                     try {
                         if (ShowSettingDialog(null)) {
-                            return;
+                            return true;
                         }
+                    } catch (InvalidOperationException e) {
+                        return false;
                     }
                     finally {
                         viewModel.BusyWithModal = false;
@@ -670,9 +681,10 @@ namespace ytplayer {
                 if(storage!=null) { 
                     SetStorage(storage);
                 } else { 
-                    InitStorage(true);
+                    return InitStorage(true);
                 }
             }
+            return true;
         }
 
         private void SetStorage(Storage newStorage) {
