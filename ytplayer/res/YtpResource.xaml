@@ -20,6 +20,7 @@
     <common:DecimalStringConverter x:Key="DecimalStringConverter"/>
     <common:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter"/>
     <local:MediaFlagToVisibilityConverter x:Key="MediaFlagToVisibilityConverter"/>
+    <local:MBSizeTextConverter x:Key="MBSizeTextConverter"/>
 
     <!-- Colors -->
     <SolidColorBrush x:Key="ControlPanelBG" Color="#90404080" />

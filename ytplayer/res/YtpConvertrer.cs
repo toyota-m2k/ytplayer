@@ -9,6 +9,26 @@ using System.Windows.Data;
 using ytplayer.data;
 
 namespace ytplayer {
+    public class MBSizeTextConverter : IValueConverter {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
+            try {
+                var v = System.Convert.ToInt64(value);
+                if (v == 0) {
+                    return "0";
+                }
+                var low = (v / 1000) % 1000;
+                var hi = v / 1_000_000;
+                return $"{hi:N0}.{low:D3}";
+            } catch (Exception) {
+                return "";
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
+            throw new NotImplementedException();
+        }
+    }
+
     public class MediaFlagToVisibilityConverter : IValueConverter {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
             bool audio = (parameter as string) == "audio";

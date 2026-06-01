@@ -7,6 +7,7 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using ytplayer.server;
 
 namespace ytplayer.common {
     public static class CertificateGenerator {
@@ -26,15 +27,16 @@ namespace ytplayer.common {
         /// アクティブなネットワークインタフェース上の IPv4 アドレスを列挙する（ループバック除く）。
         /// </summary>
         public static IEnumerable<IPAddress> GetLocalIPv4Addresses() {
-            return NetworkInterface.GetAllNetworkInterfaces()
-                .Where(ni => ni.OperationalStatus == OperationalStatus.Up
-                          && ni.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-                .SelectMany(ni => ni.GetIPProperties().UnicastAddresses)
-                .Where(addr => addr.Address.AddressFamily == AddressFamily.InterNetwork
-                            && !IPAddress.IsLoopback(addr.Address))
-                .Select(addr => addr.Address)
-                .Distinct()
-                .ToList();
+            return MdnsCommon.MyAddresses;
+            //return NetworkInterface.GetAllNetworkInterfaces()
+            //    .Where(ni => ni.OperationalStatus == OperationalStatus.Up
+            //              && ni.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+            //    .SelectMany(ni => ni.GetIPProperties().UnicastAddresses)
+            //    .Where(addr => addr.Address.AddressFamily == AddressFamily.InterNetwork
+            //                && !IPAddress.IsLoopback(addr.Address))
+            //    .Select(addr => addr.Address)
+            //    .Distinct()
+            //    .ToList();
         }
 
         /// <summary>

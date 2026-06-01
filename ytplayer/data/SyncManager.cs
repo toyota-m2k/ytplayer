@@ -6,9 +6,10 @@ using System.Json;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
-using ytplayer.download;
 using ytplayer.common;
+using ytplayer.download;
 
 namespace ytplayer.data {
     public class SyncManager {
@@ -20,7 +21,9 @@ namespace ytplayer.data {
         public interface ISyncProgress {
             void OnMessage(string msg);
             void OnProgress(int current, int total);
+            void OnProgressOfEachItem(long currentBytes, long totalBytes);
             bool IsCancelled { get; }
+            CancellationTokenSource Cancellable { get; set; }
         }
 
         class DLEntryComparator : IEqualityComparer<DLEntry> {
@@ -37,10 +40,10 @@ namespace ytplayer.data {
         /// 旧 API: ホスト文字列 ("host[:port]") のみ受け取り、HTTP 固定で同期する。
         /// 互換のため残しているが新規呼び出し側は <see cref="SyncFrom(PeerEndpoint, Storage, IReportOutput, ISyncProgress)"/> を使うこと。
         /// </summary>
-        public static Task SyncFrom(string host, Storage storage, IReportOutput output, ISyncProgress progress) {
-            var peer = PeerEndpoint.FromUserInput(host, defaultPort: 3500, useHttps: false, fp: null);
-            return SyncFrom(peer, storage, output, progress);
-        }
+        //public static Task SyncFrom(string host, Storage storage, IReportOutput output, ISyncProgress progress) {
+        //    var peer = PeerEndpoint.FromUserInput(host, defaultPort: 3500, useHttps: false, fp: null);
+        //    return SyncFrom(peer, storage, output, progress);
+        //}
 
         public static async Task SyncFrom(PeerEndpoint peer, Storage storage, IReportOutput output, ISyncProgress progress) {
             if(busy) {
@@ -80,29 +83,49 @@ namespace ytplayer.data {
                     progress?.OnMessage("Synchronizing List ...");
                     progress?.OnProgress(0, totalCount);
 
-                    for(int i=0; i<totalCount; i++ ) {
+                    byte[] buffer = null; //new byte[bufferSize];
+                    var cts = new CancellationTokenSource();
+                    progress.Cancellable = cts;
+
+                    for (int i=0; i<totalCount; i++ ) {
+                        if (progress?.IsCancelled ?? false) {
+                            break;
+                        }
                         var c = list[i];
                         try {
-                            logger.debug($"id={c.KEY}, name={c.Name}");
-                            logger.debug($"saving:{c.VPath}");
-                            output.StandardOutput($"synchronizing item: {c.KEY} - {c.Name}");
-                            if (!PathUtil.isFile(c.VPath)) {
-                                using (var inStream = await client.GetStreamAsync($"{peer.BaseUrl}/video?id={c.KEY}"))
-                                using (var outStream = new FileStream(c.VPath, FileMode.Create)) {
-                                    await inStream.CopyToAsync(outStream);
-                                    await outStream.FlushAsync();
+                            logger.debug($"{i+1}/{totalCount} ... id={c.KEY}, name={c.Name}");
+                            var mine = storage.DLTable.Find(c.KEY);
+                            if (mine != null) {
+                                if (!mine.HasCategory && c.HasCategory) {
+                                    // ピア側にだけ Categoryが設定されていたら、インポートする
+                                    mine.Category = c.Category;
                                 }
                             }
-                            storage.DLTable.Add(c);
+                            else {
+                                progress?.OnMessage($"Sync: {c.Name}");
+                                output.StandardOutput($"synchronizing item ({i + 1}/{totalCount}): {c.KEY} - {c.Name}");
+                                if (!PathUtil.isFile(c.VPath)) {
+                                    using (var response = await client.GetAsync($"{peer.BaseUrl}/video?id={c.KEY}", HttpCompletionOption.ResponseHeadersRead)) {
+                                        var length = response.Content.Headers.ContentLength ?? 0L;
+                                        using (var inStream = await response.Content.ReadAsStreamAsync())
+                                        using (var outStream = new FileStream(c.VPath, FileMode.Create)) {
+                                            if (buffer==null) {
+                                                buffer = new byte[81920];   // 80KB, same as default buffer size of Stream.CopyToAsync
+                                            }
+                                            await CopyStreamWithProgress(outStream, inStream, buffer, length, progress, cts.Token);
+                                            await outStream.FlushAsync();
+                                        }
+                                    }
+                                }
+                                storage.DLTable.Add(c);
+                            }
                         }
                         catch (Exception e) {
                             logger.debug("SaveFile error.\n" + e.ToString());
                             output.ErrorOutput($"{e.Message}");
+                            PathUtil.safeDeleteFile(c.VPath);
                         }
                         progress?.OnProgress(i + 1, totalCount);
-                        if (progress?.IsCancelled ?? false) {
-                            break;
-                        }
                     }
                     progress?.OnMessage("Items Completed.");
                     output.StandardOutput("Complete synchronizing items.");
@@ -119,6 +142,17 @@ namespace ytplayer.data {
             }
 
 
+        }
+
+
+        private static async Task CopyStreamWithProgress(Stream destination, Stream source, byte[] buffer, long totalLength, ISyncProgress progress, CancellationToken cancellationToken) {
+            int count;
+            long totalRead = 0L;
+            while ((count = await source.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)) != 0) {
+                await destination.WriteAsync(buffer, 0, count, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                totalRead += count;
+                progress.OnProgressOfEachItem(totalRead, totalLength);
+            }
         }
 
         /// <summary>
