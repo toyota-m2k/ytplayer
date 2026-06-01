@@ -104,7 +104,7 @@ namespace ytplayer.server {
         // ---- Sockets ----------------------------------------------------------------------
 
         private void BindSockets() {
-            foreach (var addr in MdnsCommon.EnumerateMulticastV4Addresses()) {
+            foreach (var addr in MdnsCommon.MyAddresses) {
                 UdpClient sock = null;
                 try {
                     sock = new UdpClient(AddressFamily.InterNetwork);
@@ -298,20 +298,20 @@ namespace ytplayer.server {
             if (string.IsNullOrWhiteSpace(s)) return "bootube";
             return s.Replace('.', '-').Replace(' ', '-').Trim();
         }
-        private static readonly string[] virtualKeywords = { "hyper-v", "virtual", "wsl", "docker" };
-        private static IEnumerable<IPAddress> MyAddresses =>
-            NetworkInterface.GetAllNetworkInterfaces()
-            .Where(ni => ni.OperationalStatus == OperationalStatus.Up   // アクティブなNIC
-                         && ni.NetworkInterfaceType != NetworkInterfaceType.Loopback    // Loopbackは除外
-                         && !virtualKeywords.Any(keyword => ni.Description.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)) // HyperVの仮想NICは除外
-            .SelectMany(ni => ni.GetIPProperties().UnicastAddresses)
-            .Where(ua => ua.Address.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(ua.Address))  // ipネットワーク限定
-            .Select(ua => ua.Address)
-            .Distinct();
-        public IPAddress MyAddress => MyAddresses.FirstOrDefault();
+        //private static readonly string[] virtualKeywords = { "hyper-v", "virtual", "wsl", "docker" };
+        //private static IEnumerable<IPAddress> MyAddresses =>
+        //    NetworkInterface.GetAllNetworkInterfaces()
+        //    .Where(ni => ni.OperationalStatus == OperationalStatus.Up   // アクティブなNIC
+        //                 && ni.NetworkInterfaceType != NetworkInterfaceType.Loopback    // Loopbackは除外
+        //                 && !virtualKeywords.Any(keyword => ni.Description.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)) // HyperVの仮想NICは除外
+        //    .SelectMany(ni => ni.GetIPProperties().UnicastAddresses)
+        //    .Where(ua => ua.Address.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(ua.Address))  // ipネットワーク限定
+        //    .Select(ua => ua.Address)
+        //    .Distinct();
+        //public IPAddress MyAddress => MyAddresses.FirstOrDefault();
 
         private static List<IPAddress> GetLocalIPv4Addresses() {
-            return MyAddresses.ToList();
+            return MdnsCommon.MyAddresses.ToList();
 
             //var list = new List<IPAddress>();
             //// NIC（ipアドレスを列挙）
