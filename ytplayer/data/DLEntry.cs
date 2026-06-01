@@ -342,6 +342,7 @@ namespace ytplayer.data {
             get => Settings.Instance.Categories.Get(mCategory);
             set => setProp(callerName(), ref mCategory, CategoryList.CategoryToDbLabel(value));
         }
+        public bool HasCategory => string.IsNullOrEmpty(mCategory);
 
         [Column(Name = "media", CanBeNull = true)]
         private int mMedia;

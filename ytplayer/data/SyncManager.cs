@@ -37,10 +37,10 @@ namespace ytplayer.data {
         /// 旧 API: ホスト文字列 ("host[:port]") のみ受け取り、HTTP 固定で同期する。
         /// 互換のため残しているが新規呼び出し側は <see cref="SyncFrom(PeerEndpoint, Storage, IReportOutput, ISyncProgress)"/> を使うこと。
         /// </summary>
-        public static Task SyncFrom(string host, Storage storage, IReportOutput output, ISyncProgress progress) {
-            var peer = PeerEndpoint.FromUserInput(host, defaultPort: 3500, useHttps: false, fp: null);
-            return SyncFrom(peer, storage, output, progress);
-        }
+        //public static Task SyncFrom(string host, Storage storage, IReportOutput output, ISyncProgress progress) {
+        //    var peer = PeerEndpoint.FromUserInput(host, defaultPort: 3500, useHttps: false, fp: null);
+        //    return SyncFrom(peer, storage, output, progress);
+        //}
 
         public static async Task SyncFrom(PeerEndpoint peer, Storage storage, IReportOutput output, ISyncProgress progress) {
             if(busy) {
