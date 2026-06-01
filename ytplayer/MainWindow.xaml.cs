@@ -28,6 +28,7 @@ using ytplayer.server;
 using System.Security.Cryptography.X509Certificates;
 using System.Reactive.Linq;
 using static ytplayer.data.SyncManager;
+using System.Threading;
 
 namespace ytplayer {
     /**
@@ -319,7 +320,11 @@ namespace ytplayer {
             public ReactiveProperty<string> Message { get; } = new ReactiveProperty<string>();
             public ReactiveProperty<int> Total { get; } = new ReactiveProperty<int>();
             public ReactiveProperty<int> Current { get; } = new ReactiveProperty<int>();
+            public ReactiveProperty<long> ItemTotalBytes { get; } = new ReactiveProperty<long>();
+            public ReactiveProperty<long> ItemCurrentBytes { get; } = new ReactiveProperty<long>();
+
             public ReactiveCommand OnCancel { get; } = new ReactiveCommand();
+            public CancellationTokenSource Cancellable { get; set; } = null;
 
             private WeakReference<DispatcherObject> mOwner = null;
             public DispatcherObject Owner {
@@ -341,10 +346,17 @@ namespace ytplayer {
                     Current.Value = current;
                 });
             }
+            public void OnProgressOfEachItem(long currentBytes, long totalBytes) {
+                Owner?.Dispatcher?.Invoke(() => {
+                    ItemTotalBytes.Value = totalBytes;
+                    ItemCurrentBytes.Value = currentBytes;
+                });
+            }
 
             public ProgressViewModel() {
                 OnCancel.Subscribe(() => {
                     IsCancelled = true;
+                    Cancellable?.Cancel();
                 });
             }
 
