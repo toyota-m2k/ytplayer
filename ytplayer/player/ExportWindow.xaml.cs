@@ -49,7 +49,7 @@ namespace ytplayer.player {
             OnlyAudio.Value = Settings.Instance.ExportOnlyAudio;
             Split.Value = Settings.Instance.ExportSplit;
 
-            FileName.Value = ExportOption.SafeFileName(entry.Name);
+            FileName.Value = ExportOption.SafeFileName(entry.Name, entry.Desc);
             if (string.IsNullOrWhiteSpace(FileName.Value)) {
                 System.IO.Path.GetFileNameWithoutExtension(entry.Path);
             }

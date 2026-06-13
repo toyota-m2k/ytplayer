@@ -57,11 +57,12 @@ namespace ytplayer.export {
          * 安全なファイル名を生成する
          * 使えない文字は、replaceに置き換える（デフォルトは空文字。。。つまり削除する）
          */
-        public static string SafeFileName(string name, string replace="") {
+        public static string SafeFileName(string name, string desc, string replace="") {
+            var fileName = string.IsNullOrWhiteSpace(desc) ? name : $"{name} {desc}";
             if(string.IsNullOrWhiteSpace(name)) {
                 return "";
             }
-            return Path.GetInvalidFileNameChars().Aggregate(name, (current, c) => current.Replace(c.ToString(),replace));
+            return Path.GetInvalidFileNameChars().Aggregate(fileName, (current, c) => current.Replace(c.ToString(),replace));
         }
     }
 }

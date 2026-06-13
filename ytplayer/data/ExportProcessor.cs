@@ -90,7 +90,7 @@ namespace ytplayer.export {
             if(string.IsNullOrEmpty(fileName)) {
                 fileName = Path.GetFileNameWithoutExtension(srcFile);
             } else {
-                fileName = ExportOption.SafeFileName(fileName);
+                fileName = ExportOption.SafeFileName(fileName, null);
             }
             string dstFile = Path.Combine(OutputDir, $"{fileName}{ext}");
 
