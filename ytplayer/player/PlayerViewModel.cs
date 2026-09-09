@@ -275,6 +275,7 @@ namespace ytplayer.player {
 
         private void PrevChapter() {
             var chapterList = Chapters.Value;
+            if (chapterList == null) return;
             var basePosition = PlayerPosition;
             if (basePosition > 1000)
                 basePosition -= 1000;
@@ -295,6 +296,8 @@ namespace ytplayer.player {
 
         private void NextChapter() {
             var chapterList = Chapters.Value;
+            if (chapterList == null) return;
+
             chapterList.GetNeighborChapterIndex(PlayerPosition, out var prev, out var next);
             if(next>=0) {
                 var c = chapterList.Values[next].Position;

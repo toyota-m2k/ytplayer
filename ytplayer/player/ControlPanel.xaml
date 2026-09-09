@@ -159,7 +159,7 @@
         <!-- ポジション（Timeline） Slider -->
         <StackPanel Grid.Row="1" Orientation="Vertical" HorizontalAlignment="Stretch">
             <local:ChapterBar 
-                x:Name="ChapterView" Margin="5,0"
+                x:Name="ChapterView" Margin="5,16"
                 Height="6"
                 />
             <local:TimelineSlider 
@@ -170,7 +170,7 @@
                 HorizontalAlignment="Stretch"
                 MinWidth="300"
                 SmallChange="10000" LargeChange="10000"
-                Margin="0,-16,0,0"
+                Margin="0,-26,0,0"
                 Value="{Binding Position.Value, Mode=TwoWay}"
                 />
             <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
@@ -186,6 +186,7 @@
             <TextBlock Text="Chapter" VerticalAlignment="Center" Foreground="White"/>
             <Button 
                 Focusable="False"
+                IsEnabled="{Binding IsReady.Value}"
                 Visibility="{Binding ChapterEditing.Value, Converter={StaticResource BoolVisibilityConverter}}"
                 Content="{StaticResource PathPlus}"
                 Style="{StaticResource IconButtonStyle}" 
@@ -195,6 +196,7 @@
                 />
             <ToggleButton 
                 Focusable="False"
+                IsEnabled="{Binding IsReady.Value}"
                 IsChecked="{Binding ChapterEditing.Value, Mode=TwoWay}"
                 Content="{StaticResource PathList}" Style="{StaticResource IconToggleButtonStyle}"
                 VerticalAlignment="Bottom"
